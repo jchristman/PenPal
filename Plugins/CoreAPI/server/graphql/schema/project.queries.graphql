@@ -1,0 +1,11 @@
+type Query {
+  getProject(id: ID!): Project!
+  getProjects(
+    first: Int
+    after: String
+    last: Int
+    before: String
+    pageSize: Int
+    pageNumber: Int
+  ): ProjectsConnection!
+}

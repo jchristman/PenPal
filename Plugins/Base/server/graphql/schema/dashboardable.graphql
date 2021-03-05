@@ -1,0 +1,21 @@
+"""
+The type to be returned by DashboardableStatisticsMetaTrendingInt.graphql_field_name
+"""
+type DashboardableStatisticsTrendingInt {
+  """
+  The display name in the user interface
+  """
+  title: String!
+  """
+  The current value of the statistic
+  """
+  value: Int!
+  """
+  The change in value since "since" field
+  """
+  delta: Int!
+  """
+  The date for which the statistic was last meaningfully cached. Up to plugin author to determine what meaningful is
+  """
+  since: Date!
+}

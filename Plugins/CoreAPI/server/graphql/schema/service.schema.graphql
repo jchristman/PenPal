@@ -1,0 +1,63 @@
+"The generic interface for services. This allows for enforcement of certain fields while allowing for customized service types to be created."
+interface Service implements Annotatable & Auditable {
+  id: ID!
+  "The host to which the service belongs"
+  host: Host!
+  "The network to which the service belongs (if the host belongs to it)"
+  network: Network
+  "The project to which the service belongs"
+  project: Project!
+  "The name of the service"
+  name: String!
+  "Annotations about the service"
+  annotations: Annotations
+  "Audits for the service"
+  changes: [Audit]
+}
+
+enum IPProtocol {
+  TCP
+  tcp
+  UDP
+  udp
+  ICMP
+  icmp
+}
+
+"An implementation of the Edge spec for a Service"
+type ServiceEdge {
+  node: Service!
+  cursor: String!
+}
+
+"An implementation of the Connection spec for Service"
+type ServicesConnection {
+  edges: [ServiceEdge]!
+  services: [Service]!
+  pageInfo: PageInfo!
+  totalCount: Int!
+}
+
+type NetworkService implements Service & Annotatable & Auditable {
+  id: ID!
+  "The host to which the service belongs"
+  host: Host!
+  "The network to which the service belongs (if the host belongs to it)"
+  network: Network
+  "The project to which the service belongs"
+  project: Project!
+  "The name of the service"
+  name: String!
+  "Annotations about the service"
+  annotations: Annotations
+  "Which IP Protocol on which the service operates"
+  ip_protocol: IPProtocol!
+  "The port number on which the service operates"
+  port: Int!
+  "Status of the port"
+  status: String
+  "The TTL of the network service, which can help in OS identification"
+  ttl: Int
+  "Audits for the service"
+  changes: [Audit]
+}

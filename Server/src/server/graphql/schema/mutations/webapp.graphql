@@ -1,0 +1,9 @@
+type Mutation {
+  signup(email: String!, password: String!): WebappAuthResult
+  authenticateWithPassword(email: String!, password: String!): WebappAuthResult
+  logout(token: String!): Boolean
+  sendVerificationEmail(email: String!): Boolean
+  verifyEmail(token: String!): WebappAuthResult
+  updateUser(user_id: ID!, update: WebappUserUpdateInput): WebappUser
+  nop: Boolean
+}

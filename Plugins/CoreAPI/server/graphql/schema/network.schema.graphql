@@ -1,0 +1,36 @@
+"A logical grouping of hosts"
+type Network implements Annotatable & Auditable {
+  id: ID!
+  project: Project!
+  "The network address (e.g. 10.0.0.0)"
+  subnet: IPSubnet!
+  "The domain associated with this network (e.g. acme.com)"
+  domain: String
+  "Individual hosts that don't fall under a particular network"
+  hostsConnection(
+    first: Int
+    after: String
+    last: Int
+    before: String
+  ): HostsConnection
+  "Annotations about the network as a whole"
+  annotations: Annotations
+  "Audits for the network"
+  changes: [Audit]
+}
+
+"An implementation of the Edge spec for a Network"
+type NetworkEdge {
+  node: Network!
+  cursor: String!
+}
+
+"An implementation of the Connection spec for Networks"
+type NetworksConnection {
+  edges: [NetworkEdge]!
+  networks: [Network]!
+  "This connection is actually a way to access the hosts for *all* of the networks simultaneously. It can be used to get a total count of hosts for a set of networks, or to just get a list of hosts for a set of networks"
+  hostsConnection: HostsConnection!
+  pageInfo: PageInfo!
+  totalCount: Int!
+}

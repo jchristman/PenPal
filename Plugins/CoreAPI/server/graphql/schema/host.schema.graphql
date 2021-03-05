@@ -1,0 +1,52 @@
+"An individual host, usually associated with a single IP Address"
+type Host implements Annotatable & Auditable {
+  id: ID!
+  "A link back to the project."
+  project: Project!
+  "A link back to the network. Can be null if not a part of the network."
+  network: Network
+  "IP Address (e.g. 10.0.0.1)"
+  ip_address: IPAddress!
+  "MAC Address (e.g. 00:11:22:33:44:55)"
+  mac_address: String
+  "Hostnames associated with this host (e.g ['localhost', 'ns1'])"
+  hostnames: [String]
+  "The identified operating system for this host (e.g. Windows 10)"
+  os: HostOS
+  "Services associated with this host"
+  servicesConnection(
+    first: Int
+    after: String
+    last: Int
+    before: String
+  ): ServicesConnection
+  "Annotations about this host"
+  annotations: Annotations
+  "Audits for the host"
+  changes: [Audit]
+}
+
+"An implementation of the Edge spec for a Host"
+type HostEdge {
+  node: Host!
+  cursor: String!
+}
+
+"An implementation of the Connection spec for Hosts"
+type HostsConnection {
+  edges: [HostEdge]!
+  hosts: [Host]!
+  "This connection is actually a way to access the services for *all* of the hosts simultaneously. It can be used to get a total count of services for a set of hosts, or to just get a list of services for a set of hosts"
+  servicesConnection: ServicesConnection!
+  pageInfo: PageInfo!
+  totalCount: Int!
+}
+
+"A way of identifying what a host's OS is."
+type HostOS {
+  id: ID!
+  "The OS name"
+  name: String!
+  "The method by which the OS was determined (TODO make this more granular based on a new 'Tool' type)"
+  method: String!
+}

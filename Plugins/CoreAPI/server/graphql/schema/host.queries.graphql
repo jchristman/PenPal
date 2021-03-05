@@ -1,0 +1,5 @@
+type Query {
+  getHost(id: ID!): Host!
+  getHosts(ids: [ID!]!): [Host]!
+  getHostsByProjectID(id: ID!): [Host]!
+}

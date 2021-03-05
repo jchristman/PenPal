@@ -1,0 +1,5 @@
+type Query {
+  nop: Boolean
+  currentUser: WebappUser
+  getUsers(filter: WebappUserFilterInput): [WebappUser]
+}

@@ -1,0 +1,34 @@
+# Base Meteor 1.9.3 minimal app
+meteor@1.9.3                  # Shared foundation for all Meteor packages
+static-html                   # Define static page content in .html files
+standard-minifier-css@1.7.2   # CSS minifier run for production mode
+standard-minifier-js@2.6.0    # JS minifier run for production mode
+es5-shim@4.8.0                # ECMAScript 5 compatibility for older browsers
+ecmascript@0.15.0              # Enable ECMAScript2015+ syntax in app code
+typescript@4.1.2              # Enable TypeScript syntax in .ts and .tsx modules
+shell-server@0.5.0            # Server-side component of the `meteor shell` command
+webapp@1.10.0                  # Serves a Meteor app over HTTP
+server-render@0.3.1           # Support for server-side rendering
+hot-code-push@1.0.4                 # Support for automatically pushing code changes
+ddp@1.4.0                           # Dedicated data protocol (let's the client know to refresh for code pushes)
+hot-module-replacement
+react-fast-refresh
+
+############ Apollo Packages ############
+
+apollo
+
+############ Accounts Packages ############
+
+accounts-password@1.7.0
+
+############ Your Packages ############
+
+penpal:graphql
+deanius:promise
+percolate:migrations
+
+
+############ Custom Packages ############
+
+penpal

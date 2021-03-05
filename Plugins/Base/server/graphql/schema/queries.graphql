@@ -1,0 +1,7 @@
+type Query {
+  getPlugins: [Plugin]
+  getConfigurablePlugins: [Plugin]
+  getPluginConfigurationSettings(plugin_id: ID!): PluginConfigurationSettings
+  getDashboardablePlugins: [Plugin]
+  getPluginDashboardSettings(plugin_id: ID!): PluginDashboardSettings
+}

@@ -1,0 +1,88 @@
+{
+    "name": "(Masscan) New Network Host Discovery",
+    "nodes": [
+        {
+            "parameters": {},
+            "name": "Start",
+            "type": "n8n-nodes-base.start",
+            "typeVersion": 1,
+            "position": [250, 300]
+        },
+        {
+            "parameters": {},
+            "name": "(PenPal) New Network Trigger",
+            "type": "CUSTOM.CoreAPINewNetwork",
+            "typeVersion": 1,
+            "position": [230, 550],
+            "webhookId": "9e6e7828-5842-4f68-9afd-f9cfc9227229"
+        },
+        {
+            "parameters": {
+                "project_id": "={{$json[\"projectID\"]}}",
+                "network_ids": "={{$json[\"networkIDs\"]}}"
+            },
+            "name": "(PenPal) Get Network Data",
+            "type": "CUSTOM.CoreAPIGetNetwork",
+            "typeVersion": 1,
+            "position": [430, 550]
+        },
+        {
+            "parameters": {
+                "array": "={{$json[\"coreAPIGetNetworkData\"]}}",
+                "field": "subnet"
+            },
+            "name": "Join",
+            "type": "CUSTOM.join",
+            "typeVersion": 1,
+            "position": [630, 550]
+        },
+        {
+            "parameters": {
+                "project_id": "={{$json[\"projectID\"]}}",
+                "ips": "={{$json[\"joined_string\"]}}"
+            },
+            "name": "(Masscan) Host Discovery",
+            "type": "CUSTOM.MasscanHostDiscovery",
+            "typeVersion": 1,
+            "position": [810, 550]
+        }
+    ],
+    "connections": {
+        "(PenPal) New Network Trigger": {
+            "main": [
+                [
+                    {
+                        "node": "(PenPal) Get Network Data",
+                        "type": "main",
+                        "index": 0
+                    }
+                ]
+            ]
+        },
+        "(PenPal) Get Network Data": {
+            "main": [
+                [
+                    {
+                        "node": "Join",
+                        "type": "main",
+                        "index": 0
+                    }
+                ]
+            ]
+        },
+        "Join": {
+            "main": [
+                [
+                    {
+                        "node": "(Masscan) Host Discovery",
+                        "type": "main",
+                        "index": 0
+                    }
+                ]
+            ]
+        }
+    },
+    "active": true,
+    "settings": {},
+    "id": "1"
+}

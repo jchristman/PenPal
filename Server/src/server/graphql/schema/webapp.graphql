@@ -1,0 +1,81 @@
+"""
+A user in the web app
+"""
+type WebappUser {
+  """
+  The user ID
+  """
+  id: ID!
+  """
+  An array of emails. This is structured to match Meteor's built-in accounts system, even though we will likely not support any oauth logins
+  """
+  emails: [String!]!
+  """
+  The date the account was created
+  """
+  createdAt: Date!
+  """
+  A container for more volatile pieces of user information
+  """
+  profile: WebappUserProfile
+  """
+  A container for settings specific to the Redball system
+  """
+  settings: WebappUserSettings
+}
+
+"""
+A container for more volatile information related to the user
+"""
+type WebappUserProfile {
+  """
+  The display name that will be used throughout the web app. Must be unique to avoid confusion
+  """
+  display_name: String
+}
+
+"""
+A container for settings specific to the Redball system
+"""
+type WebappUserSettings {
+  """
+  An array of roles assigned to the user
+  """
+  roles: [String]
+  """
+  A flag indicating whether the account is enabled. The user will not be able to login until this is set to true
+  """
+  enabled: Boolean
+}
+
+"""
+This is used to return info from various login/logout mutations
+"""
+type WebappAuthResult {
+  """
+  User ID
+  """
+  userId: String
+  """
+  Auth token
+  """
+  token: String
+  """
+  Token expiration date
+  """
+  tokenExpires: Date
+  """
+  The user associated with this login attempt. This will save a round trip if requested
+  """
+  user: WebappUser
+}
+
+input WebappUserFilterInput {
+  active: Boolean
+  pending: Boolean
+}
+
+input WebappUserUpdateInput {
+  roles: [String]
+  enabled: Boolean
+}

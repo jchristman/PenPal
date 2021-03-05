@@ -1,0 +1,5 @@
+type Mutation {
+  createCustomer(customer: CreateCustomerInput!): Customer
+  updateCustomer(customer: UpdateCustomerInput!): Customer
+  removeCustomer(id: ID!): Boolean!
+}

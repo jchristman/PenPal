@@ -1,0 +1,5 @@
+type Mutation {
+  createProject(project: CreateProjectInput!): Project!
+  updateProject(project: UpdateProjectInput!): Project!
+  removeProject(id: ID!): Boolean!
+}

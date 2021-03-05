@@ -1,0 +1,24 @@
+"An interface that allows audit trails to be applied to the implementer"
+interface Auditable {
+  changes: [Audit]
+}
+
+"A way to implement plugin 'users' that can allow auditing of when a plugin causes a change"
+type PluginUser {
+  id: ID!
+  "The plugin name"
+  name: String!
+}
+
+"An Audit user is one of WebappUser or PluginUser"
+union AuditUser = WebappUser | PluginUser
+
+"This contains the audit trail for any type that implementes Auditable"
+type Audit {
+  "The user that caused the change"
+  user: AuditUser!
+  "The date that the change happened on"
+  date: Date!
+  "A message to go along with the audit trail"
+  message: String!
+}

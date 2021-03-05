@@ -1,0 +1,7 @@
+type MongoDataStoreConfiguration {
+  connectionString: String!
+}
+
+input MongoDataStoreConfigurationInput {
+  connectionString: String!
+}

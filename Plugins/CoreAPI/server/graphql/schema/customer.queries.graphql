@@ -1,0 +1,4 @@
+type Query {
+  getCustomer(id: ID!): Customer!
+  getCustomers: [Customer]!
+}

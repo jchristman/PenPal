@@ -1,0 +1,7 @@
+type CoreAPIAnalytics {
+  id: ID!
+  totalProjects: DashboardableStatisticsTrendingInt!
+  totalCustomers: DashboardableStatisticsTrendingInt!
+  totalHosts: DashboardableStatisticsTrendingInt!
+  totalServices: DashboardableStatisticsTrendingInt!
+}

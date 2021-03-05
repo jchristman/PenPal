@@ -1,0 +1,117 @@
+"An implementation of the Connection spec for Projects"
+type ProjectsConnection {
+  edges: [ProjectEdge]!
+  projects: [Project]!
+  pageInfo: PageInfo!
+  totalCount: Int!
+}
+
+"An implementation of the Edge spec for a Network"
+type ProjectEdge {
+  node: Project!
+  cursor: String!
+}
+
+"The root of the PenPal data schema"
+type Project implements Annotatable & Auditable {
+  id: ID!
+  "The customer for this project"
+  customer: Customer!
+  "The user-friendly name for the particular project"
+  name: String!
+  "Important dates for the project"
+  dates: ProjectDates!
+  "Project description"
+  description: String
+  "All WebappUsers associated with this project"
+  users: ProjectUsers!
+  "Project annotations"
+  annotations: Annotations
+  "The networks and domains that represent the project's scope of project"
+  scope: ProjectScope
+  "Audits for the project"
+  changes: [Audit]
+}
+
+"Fields for createProject mutation"
+input CreateProjectInput {
+  "Sets the customer for the project"
+  customer: ID!
+  "Sets the name of the project (e.g. 'Q1 Pentest')"
+  name: String!
+  "Sets the description of the project"
+  description: String!
+  "Sets the appropriate dates for the project"
+  dates: ProjectInputDates
+  "Sets the scope for the project"
+  scope: ProjectInputScope
+}
+
+"Fields for updateProject mutation"
+input UpdateProjectInput {
+  "The ID of the project to update"
+  id: ID!
+  "Sets the customer for the project"
+  customer: ID
+  "Updates the name of the project"
+  name: String
+  "Sets the description of the project"
+  description: String
+  "Sets the appropriate dates for the project"
+  dates: ProjectInputDates
+}
+
+"Important dates with regards to a project"
+type ProjectDates {
+  "Date this project was created"
+  created_at: Date!
+  "The date that action for the project starts"
+  start: Date
+  "The date that action for the project ends"
+  end: Date
+}
+
+"An input for project dates. Neither a start nor an end date are required for a project"
+input ProjectInputDates {
+  start: Date
+  end: Date
+}
+
+input ProjectInputScope {
+  hosts: [IPAddress]
+  networks: [IPSubnet]
+}
+
+"Users associated with this project"
+type ProjectUsers {
+  "The user that created the project"
+  creator: WebappUser!
+  "The user that owns the project"
+  owner: WebappUser!
+  "Any user that has made a contribution to the project"
+  contributors: [WebappUser]!
+}
+
+"This is one of the most important parts of the project as it defines the way in which the user thinks about hosts fit together."
+type ProjectScope {
+  "Groups of hosts that can be defined by subnets"
+  networksConnection(
+    first: Int
+    after: String
+    last: Int
+    before: String
+  ): NetworksConnection
+  "Individual hosts that don't fall under a particular network"
+  hostsConnection(
+    first: Int
+    after: String
+    last: Int
+    before: String
+  ): HostsConnection
+}
+
+"Input for project scope"
+input ProjectScopeInput {
+  ip_addresses: [IPAddress]
+  subnets: [IPSubnet]
+}

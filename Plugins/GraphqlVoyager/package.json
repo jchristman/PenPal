@@ -1,0 +1,7 @@
+{
+  "name": "penpal-graphql-voyager",
+  "version": "0.1.0",
+  "dependencies": {
+    "graphql-voyager": "1.0.0-rc.31"
+  }
+}

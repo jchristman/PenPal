@@ -1,0 +1,21 @@
+version: "2"
+services:
+    penpal-server:
+        build: ./Server
+        volumes:
+            - penpal-npm-cache:/home/node/.npm
+            - ./N8n-Nodes/:/home/node/custom-n8n-nodes/
+        ports:
+            - "3000:3000"
+            - "5678:5678"
+        command: npm run start
+        networks:
+            - public
+
+volumes:
+    penpal-npm-cache:
+        external: false
+
+networks:
+    public:
+        driver: bridge

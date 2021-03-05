@@ -1,0 +1,44 @@
+"Customers are a type that allows projects to be grouped together and holds metadata about the customer"
+type Customer implements Annotatable & Auditable {
+  id: ID!
+  "Customer name (e.g. Acme, Inc)"
+  name: String!
+  "The customer's industry type"
+  industry: Industry
+  "The projects associated with this customer"
+  projectsConnection(
+    first: Int
+    after: String
+    last: Int
+    before: String
+  ): ProjectsConnection!
+  "Customer annotations"
+  annotations: Annotations
+  "Audits for the customer"
+  changes: [Audit]
+}
+
+"Fields for the createCustomer mutation"
+input CreateCustomerInput {
+  "Sets the name of the customer (e.g. 'Acme, Inc')"
+  name: String!
+  "Sets the industry of the customer"
+  industry: Industry!
+}
+
+"Fields for the createCustomer mutation"
+input UpdateCustomerInput {
+  "The ID of the customer to update"
+  id: ID!
+  "Updates the name of the customer"
+  name: String
+  "Updates the industry of the customer"
+  industry: Industry
+}
+
+enum Industry {
+  Agriculture
+  Finance
+  Software
+  Other
+}

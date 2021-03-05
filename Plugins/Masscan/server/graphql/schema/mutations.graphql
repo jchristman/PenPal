@@ -1,0 +1,4 @@
+type Mutation {
+  parseMasscanFile(submissionDoc: MasscanUpload!): MasscanUploadResponse!
+  performMasscan(data: JSON!): MasscanExecutionResponse!
+}

@@ -1,0 +1,6 @@
+{
+    "name": "DataStore",
+    "version": "0.1.0",
+    "dependsOn": ["Base@0.1.0"],
+    "requiresImplementation": true
+}

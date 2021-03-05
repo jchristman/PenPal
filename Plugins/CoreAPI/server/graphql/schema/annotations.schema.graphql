@@ -1,0 +1,43 @@
+"An interface that allows annotations to be supplied to the implementer"
+interface Annotatable {
+  annotations: Annotations
+}
+
+"This is a container for annotations, which are a way of adding information to any type that implements Annotatable"
+type Annotations {
+  id: ID!
+  "A link back to the Type to which the annotations apply"
+  annotatee: Annotatable
+  "Notes about the annotatee"
+  notes: [Note]
+  "Files related to the annotatee"
+  files: [File]
+  "Tags that apply to the annotatee (one-word notes)"
+  tags: [String]
+}
+
+"A note that can be used to store some information about an Annotatable Type"
+type Note {
+  id: ID!
+  "The note's title"
+  title: String!
+  "The note's body"
+  content: String!
+  "The user that wrote the note"
+  last_modified_by: WebappUser!
+}
+
+"A file that can be used to store some information about an Annotatable Type"
+type File {
+  id: ID!
+  "The file's name"
+  filename: String!
+  "The downloadable URL"
+  url: String!
+}
+
+input NoteInput {
+  title: String
+  content: String
+  last_modified_by: ID!
+}

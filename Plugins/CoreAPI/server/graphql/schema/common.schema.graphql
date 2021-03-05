@@ -1,0 +1,11 @@
+type PageInfo {
+  hasPreviousPage: Boolean!
+  hasNextPage: Boolean!
+  startCursor: String
+  startCursorOffset: Int
+  endCursor: String
+  endCursorOffset: Int
+}
+
+scalar IPAddress
+scalar IPSubnet

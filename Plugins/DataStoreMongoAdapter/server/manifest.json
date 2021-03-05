@@ -1,0 +1,6 @@
+{
+    "name": "DataStoreMongoAdapter",
+    "version": "0.1.0",
+    "dependsOn": ["DataStore@0.1.0"],
+    "implements": "DataStore@0.1.0"
+}

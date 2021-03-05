@@ -1,0 +1,5 @@
+{
+    "name": "CoreAPI-N8n-Nodes",
+    "version": "0.1.0",
+    "dependsOn": ["N8n@0.1.0"]
+}

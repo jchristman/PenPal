@@ -1,0 +1,8 @@
+{
+    "name": "penpal-datastore",
+    "version": "0.1.0",
+    "dependencies": {
+        "biguint-format": "1.0.2",
+        "flake-idgen": "1.4.0"
+    }
+}

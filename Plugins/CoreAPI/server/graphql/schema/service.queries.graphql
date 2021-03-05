@@ -1,0 +1,4 @@
+type Query {
+  getServices(projectID: ID!): [Service]!
+  getService(id: ID!): Service!
+}

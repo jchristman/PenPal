@@ -1,0 +1,404 @@
+type BurpsuiteProConfigScope {
+  advanced_mode: Boolean
+  include: [String]
+  exclude: [String]
+}
+
+type BurpsuiteProConfigByStatusCode {
+  show_2xx: Boolean
+  show_3xx: Boolean
+  show_4xx: Boolean
+  show_5xx: Boolean
+}
+
+type BurpsuiteProConfigBySearch {
+  case_sensitive: Boolean
+  negative_search: Boolean
+  regex: Boolean
+  term: String
+}
+
+type BurpsuiteProConfigByRequestType {
+  hide_not_found_items: Boolean
+  show_only_in_scope_items: Boolean
+  show_only_parameterized_requests: Boolean
+  show_only_requested_items: Boolean
+}
+
+type BurpsuiteProConfigByMimeType {
+  show_css: Boolean
+  show_flash: Boolean
+  show_html: Boolean
+  show_images: Boolean
+  show_other_binary: Boolean
+  show_other_text: Boolean
+  show_script: Boolean
+  show_xml: Boolean
+}
+
+type BurpsuiteProConfigByFolders {
+  hide_empty_folders: Boolean
+}
+
+type BurpsuiteProConfigByFileExtension {
+  hide_specific: Boolean
+  show_only_specific: Boolean
+  show_items: [String]
+  hide_items: [String]
+}
+
+type BurpsuiteProConfigByAnnotation {
+  show_only_commented_items: Boolean
+  show_only_highlighted_items: Boolean
+}
+
+type BurpsuiteProConfigFilter {
+  by_status_code: BurpsuiteProConfigByStatusCode
+  by_search: BurpsuiteProConfigBySearch
+  by_request_type: BurpsuiteProConfigByRequestType
+  by_mime_type: BurpsuiteProConfigByMimeType
+  by_folders: BurpsuiteProConfigByFolders
+  by_file_extension: BurpsuiteProConfigByFileExtension
+  by_annotation: BurpsuiteProConfigByAnnotation
+}
+
+type BurpsuiteProConfigTarget {
+  scope: BurpsuiteProConfigScope
+  filter: BurpsuiteProConfigFilter
+}
+
+type BurpsuiteProConfigTokenHandling {
+  base_64_decode_before_analyzing: Boolean
+  pad_short_tokens_at: String
+  pad_with: String
+}
+
+type BurpsuiteProConfigTokenAnalysis {
+  compression: Boolean
+  correlation: Boolean
+  count: Boolean
+  fips_long_run: Boolean
+  fips_monobit: Boolean
+  fips_poker: Boolean
+  fips_runs: Boolean
+  spectral: Boolean
+  transitions: Boolean
+}
+
+type BurpsuiteProConfigLiveCapture {
+  ignore_abnormal_length_tokens: Boolean
+  max_length_deviation: Int
+  num_threads: Int
+  throttle: Int
+}
+
+type BurpsuiteProConfigSequencer {
+  token_handling: BurpsuiteProConfigTokenHandling
+  token_analysis: BurpsuiteProConfigTokenAnalysis
+  live_capture: BurpsuiteProConfigLiveCapture
+}
+
+type BurpsuiteProConfigRepeater {
+  follow_redirections: String
+  process_cookies_in_redirections: Boolean
+  unpack_gzip_deflate: Boolean
+  update_content_length: Boolean
+}
+
+type BurpsuiteProConfigByListener {
+  listener_port: String
+}
+
+type BurpsuiteProConfigWebSocketsHistoryDisplayFilter {
+  by_search: BurpsuiteProConfigBySearch
+  by_request_type: BurpsuiteProConfigByRequestType
+  by_listener: BurpsuiteProConfigByListener
+  by_annotation: BurpsuiteProConfigByAnnotation
+}
+
+type BurpsuiteProConfigSslPassThrough {
+  automatically_add_entries_on_client_ssl_negotiation_failure: Boolean
+  rules: [String]
+}
+
+type BurpsuiteProConfigResponseModification {
+  convert_https_links_to_http: Boolean
+  enable_disabled_form_fields: Boolean
+  highlight_unhidden_fields: Boolean
+  remove_all_javascript: Boolean
+  remove_input_field_length_limits: Boolean
+  remove_javascript_form_validation: Boolean
+  remove_object_tags: Boolean
+  remove_secure_flag_from_cookies: Boolean
+  unhide_hidden_form_fields: Boolean
+}
+
+type BurpsuiteProConfigRequestListeners {
+  certificate_mode: String
+  listen_mode: String
+  listener_port: Int
+  running: Boolean
+}
+
+type BurpsuiteProConfigMiscellaneous {
+  disable_logging_to_history_and_site_map: Boolean
+  disable_out_of_scope_logging_to_history_and_site_map: Boolean
+  disable_web_interface: Boolean
+  remove_unsupported_encodings_from_accept_encoding_headers_in_incoming_requests: Boolean
+  set_connection_close_header_on_requests: Boolean
+  set_connection_close_header_on_responses: Boolean
+  strip_proxy_headers_in_incoming_requests: Boolean
+  strip_sec_websocket_extensions_headers_in_incoming_requests: Boolean
+  suppress_burp_error_messages_in_browser: Boolean
+  unpack_gzip_deflate_in_requests: Boolean
+  unpack_gzip_deflate_in_responses: Boolean
+  use_http_10_in_requests_to_server: Boolean
+  use_http_10_in_responses_to_client: Boolean
+}
+
+type BurpsuiteProConfigMatchReplaceRules {
+  comment: String
+  enabled: Boolean
+  is_simple_match: Boolean
+  rule_type: String
+  string_match: String
+  string_replace: String
+}
+
+type BurpsuiteProConfigInterceptWebSocketsMessages {
+  client_to_server_messages: Boolean
+  server_to_client_messages: Boolean
+}
+
+type BurpsuiteProConfigInterceptServerResponses {
+  automatically_update_content_length_header_when_the_response_is_edited: Boolean
+  do_intercept: Boolean
+  rules: [BurpsuiteProConfigRules]
+}
+
+type BurpsuiteProConfigInterceptClientRequests {
+  automatically_fix_missing_or_superfluous_new_lines_at_end_of_request: Boolean
+  automatically_update_content_length_header_when_the_request_is_edited: Boolean
+  do_intercept: Boolean
+  rules: [BurpsuiteProConfigRules]
+}
+
+type BurpsuiteProConfigHttpHistoryDisplayFilter {
+  by_status_code: BurpsuiteProConfigByStatusCode
+  by_search: BurpsuiteProConfigBySearch
+  by_request_type: BurpsuiteProConfigByRequestType
+  by_mime_type: BurpsuiteProConfigByMimeType
+  by_listener: BurpsuiteProConfigByListener
+  by_file_extension: BurpsuiteProConfigByFileExtension
+  by_annotation: BurpsuiteProConfigByAnnotation
+}
+
+type BurpsuiteProConfigProxy {
+  web_sockets_history_display_filter: BurpsuiteProConfigWebSocketsHistoryDisplayFilter
+  ssl_pass_through: BurpsuiteProConfigSslPassThrough
+  response_modification: BurpsuiteProConfigResponseModification
+  request_listeners: [BurpsuiteProConfigRequestListeners]
+  miscellaneous: BurpsuiteProConfigMiscellaneous
+  match_replace_rules: [BurpsuiteProConfigMatchReplaceRules]
+  intercept_web_sockets_messages: BurpsuiteProConfigInterceptWebSocketsMessages
+  intercept_server_responses: BurpsuiteProConfigInterceptServerResponses
+  intercept_client_requests: BurpsuiteProConfigInterceptClientRequests
+  http_history_display_filter: BurpsuiteProConfigHttpHistoryDisplayFilter
+}
+
+type BurpsuiteProConfigNegotiation {
+  allow_unsafe_renegotiation: Boolean
+  disable_ssl_session_resume: Boolean
+  tls_negotiation_behavior: String
+  enabled_protocols: [String]
+  enabled_ciphers: [String]
+}
+
+type BurpsuiteProConfigClientCertificates {
+  use_user_options: Boolean
+  certificates: [String]
+}
+
+type BurpsuiteProConfigSsl {
+  negotiation: BurpsuiteProConfigNegotiation
+  client_certificates: BurpsuiteProConfigClientCertificates
+}
+
+type BurpsuiteProConfigActions {
+  enabled: Boolean
+  match_cookies: String
+  type: String
+}
+
+type BurpsuiteProConfigRules {
+  description: String
+  enabled: Boolean
+  restrict_scope_to_named_params: Boolean
+  url_scope: String
+  url_scope_advanced_mode: Boolean
+  tools_scope: [String]
+  named_params: [String]
+  include_in_scope: [String]
+  exclude_from_scope: [String]
+  actions: [BurpsuiteProConfigActions]
+}
+
+type BurpsuiteProConfigSessionHandlingRules {
+  rules: [BurpsuiteProConfigRules]
+}
+
+type BurpsuiteProConfigMacros {
+  macros: [String]
+}
+
+type BurpsuiteProConfigCookieJar {
+  monitor_extender: Boolean
+  monitor_intruder: Boolean
+  monitor_proxy: Boolean
+  monitor_repeater: Boolean
+  monitor_scanner: Boolean
+  monitor_sequencer: Boolean
+}
+
+type BurpsuiteProConfigSessions {
+  session_handling_rules: BurpsuiteProConfigSessionHandlingRules
+  macros: BurpsuiteProConfigMacros
+  cookie_jar: BurpsuiteProConfigCookieJar
+}
+
+type BurpsuiteProConfigScheduledTasks {
+  tasks: [String]
+}
+
+type BurpsuiteProConfigResponses {
+  all_tools: String
+  extender: String
+  intruder: String
+  proxy: String
+  repeater: String
+  scanner: String
+  sequencer: String
+}
+
+type BurpsuiteProConfigRequests {
+  all_tools: String
+  extender: String
+  intruder: String
+  proxy: String
+  repeater: String
+  scanner: String
+  sequencer: String
+}
+
+type BurpsuiteProConfigLogging {
+  responses: BurpsuiteProConfigResponses
+  requests: BurpsuiteProConfigRequests
+}
+
+type BurpsuiteProConfigCollaboratorServer {
+  location: String
+  poll_over_unencrypted_http: Boolean
+  polling_location: String
+  type: String
+}
+
+type BurpsuiteProConfigMisc {
+  scheduled_tasks: BurpsuiteProConfigScheduledTasks
+  logging: BurpsuiteProConfigLogging
+  collaborator_server: BurpsuiteProConfigCollaboratorServer
+}
+
+type BurpsuiteProConfigStreamingResponses {
+  scope_advanced_mode: Boolean
+  store: Boolean
+  strip_chunked_encoding_metadata: Boolean
+  urls: [String]
+}
+
+type BurpsuiteProConfigStatus_100Responses {
+  remove_100_continue_responses: Boolean
+  understand_100_continue_responses: Boolean
+}
+
+type BurpsuiteProConfigRedirections {
+  understand_3xx_status_code: Boolean
+  understand_any_status_code_with_location_header: Boolean
+  understand_javascript_driven: Boolean
+  understand_meta_refresh_tag: Boolean
+  understand_refresh_header: Boolean
+}
+
+type BurpsuiteProConfigHttp {
+  streaming_responses: BurpsuiteProConfigStreamingResponses
+  status_100_responses: BurpsuiteProConfigStatus_100Responses
+  redirections: BurpsuiteProConfigRedirections
+}
+
+type BurpsuiteProConfigUpstreamProxy {
+  use_user_options: Boolean
+  servers: [String]
+}
+
+type BurpsuiteProConfigTimeouts {
+  domain_name_resolution_timeout: Milliseconds
+  failed_domain_name_resolution_timeout: Milliseconds
+  normal_timeout: Milliseconds
+  open_ended_response_timeout: Milliseconds
+}
+
+type BurpsuiteProConfigSocksProxy {
+  dns_over_socks: Boolean
+  host: String
+  password: String
+  port: Int
+  use_proxy: Boolean
+  use_user_options: Boolean
+  username: String
+}
+
+type BurpsuiteProConfigPlatformAuthentication {
+  do_platform_authentication: Boolean
+  prompt_on_authentication_failure: Boolean
+  use_user_options: Boolean
+  credentials: [String]
+}
+
+type BurpsuiteProConfigOutOfScopeRequests {
+  advanced_mode: Boolean
+  drop_all_out_of_scope: Boolean
+  scope_option: String
+  include: [String]
+  exclude: [String]
+}
+
+type BurpsuiteProConfigConnections {
+  upstream_proxy: BurpsuiteProConfigUpstreamProxy
+  timeouts: BurpsuiteProConfigTimeouts
+  socks_proxy: BurpsuiteProConfigSocksProxy
+  platform_authentication: BurpsuiteProConfigPlatformAuthentication
+  out_of_scope_requests: BurpsuiteProConfigOutOfScopeRequests
+  hostname_resolution: [String]
+}
+
+type BurpsuiteProConfigProjectOptions {
+  ssl: BurpsuiteProConfigSsl
+  sessions: BurpsuiteProConfigSessions
+  misc: BurpsuiteProConfigMisc
+  http: BurpsuiteProConfigHttp
+  connections: BurpsuiteProConfigConnections
+}
+
+type BurpsuiteProPenPalSettings {
+  rest_url: String
+  rest_timeout: Milliseconds
+  rest_error: PenPalError
+}
+
+type BurpsuiteProConfiguration {
+  penpal_settings: BurpsuiteProPenPalSettings
+  target: BurpsuiteProConfigTarget
+  sequencer: BurpsuiteProConfigSequencer
+  repeater: BurpsuiteProConfigRepeater
+  proxy: BurpsuiteProConfigProxy
+  project_options: BurpsuiteProConfigProjectOptions
+}

@@ -1,0 +1,183 @@
+type BurpsuiteProConfiguration {
+  project_options: BurpsuiteProConfigurationProjectOptions
+  """
+  proxy: BurpsuiteProConfigurationProxyOptions
+  repeater: BurpsuiteProConfigurationRepeaterOptions
+  sequencer: BurpsuiteProConfigurationSequencerOptions
+  target: BurpsuiteProConfigurationTargetOptions
+  """
+  placeholder: Boolean
+}
+
+"""
+config.project_options
+"""
+type BurpsuiteProConfigurationProjectOptions {
+  connections: BurpsuiteProConfigurationProjectOptionsConnections
+  http: BurpsuiteProConfigurationProjectOptionsHTTP
+  misc: BurpsuiteProConfigurationProjectOptionsMisc
+  sessions: BurpsuiteProConfigurationProjectOptionsSessions
+  """
+  ssl: BurpsuiteProConfigurationProjectOptionsSSL
+  """
+  placeholder: Boolean
+}
+
+"""
+config.project_options.connections
+"""
+type BurpsuiteProConfigurationProjectOptionsConnections {
+  hostname_resolution: [String]
+  out_of_scope_requests: BurpsuiteProConfigurationProjectOptionsConnectionsOutOfScopeRequests
+  platform_authentication: BurpsuiteProConfigurationProjectOptionsConnectionsPlatformAuthentication
+  socks_proxy: BurpsuiteProConfigurationProjectOptionsConnectionsSocksProxy
+  timeouts: BurpsuiteProConfigurationProjectOptionsConnectionsTimeouts
+  upstream_proxy: BurpsuiteProConfigurationProjectOptionsConnectionsUpstreamProxy
+}
+
+type BurpsuiteProConfigurationProjectOptionsConnectionsOutOfScopeRequests {
+  advanced_mode: Boolean
+  drop_all_out_of_scope: Boolean
+  exclude: [String]
+  include: [String]
+  scope_options: String
+}
+
+type BurpsuiteProConfigurationProjectOptionsConnectionsPlatformAuthentication {
+  credentials: [String]
+  do_platform_authentication: Boolean
+  prompt_on_authentication_failure: Boolean
+  use_user_options: Boolean
+}
+
+type BurpsuiteProConfigurationProjectOptionsConnectionsSocksProxy {
+  dns_over_socks: Boolean
+  host: String
+  password: String
+  port: Int
+  use_proxy: Boolean
+  use_user_options: Boolean
+  username: String
+}
+
+type BurpsuiteProConfigurationProjectOptionsConnectionsTimeouts {
+  domain_name_resolution_timeout: Milliseconds
+  failed_domain_name_resolution_timeout: Milliseconds
+  normal_timeout: Milliseconds
+  open_ended_response_timeout: Milliseconds
+}
+
+type BurpsuiteProConfigurationProjectOptionsConnectionsUpstreamProxy {
+  servers: [String]
+  use_user_options: Boolean
+}
+
+"""
+config.project_options.http
+"""
+type BurpsuiteProConfigurationProjectOptionsHTTP {
+  redirections: BurpsuiteProConfigurationProjectOptionsHTTPRedirections
+  status_100_responses: BurpsuiteProConfigurationProjectOptionsHTTPStatus100Responses
+  streaming_responses: BurpsuiteProConfigurationProjectOptionsHTTPStreamingResponses
+}
+
+type BurpsuiteProConfigurationProjectOptionsHTTPRedirections {
+  understand_3xx_status_code: Boolean
+  understand_any_status_code_with_location_header: Boolean
+  understand_javascript_driven: Boolean
+  understand_meta_refresh_tag: Boolean
+  understand_refresh_header: Boolean
+}
+
+type BurpsuiteProConfigurationProjectOptionsHTTPStatus100Responses {
+  remove_100_continue_responses: Boolean
+  understand_100_continue_responses: Boolean
+}
+
+type BurpsuiteProConfigurationProjectOptionsHTTPStreamingResponses {
+  scope_advanced_mode: Boolean
+  store: Boolean
+  strip_chunked_encoding_metadata: Boolean
+  urls: [String]
+}
+
+"""
+config.project_options.misc
+"""
+type BurpsuiteProConfigurationProjectOptionsMisc {
+  collaborator_server: BurpsuiteProConfigurationProjectOptionsMiscCollaboratorServer
+  logging: BurpsuiteProConfigurationProjectOptionsMiscLogging
+  scheduled_tasks: BurpsuiteProConfigurationProjectOptionsMiscScheduledTasks
+}
+
+type BurpsuiteProConfigurationProjectOptionsMiscCollaboratorServer {
+  location: String
+  poll_over_unencrypted_http: Boolean
+  polling_location: String
+  type: String
+}
+
+type BurpsuiteProConfigurationProjectOptionsMiscLogging {
+  requests: BurpsuiteProConfigurationProjectOptionsMiscLoggingRequests
+  responses: BurpsuiteProConfigurationProjectOptionsMiscLoggingResponses
+}
+
+type BurpsuiteProConfigurationProjectOptionsMiscLoggingRequests {
+  all_tools: String
+  extender: String
+  intruder: String
+  proxy: String
+  repeater: String
+  scanner: String
+  sequencer: String
+}
+
+type BurpsuiteProConfigurationProjectOptionsMiscLoggingResponses {
+  all_tools: String
+  extender: String
+  intruder: String
+  proxy: String
+  repeater: String
+  scanner: String
+  sequencer: String
+}
+
+type BurpsuiteProConfigurationProjectOptionsMiscScheduledTasks {
+  """
+  TODO: Figure out structure of this
+  """
+  tasks: [String]
+}
+
+"""
+config.project_options.sessions
+"""
+type BurpsuiteProConfigurationProjectOptionsSessions {
+  cookie_jar: BurpsuiteProConfigurationProjectOptionsSessionsCookieJar
+  macros: BurpsuiteProConfigurationProjectOptionsSessionsMacros
+  session_handling_rules: BurpsuiteProConfigurationProjectOptionsSessionsSessionHandlingRules
+}
+
+type BurpsuiteProConfigurationProjectOptionsSessionsCookieJar {
+  monitor_extender: Boolean
+  monitor_intruder: Boolean
+  monitor_proxy: Boolean
+  monitor_repeater: Boolean
+  monitor_scanner: Boolean
+  monitor_sequencer: Boolean
+}
+
+type BurpsuiteProConfigurationProjectOptionsSessionsMacros {
+  macros: []
+}
+
+type BurpsuiteProConfigurationProjectOptionsSessionsSessionHandlingRules {
+  rules: [BurpsuiteProConfigurationProjectOptionsSessionsSessionHandlingRule]
+}
+
+type BurpsuiteProConfigurationProjectOptionsSessionsSessionHandlingRule {
+  actions: [BurpsuiteProConfigurationProjectOptionsSessionsSessionHandlingRuleAction]
+  description: String
+  enabled: Boolean
+  exclude_from_scope
+}

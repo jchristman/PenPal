@@ -1,0 +1,7 @@
+type N8nWebhook {
+  id: String!
+  url: String!
+  name: String!
+  type: String!
+  trigger: String!
+}

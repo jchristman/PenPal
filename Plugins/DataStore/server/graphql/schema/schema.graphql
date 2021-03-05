@@ -1,0 +1,13 @@
+type DataStoreAnalytics {
+  RegisterAdapter: Int
+  GetAdapter: Int
+  CreateStore: Int
+  DeleteStore: Int
+  fetch: Int
+  getPaginationInfo: Int
+  fetchOne: Int
+  insert: Int
+  insertMany: Int
+  update: Int
+  delete: Int
+}
