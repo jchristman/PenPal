@@ -29,7 +29,7 @@ RUN mkdir -p /data/db
 
 # Install npm
 RUN curl -L https://npmjs.org/install.sh | sh
-RUN npm install -g npm
+RUN npm install -g npm@latest
 
 # Workaround for untar not working on docker overlayFS. Needed for meteor install
 RUN apt-get install -y --no-install-recommends bsdtar
