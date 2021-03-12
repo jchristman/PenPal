@@ -1,15 +1,14 @@
 import React, { useState } from "react";
-import _ from "lodash";
 
 import { Components } from "meteor/penpal";
 import { SetupProviders } from "stories/common.js";
 
-export const Login = () => (
+export const TableView = () => (
   <SetupProviders>
-    <Components.Login />
+    <Components.Projects />
   </SetupProviders>
 );
 
 export default {
-  title: "Layout/Login"
+  title: "PenPal/CoreAPI/Projects List"
 };

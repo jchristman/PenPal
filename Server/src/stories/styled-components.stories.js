@@ -1,15 +1,11 @@
 import React, { useState } from "react";
-import { storiesOf } from "@storybook/react";
-import { action } from "@storybook/addon-actions";
 
 import { Components } from "meteor/penpal";
 import { SetupProviders } from "stories/common.js";
 
-const projects = storiesOf("UI/Styled Components", module);
-
 // ------------------------------------------------------
 
-projects.add("Button", () => (
+export const Button = () => (
   <SetupProviders>
     <Components.StyledButton
       variant="contained"
@@ -19,11 +15,11 @@ projects.add("Button", () => (
       Test Button
     </Components.StyledButton>
   </SetupProviders>
-));
+);
 
 // ------------------------------------------------------
 
-projects.add("Text Field", () => (
+export const TextField = () => (
   <SetupProviders>
     <Components.StyledTextField
       label={"Primary field"}
@@ -32,15 +28,15 @@ projects.add("Text Field", () => (
       margin={"normal"}
     />
   </SetupProviders>
-));
+);
 
 // ------------------------------------------------------
 
-projects.add("Date Field", () => (
+export const DateField = () => (
   <SetupProviders>
     <Components.StyledDateField label={"This is a date picker"} />
   </SetupProviders>
-));
+);
 
 // ------------------------------------------------------
 
@@ -50,7 +46,7 @@ const items = [
   { id: "test-2", value: "test 2" }
 ];
 
-projects.add("Select", () => {
+export const Select = () => {
   const [selected, setSelected] = useState("");
   const handleChange = (event) => setSelected(event.target.value);
 
@@ -70,4 +66,8 @@ projects.add("Select", () => {
       </Components.StyledSelect>
     </SetupProviders>
   );
-});
+};
+
+export default {
+  title: "UI/Styled Components"
+};

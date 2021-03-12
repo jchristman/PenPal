@@ -1,6 +1,6 @@
 import faker from "faker";
 import _ from "lodash";
-import GetProjectSummariesQuery from "../../client/pages/projects/queries/get-project-summaries.js";
+import GetProjectSummariesQuery from "../../client/pages/projects-list/queries/get-project-summaries.js";
 
 const PROJECT_COUNT = 73;
 

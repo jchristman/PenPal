@@ -11,6 +11,13 @@ const registerRoutes = () => {
     icon: AccountTreeIcon
   };
   registerRoute(Projects, 1);
+
+  const Project = {
+    name: "project",
+    path: "/projects/:project_id",
+    componentName: "Project"
+  };
+  registerRoute(Project);
 };
 
 export default registerRoutes;

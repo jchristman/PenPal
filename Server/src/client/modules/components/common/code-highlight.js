@@ -30,7 +30,4 @@ const CodeHighlight = ({ code: _code, language = "" }) => {
   );
 };
 
-console.log(
-  "!!!!!!!!!!!!!!!!!!!! REGISTERING CODE HIGHLIGHT !!!!!!!!!!!!!!!!!!!!!!"
-);
 registerComponent("CodeHighlight", CodeHighlight);

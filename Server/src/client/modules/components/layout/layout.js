@@ -167,7 +167,9 @@ const useStyles = makeStyles((theme) => ({
   },
   container: {
     flex: 1,
-    padding: theme.spacing(4)
+    padding: theme.spacing(2),
+    overflow: "hidden",
+    overflowY: "auto"
   },
   paper: {
     padding: theme.spacing(2),
@@ -208,7 +210,7 @@ const useStyles = makeStyles((theme) => ({
   }
 }));
 
-const Layout = ({ children }) => {
+const Layout = () => {
   const location = useLocation();
   let activeRoutePrettyName = "";
   const routes = Routes.map((_route) => {
@@ -294,6 +296,7 @@ const Layout = ({ children }) => {
         <List className={classes.nav_drawer}>
           {routes.map((route, index) => {
             if (route === null) return <Divider key={index} />;
+            if (route.prettyName === undefined) return null;
             const { icon: Icon } = route;
             return (
               <ListItem
@@ -339,80 +342,8 @@ const Layout = ({ children }) => {
           </Switch>
         </div>
       </main>
-      {/*hasRole(user, CONSTANTS.ROLE.ADMIN) ? <AdminPanel /> : null*/}
     </div>
   );
 };
 
-const admin_panel_actions = [
-  {
-    icon: <SupervisorAccountIcon />,
-    name: "Account Management",
-    modal: () => Components.AdminAccountManagement // This needs to be a function because the components aren't all initialized yet
-  },
-  {
-    icon: <AssignmentIcon />,
-    name: "Automated Task Management",
-    modal: () => Components.AdminAutomatedTaskManagement
-  }
-];
-
-const AdminPanel = ({ visible = false }) => {
-  const classes = useStyles();
-  const [adminPanelOpen, setAdminPanelOpen] = useState(visible);
-  const [actionIndexOpen, setActionIndexOpen] = useState(-1);
-
-  const handleAdminPanelOpen = () => setAdminPanelOpen(true);
-  const handleAdminPanelClose = () => setAdminPanelOpen(false);
-
-  const handle_modal_close = () => {
-    setActionIndexOpen(-1);
-    setTimeout(() => handleAdminPanelClose(), 50);
-  };
-  const handle_modal_open = (action_index) => {
-    setActionIndexOpen(action_index);
-    handleAdminPanelClose();
-  };
-
-  return (
-    <div className={cx(classes.admin)}>
-      <div className={classes.adminPanel}>
-        <Backdrop open={adminPanelOpen} />
-        <SpeedDial
-          ariaLabel="Admin Panel"
-          className={classes.speedDial}
-          icon={
-            <SpeedDialIcon icon={<SettingsIcon />} openIcon={<CloseIcon />} />
-          }
-          onClose={handleAdminPanelClose}
-          onOpen={handleAdminPanelOpen}
-          open={adminPanelOpen}
-        >
-          {admin_panel_actions.map((action, index) => (
-            <SpeedDialAction
-              key={action.name}
-              icon={action.icon}
-              tooltipTitle={action.name}
-              classes={{ staticTooltipLabel: classes.admin_action_tooltip }}
-              tooltipOpen
-              onClick={() => handle_modal_open(index)}
-            />
-          ))}
-        </SpeedDial>
-        {admin_panel_actions.map((action, index) => {
-          const ModalComponent = action.modal();
-          return (
-            <ModalComponent
-              key={index}
-              open={actionIndexOpen === index}
-              handleClose={handle_modal_close}
-            />
-          );
-        })}
-      </div>
-    </div>
-  );
-};
-
-registerComponent("AdminPanel", AdminPanel);
 registerComponent("Layout", Layout);
