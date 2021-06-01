@@ -6,7 +6,7 @@ RUN apt-get update
 RUN apt-get install curl -y
 
 # Install node.js and Mongo
-RUN curl -sL https://deb.nodesource.com/setup_12.x | bash -
+RUN curl -sL https://deb.nodesource.com/setup_14.x | bash -
 RUN curl -sL https://www.mongodb.org/static/pgp/server-4.2.asc | apt-key add -
 RUN echo "deb http://repo.mongodb.org/apt/debian buster/mongodb-org/4.2 main" | tee /etc/apt/sources.list.d/mongodb-org-4.2.list
 
@@ -62,6 +62,9 @@ RUN chown -R node:node /usr/lib/node_modules
 
 # Drop privs to the node user
 USER node
+
+# Use npm6 peer deps behavior
+RUN npm config set legacy-peer-deps true
 
 # Install lerna
 RUN sudo npm install -g lerna
