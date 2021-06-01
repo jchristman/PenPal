@@ -1,5 +1,6 @@
 {
     "name": "(Masscan) New Network Host Discovery",
+    "tags": [],
     "nodes": [
         {
             "parameters": {},
