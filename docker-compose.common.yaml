@@ -12,8 +12,17 @@ services:
         networks:
             - public
 
+    node-red:
+        image: nodered/node-red
+        volumes:
+            - node-red-data:/data
+        ports:
+            - "1880:1880"
+
 volumes:
     penpal-npm-cache:
+        external: false
+    node-red-data:
         external: false
 
 networks:
