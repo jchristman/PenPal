@@ -1,7 +1,0 @@
-query foo {
-    baz
-}
-
-query bar {
-    baz
-}

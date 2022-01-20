@@ -2,16 +2,8 @@ version: "2"
 services:
     penpal-server:
         volumes:
-            - ./Server/src/client/:/app/client:consistent
-            - ./Server/src/lib/:/app/lib:consistent
-            - ./Server/src/server/:/app/server:consistent
-            - ./Server/src/stories/:/app/stories:consistent
-            - ./Server/src/package.json:/app/package.json:consistent
-            - ./Server/src/settings.dev.json:/app/settings.json:consistent
-            - ./Server/src/.meteor/packages:/app/.meteor/packages:consistent
-            - ./Server/src/public:/app/public:consistent
-            - ./Server/src/packages:/app/packages:consistent
-            - ./Plugins/:/app/plugins:consistent
+            - ./PenPal/app/:/penpal/app:consistent
+            - ./Plugins/:/penpal/plugins:consistent
             - /var/run/docker.sock:/var/run/docker.sock
         environment:
             - LOCAL_USER_ID=${LOCAL_USER_ID}

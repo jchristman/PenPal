@@ -1,10 +1,9 @@
 version: "2"
 services:
     penpal-server:
-        build: ./Server
+        build: ./PenPal
         volumes:
             - penpal-npm-cache:/home/node/.npm
-            - ./N8n-Nodes/:/home/node/custom-n8n-nodes/
         ports:
             - "3000:3000"
             - "5678:5678"
