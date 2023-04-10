@@ -2,7 +2,7 @@ import _ from "lodash";
 import {
   check_manifest,
   check_plugin,
-  isFunction
+  isFunction,
 } from "../../common/penpal.js";
 
 // ----------------------------------------------------------------------------
@@ -88,7 +88,7 @@ PenPal.registerPlugin = (manifest, plugin) => {
     name,
     version,
     dependsOn,
-    plugin
+    plugin,
   };
 };
 
@@ -96,7 +96,7 @@ PenPal.loadPlugins = async () => {
   PenPal.LoadedPlugins = _.mapValues(PenPal.RegisteredPlugins, (plugin) => ({
     loaded: false,
     name: plugin.name,
-    version: plugin.version
+    version: plugin.version,
   }));
 
   const plugins_to_load = Object.keys(PenPal.RegisteredPlugins);
@@ -148,7 +148,7 @@ PenPal.loadPlugins = async () => {
     console.log(`[+] Loaded ${plugin_name}`);
   }
 
-  for (plugin_name of Object.keys(PenPal.LoadedPlugins)) {
+  for (let plugin_name of Object.keys(PenPal.LoadedPlugins)) {
     if (PenPal.LoadedPlugins[plugin_name].loaded === false) {
       delete PenPal.LoadedPlugins[plugin_name];
     }

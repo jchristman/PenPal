@@ -1,5 +1,5 @@
 // Overall PenPal coordinating server code
-import PenPal from "meteor/penpal";
+import PenPal from "PenPal";
 
 // Plugin-specific info
 import Plugin from "./plugin.js";

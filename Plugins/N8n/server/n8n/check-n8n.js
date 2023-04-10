@@ -1,4 +1,4 @@
-import PenPal from "meteor/penpal";
+import PenPal from "PenPal";
 import { check, Match } from "meteor/check";
 
 const check_n8n = (n8n) => {

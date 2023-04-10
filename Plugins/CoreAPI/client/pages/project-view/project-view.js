@@ -1,5 +1,5 @@
 import React, { useState, useEffect } from "react";
-import { Components, registerComponent } from "meteor/penpal";
+import { Components, registerComponent } from "PenPal";
 import { useSnackbar } from "notistack";
 import { makeStyles } from "@material-ui/core/styles";
 
@@ -11,23 +11,24 @@ const useStyles = makeStyles((theme) => ({
     width: "100%",
     height: "100%",
     display: "flex",
-    flexDirection: "column"
-  }
+    flexDirection: "column",
+  },
 }));
 
 const ProjectView = ({ project_id, disable_polling = false }) => {
   const { enqueueSnackbar } = useSnackbar();
   const classes = useStyles();
 
-  const { loading, error, data: { getProject: project } = {} } = useQuery(
-    GetProjectDetails,
-    {
-      pollInterval: disable_polling ? 0 : 15000,
-      variables: {
-        id: project_id
-      }
-    }
-  );
+  const {
+    loading,
+    error,
+    data: { getProject: project } = {},
+  } = useQuery(GetProjectDetails, {
+    pollInterval: disable_polling ? 0 : 15000,
+    variables: {
+      id: project_id,
+    },
+  });
 
   if (loading) {
     return null;

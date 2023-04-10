@@ -1,4 +1,4 @@
-import PenPal from "meteor/penpal";
+import PenPal from "PenPal";
 import _ from "lodash";
 
 export default {
@@ -18,7 +18,7 @@ export default {
         title: "Total Projects",
         value: 0,
         delta: 0,
-        since: new Date()
+        since: new Date(),
       };
 
       if (results.length > 0) {
@@ -43,7 +43,7 @@ export default {
         title: "Total Customers",
         value: 0,
         delta: 0,
-        since: new Date()
+        since: new Date(),
       };
 
       if (results.length > 0) {
@@ -68,7 +68,7 @@ export default {
         title: "Total Hosts",
         value: 0,
         delta: 0,
-        since: new Date()
+        since: new Date(),
       };
 
       if (results.length > 0) {
@@ -93,7 +93,7 @@ export default {
         title: "Total Services",
         value: 0,
         delta: 0,
-        since: new Date()
+        since: new Date(),
       };
 
       if (results.length > 0) {
@@ -101,7 +101,7 @@ export default {
       }
 
       return result;
-    }
+    },
 
     /*
     customerBreakdown: async ({ id }) => {
@@ -183,5 +183,5 @@ export default {
 
       return results;
     }*/
-  }
+  },
 };

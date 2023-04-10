@@ -1,4 +1,4 @@
-import PenPal from "meteor/penpal";
+import PenPal from "PenPal";
 import mutations from "../../graphql/resolvers/mutations.js";
 
 const tcp_ports = [21, 22, 23, 25, 80, 135, 139, 443, 445, 3389, 8080];

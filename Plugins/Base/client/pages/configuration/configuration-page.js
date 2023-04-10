@@ -1,5 +1,5 @@
 import React, { useState, useEffect } from "react";
-import { Components, registerComponent } from "meteor/penpal";
+import { Components, registerComponent } from "PenPal";
 import _ from "lodash";
 import Grid from "@material-ui/core/Grid";
 import Paper from "@material-ui/core/Paper";
@@ -14,15 +14,15 @@ import { makeStyles } from "@material-ui/core/styles";
 
 const useStyles = makeStyles((theme) => ({
   main: {
-    padding: theme.spacing(1)
+    padding: theme.spacing(1),
   },
   label: {
-    textTransform: "capitalize"
+    textTransform: "capitalize",
   },
   configuration_option: {},
   section: {
-    width: "100%"
-  }
+    width: "100%",
+  },
 }));
 
 const transform_key = (key) => key.replaceAll("_", " ");
@@ -31,7 +31,7 @@ const ConfigurationPageSection = ({
   handleConfigChange,
   path,
   config: { __typename, ...rest },
-  depth = 0
+  depth = 0,
 }) => {
   const classes = useStyles();
   const { enqueueSnackbar } = useSnackbar();
@@ -45,7 +45,7 @@ const ConfigurationPageSection = ({
   useEffect(() => {
     if (__typename === "PenPalError") {
       enqueueSnackbar(`Error ${rest.code}: ${rest.message}`, {
-        variant: "error"
+        variant: "error",
       });
     }
   }, messageEffectConditions);

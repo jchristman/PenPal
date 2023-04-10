@@ -1,17 +1,12 @@
 import React, { useState, useEffect } from "react";
-import {
-  Components,
-  registerComponent,
-  Hooks,
-  GraphQLUtils
-} from "meteor/penpal";
+import { Components, registerComponent, Hooks, GraphQLUtils } from "PenPal";
 import _ from "lodash";
 import Grid from "@material-ui/core/Grid";
 import Paper from "@material-ui/core/Paper";
 import Select from "@material-ui/core/Select";
 import MenuItem from "@material-ui/core/MenuItem";
 import FormControl from "@material-ui/core/FormControl";
-import ExpandMoreIcon from "@material-ui/icons/ExpandMore";
+import ExpandMoreIcon from "@mui/icons-material/ExpandMore";
 import Button from "@material-ui/core/Button";
 import { makeStyles } from "@material-ui/core/styles";
 import { indigo } from "@material-ui/core/colors";
@@ -27,19 +22,19 @@ const useStyles = makeStyles((theme) => ({
     width: "100%",
     height: "100%",
     display: "flex",
-    flexDirection: "column"
+    flexDirection: "column",
   },
   selectBox: {
     marginBottom: theme.spacing(2),
     display: "flex",
     flexDirection: "row",
-    alignItems: "center"
+    alignItems: "center",
   },
   save_button: {
-    marginLeft: theme.spacing(2)
+    marginLeft: theme.spacing(2),
   },
   flex: {
-    flex: 1
+    flex: 1,
   },
   select: {
     minWidth: 200,
@@ -56,19 +51,19 @@ const useStyles = makeStyles((theme) => ({
     "&:focus": {
       borderRadius: 12,
       background: "white",
-      borderColor: indigo[100]
-    }
+      borderColor: indigo[100],
+    },
   },
   icon: {
     color: indigo[300],
     right: 12,
     position: "absolute",
     userSelect: "none",
-    pointerEvents: "none"
+    pointerEvents: "none",
   },
   paper: {
     borderRadius: 12,
-    marginTop: 8
+    marginTop: 8,
   },
   list: {
     paddingTop: 0,
@@ -77,19 +72,19 @@ const useStyles = makeStyles((theme) => ({
     "& li": {
       fontWeight: 200,
       paddingTop: 12,
-      paddingBottom: 12
+      paddingBottom: 12,
     },
     "& li:hover": {
-      background: indigo[100]
+      background: indigo[100],
     },
     "& li.Mui-selected": {
       color: "white",
-      background: indigo[400]
+      background: indigo[400],
     },
     "& li.Mui-selected:hover": {
-      background: indigo[500]
-    }
-  }
+      background: indigo[500],
+    },
+  },
 }));
 
 const Selector = () => {
@@ -104,12 +99,12 @@ const Selector = () => {
     loading: introspection_loading,
     types,
     queries,
-    mutations
+    mutations,
   } = useIntrospection();
 
   const {
     loading: plugins_loading,
-    data: { getConfigurablePlugins = [] } = {}
+    data: { getConfigurablePlugins = [] } = {},
   } = useQuery(GetConfigurablePluginsQuery);
 
   const loading = introspection_loading || plugins_loading;
@@ -120,8 +115,8 @@ const Selector = () => {
     configuration: {
       schema_root: false,
       getter: false,
-      setter: false
-    }
+      setter: false,
+    },
   };
 
   const query = generateQueryFromSchema(
@@ -174,7 +169,7 @@ const Selector = () => {
       const newLocalConfig =
         (
           await setConfig({
-            variables: { configuration: JSON.stringify(localConfig) }
+            variables: { configuration: JSON.stringify(localConfig) },
           })
         )?.data?.[configuration.setter] ?? {};
       delete newLocalConfig.__typename;
@@ -192,17 +187,17 @@ const Selector = () => {
   const menuProps = {
     classes: {
       paper: classes.paper,
-      list: classes.list
+      list: classes.list,
     },
     anchorOrigin: {
       vertical: "bottom",
-      horizontal: "left"
+      horizontal: "left",
     },
     transformOrigin: {
       vertical: "top",
-      horizontal: "left"
+      horizontal: "left",
     },
-    getContentAnchorEl: null
+    getContentAnchorEl: null,
   };
 
   return (

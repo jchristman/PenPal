@@ -1,4 +1,4 @@
-import PenPal from "meteor/penpal";
+import PenPal from "PenPal";
 
 export default {
   async coreAPIGetHostData(root, { data }, context) {
@@ -6,5 +6,5 @@ export default {
   },
   async coreAPIGetNetworkData(root, { data }, context) {
     return await PenPal.API.Networks.GetMany(data.network_ids);
-  }
+  },
 };

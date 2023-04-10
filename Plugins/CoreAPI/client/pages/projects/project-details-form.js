@@ -1,5 +1,5 @@
 import React, { useState } from "react";
-import { Components, registerComponent } from "meteor/penpal";
+import { Components, registerComponent } from "PenPal";
 import { makeStyles, useTheme } from "@material-ui/core/styles";
 
 const useStyles = makeStyles((theme) => ({
@@ -9,18 +9,18 @@ const useStyles = makeStyles((theme) => ({
     justifyContent: "center",
     alignItems: "flex-start",
     height: "100%",
-    width: "100%"
+    width: "100%",
   },
   form_field: {
     width: 300,
-    marginBottom: theme.spacing(2)
+    marginBottom: theme.spacing(2),
   },
   submit_container: {
-    marginTop: theme.spacing(4)
+    marginTop: theme.spacing(4),
   },
   submit: {
-    width: 300
-  }
+    width: 300,
+  },
 }));
 
 const ProjectDetailsForm = ({
@@ -31,7 +31,7 @@ const ProjectDetailsForm = ({
   projectStartDate,
   setProjectStartDate,
   projectEndDate,
-  setProjectEndDate
+  setProjectEndDate,
 }) => {
   // ----------------------------------------------------
 

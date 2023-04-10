@@ -9,7 +9,7 @@ if [[ $USER_ID -eq 0 ]]; then
 	sleep 10
 
 	echo Installing packages from all package.json files
-	npm-recursive-install --rootDir=plugins
+	npm-recursive-install --rootDir=/penpal/plugins
 
 	exec "$@"
 
@@ -23,13 +23,13 @@ if [[ ! $CURRENT_NODE_UID -eq $USER_ID ]]; then
 	echo Restarting sudo
 	service sudo restart
 
-	echo Changing file permissions of /app, /n8n, and /usr/lib/node_modules
-	chown -R node:node /app /n8n /usr/lib/node_modules /home/node/custom-n8n-nodes
+	echo Changing file permissions of /penpal, /n8n, and /usr/lib/node_modules
+	chown -R node:node /penpal /n8n /usr/lib/node_modules /home/node/custom-n8n-nodes
 else
 	echo UID matches inside container. Moving on
 fi
 
 echo Installing packages from all package.json files
-npm-recursive-install --rootDir=plugins
+npm-recursive-install --rootDir=/penpal/plugins
 
 exec /usr/local/bin/gosu node "$@"

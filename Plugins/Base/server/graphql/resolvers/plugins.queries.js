@@ -1,16 +1,16 @@
 import { Meteor } from "meteor/meteor";
-import PenPal from "meteor/penpal";
+import PenPal from "PenPal";
 
-const getXablePlugins = settings_field => {
+const getXablePlugins = (settings_field) => {
   const plugins_name_version = Object.keys(PenPal.LoadedPlugins);
   return plugins_name_version
     .filter(
-      plugin_name_version =>
+      (plugin_name_version) =>
         PenPal.LoadedPlugins[plugin_name_version].settings?.[settings_field] !==
         undefined
     )
-    .map(plugin_name_version => ({
-      id: plugin_name_version
+    .map((plugin_name_version) => ({
+      id: plugin_name_version,
     }));
 };
 
@@ -25,8 +25,8 @@ const getPluginXSettings = (plugin_id, settings_field) => {
 export default {
   async getPlugins(root, args, context) {
     const plugins_name_version = Object.keys(PenPal.LoadedPlugins);
-    return plugins_name_version.map(plugin_name_version => ({
-      id: plugin_name_version
+    return plugins_name_version.map((plugin_name_version) => ({
+      id: plugin_name_version,
     }));
   },
 
@@ -44,5 +44,5 @@ export default {
 
   async getPluginDashboardSettings(root, { plugin_id }, context) {
     return getPluginXSettings(plugin_id, "dashboard");
-  }
+  },
 };

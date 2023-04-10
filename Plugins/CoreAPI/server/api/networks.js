@@ -1,4 +1,4 @@
-import PenPal from "meteor/penpal";
+import PenPal from "PenPal";
 import _ from "lodash";
 
 import { required_field, isTestData } from "./common.js";
@@ -6,7 +6,7 @@ import { networks as mockNetworks } from "../test/mock-networks.json";
 import {
   newNetworkHooks,
   deletedNetworkHooks,
-  updatedNetworkHooks
+  updatedNetworkHooks,
 } from "./hooks.js";
 
 // -----------------------------------------------------------
@@ -16,7 +16,7 @@ export const getNetwork = async (network_id) => {
   return is_test
     ? _.find(mockNetworks, (network) => network.id === network_id)
     : await PenPal.DataStore.fetchOne("CoreAPI", "Networks", {
-        id: network_id
+        id: network_id,
       });
 };
 
@@ -28,7 +28,7 @@ export const getNetworks = async (network_ids) => {
         _.find(mockNetworks, (network) => network.id === id)
       )
     : await PenPal.DataStore.fetch("CoreAPI", "Networks", {
-        id: { $in: network_ids }
+        id: { $in: network_ids },
       });
 };
 
@@ -43,7 +43,7 @@ export const getNetworksPaginationInfo = async (network_ids = [], options) => {
 
 export const getNetworksByProject = async (project_id) => {
   const result = await PenPal.DataStore.fetch("CoreAPI", "Networks", {
-    project: project_id
+    project: project_id,
   });
 
   return result;
@@ -52,7 +52,7 @@ export const getNetworksByProject = async (project_id) => {
 // -----------------------------------------------------------
 
 const default_network = {
-  hosts: []
+  hosts: [],
 };
 
 export const insertNetwork = async (network) => {
@@ -116,7 +116,7 @@ export const updateNetworks = async (networks) => {
   }
 
   let matched_networks = await PenPal.DataStore.fetch("CoreAPI", "Networks", {
-    id: { $in: _accepted.map((network) => network.id) }
+    id: { $in: _accepted.map((network) => network.id) },
   });
 
   if (matched_networks.length !== _accepted.length) {
@@ -157,11 +157,11 @@ export const removeNetwork = async (network_id) => {
 export const removeNetworks = async (network_ids) => {
   // Get all the network data for hooks so the deleted network hook has some info for notifications and such
   let networks = await PenPal.DataStore.fetch("CoreAPI", "Networks", {
-    id: { $in: network_ids }
+    id: { $in: network_ids },
   });
 
   let res = await PenPal.DataStore.delete("CoreAPI", "Networks", {
-    id: { $in: network_ids }
+    id: { $in: network_ids },
   });
 
   if (res > 0) {

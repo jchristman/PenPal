@@ -1,4 +1,4 @@
-import PenPal from "meteor/penpal";
+import PenPal from "PenPal";
 
 import _ from "lodash";
 import { spawn } from "child_process";
@@ -17,7 +17,7 @@ const killOldServer = async () => {
   console.log("[.] Killing old n8n server if still running");
   spawn(`ps -ef | grep "n8n" | awk '{print $2}' | xargs kill -9`, {
     stdio: "ignore",
-    shell: true
+    shell: true,
   });
 };
 
@@ -29,13 +29,13 @@ const cleanOldNodes = async () => {
       spawn(`rm /home/node/.n8n/custom/*`, {
         stdio: ["ignore", "ignore", "ignore"],
         shell: true,
-        cwd: N8N_DIR
+        cwd: N8N_DIR,
       }),
       spawn(`for d in ./*/; do rm -rf $d; done`, {
         stdio: ["ignore", "ignore", "ignore"],
         shell: true,
-        cwd: N8N_NODES_DIR
-      })
+        cwd: N8N_NODES_DIR,
+      }),
     ];
 
     let finished_processes = 0;
@@ -114,16 +114,16 @@ const buildNodes = () => {
       spawn(`n8n-node-dev build`, {
         stdio: ["ignore", "ignore", "inherit"],
         shell: true,
-        cwd: N8N_NODES_DIR
+        cwd: N8N_NODES_DIR,
       }),
       spawn(
         `for d in ./*/; do echo; echo "Building $d"; (cd $d && n8n-node-dev build) & done`,
         {
           stdio: ["ignore", "ignore", "inherit"],
           shell: true,
-          cwd: N8N_NODES_DIR
+          cwd: N8N_NODES_DIR,
         }
-      )
+      ),
     ];
 
     let finished_processes = 0;
@@ -144,7 +144,7 @@ const startN8nServer = async () => {
   spawn("npm run start", {
     stdio: "inherit",
     shell: true,
-    cwd: N8N_DIR
+    cwd: N8N_DIR,
   });
 };
 
@@ -212,7 +212,7 @@ const createDefaultWorkflows = async () => {
         await fetch("http://localhost:5678/rest/workflows", {
           method: "post",
           body: JSON.stringify(workflow),
-          headers: { "Content-Type": "application/json" }
+          headers: { "Content-Type": "application/json" },
         })
       ).json();
 
@@ -232,7 +232,7 @@ const createDefaultWorkflows = async () => {
           await fetch(`http://localhost:5678/rest/workflows/${workflow_id}`, {
             method: "patch",
             body: JSON.stringify(workflow),
-            headers: { "Content-Type": "application/json" }
+            headers: { "Content-Type": "application/json" },
           })
         ).json();
 

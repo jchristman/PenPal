@@ -1,9 +1,9 @@
 import React, { useState, useEffect } from "react";
-import { Components, registerComponent } from "meteor/penpal";
+import { Components, registerComponent } from "PenPal";
 import { makeStyles } from "@material-ui/core/styles";
 import Paper from "@material-ui/core/Paper";
 import IconButton from "@material-ui/core/IconButton";
-import OpenInNewIcon from "@material-ui/icons/OpenInNew";
+import OpenInNewIcon from "@mui/icons-material/OpenInNew";
 
 const useStyles = makeStyles((theme) => ({
   container: {
@@ -13,11 +13,11 @@ const useStyles = makeStyles((theme) => ({
     left: 0,
     right: 0,
     padding: theme.spacing(2),
-    marginBottom: theme.spacing(2)
+    marginBottom: theme.spacing(2),
   },
   project_name: {
     fontSize: 30,
-    marginRight: theme.spacing(4)
+    marginRight: theme.spacing(4),
   },
   project_description: {
     fontSize: 20,
@@ -25,11 +25,11 @@ const useStyles = makeStyles((theme) => ({
     maxWidth: 300,
     overflowX: "hidden",
     textOverflow: "ellipsis",
-    whiteSpace: "nowrap"
+    whiteSpace: "nowrap",
   },
   flex: {
-    flex: 1
-  }
+    flex: 1,
+  },
 }));
 
 const ProjectViewTitleBar = ({ project }) => {

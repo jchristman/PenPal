@@ -1,10 +1,14 @@
+import express from "express";
 import { ApolloServer } from "apollo-server-express";
 import { makeExecutableSchema } from "graphql-tools";
 import { mergeTypeDefs } from "@graphql-tools/merge";
 import { applyMiddleware } from "graphql-middleware";
 // TODO: Get PenPal again
-//import PenPal from "meteor/penpal";
+//import PenPal from "PenPal";
 import _ from "lodash";
+
+const app = express();
+const port = 3001;
 
 import { types, resolvers, buildLoaders } from "./graphql";
 
@@ -21,7 +25,7 @@ const startGraphQLServer = (
     makeExecutableSchema({
       typeDefs: _typeDefs,
       resolvers: _resolvers,
-      inheritResolversFromInterfaces: true
+      inheritResolversFromInterfaces: true,
     })
   );
 
@@ -54,18 +58,18 @@ const startGraphQLServer = (
 
       return {
         user: user,
-        loaders
+        loaders,
         // FIXME
         //PenPalCachingAPI
       };
-    }
+    },
   });
 
   // Replace with Express
-  //server.applyMiddleware({
-  //  app: WebApp.connectHandlers,
-  //  path: "/graphql"
-  //});
+  server.applyMiddleware({
+    app,
+    path: "/graphql",
+  });
 
   //WebApp.connectHandlers.use("/graphql", (req, res) => {
   //  if (req.method === "GET") {

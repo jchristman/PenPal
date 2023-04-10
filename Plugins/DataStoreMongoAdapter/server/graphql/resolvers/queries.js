@@ -1,4 +1,4 @@
-import PenPal from "meteor/penpal";
+import PenPal from "PenPal";
 
 export default {
   async getMongoDataStoreConfiguration(root, args, context) {
@@ -6,5 +6,5 @@ export default {
       PenPal.DataStore.fetch("MongoDataStore", "Configuration", {})[0]
         ?.connectionString ?? "";
     return { connectionString };
-  }
+  },
 };

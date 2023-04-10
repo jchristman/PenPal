@@ -1,4 +1,4 @@
-import PenPal from "meteor/penpal";
+import PenPal from "PenPal";
 import { exec } from "child_process";
 
 const runCommand = (args) => {

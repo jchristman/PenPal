@@ -1,6 +1,6 @@
 import React from "react";
 
-import { Components } from "meteor/penpal";
+import { Components } from "PenPal";
 import { SetupProviders } from "stories/common.js";
 
 export const NewCustomerForm = () => (
@@ -12,5 +12,5 @@ export const NewCustomerForm = () => (
 );
 
 export default {
-  title: "PenPal/CoreAPI/Customers"
+  title: "PenPal/CoreAPI/Customers",
 };

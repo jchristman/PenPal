@@ -1,5 +1,5 @@
 import React from "react";
-import { Components, registerComponent } from "meteor/penpal";
+import { Components, registerComponent } from "PenPal";
 import {
   Avatar,
   Box,
@@ -8,47 +8,47 @@ import {
   Grid,
   Typography,
   colors,
-  makeStyles
+  makeStyles,
 } from "@material-ui/core";
-import ArrowUpwardIcon from "@material-ui/icons/ArrowUpward";
-import CheckBoxOutlineBlankIcon from "@material-ui/icons/CheckBoxOutlineBlank";
+import ArrowUpwardIcon from "@mui/icons-material/ArrowUpward";
+import CheckBoxOutlineBlankIcon from "@mui/icons-material/CheckBoxOutlineBlank";
 import cx from "classnames";
 
 const useStyles = makeStyles((theme) => ({
   root: {
-    height: "100%"
+    height: "100%",
   },
   avatar: {
     backgroundColor: "#A9A9A9",
     height: 56,
-    width: 56
+    width: 56,
   },
   delta: {
-    marginRight: theme.spacing(1)
+    marginRight: theme.spacing(1),
   },
   positiveDelta: {
-    color: colors.green[900]
+    color: colors.green[900],
   },
   negativeDelta: {
-    color: colors.red[900]
+    color: colors.red[900],
   },
   negativeDeltaArrow: {
-    transform: "rotate(-180deg)"
+    transform: "rotate(-180deg)",
   },
   uppercase: {
-    textTransform: "uppercase"
+    textTransform: "uppercase",
   },
   caption: {
     marginLeft: theme.spacing(2),
-    fontSize: 15
-  }
+    fontSize: 15,
+  },
 }));
 
 const TrendingStatistic = ({
   title = "",
   value = 0,
   delta = 0,
-  caption = ""
+  caption = "",
   //icon = <CheckBoxOutlineBlankIcon />
 }) => {
   const classes = useStyles();

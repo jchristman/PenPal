@@ -1,9 +1,9 @@
 import React from "react";
-import { Components, registerComponent } from "meteor/penpal";
+import { Components, registerComponent } from "PenPal";
 
 import { makeStyles } from "@material-ui/core/styles";
 import Paper from "@material-ui/core/Paper";
-import ErrorOutlineIcon from "@material-ui/icons/ErrorOutline";
+import ErrorOutlineIcon from "@mui/icons-material/ErrorOutline";
 
 const useStyles = makeStyles({
   container: {
@@ -16,7 +16,7 @@ const useStyles = makeStyles({
     display: "flex",
     flexDirection: "column",
     alignItems: "center",
-    justifyContent: "center"
+    justifyContent: "center",
   },
 
   error_box: {
@@ -25,18 +25,18 @@ const useStyles = makeStyles({
     paddingTop: 10,
     paddingLeft: 20,
     paddingRight: 20,
-    paddingBottom: 10
+    paddingBottom: 10,
   },
 
   inline: {
     display: "flex",
     flexDirection: "row",
-    alignItems: "center"
+    alignItems: "center",
   },
 
   message_container: {
-    overflow: "scroll"
-  }
+    overflow: "scroll",
+  },
 });
 
 const ErrorDisplay = ({ err_number, message, stack }) => {

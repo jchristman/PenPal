@@ -3,7 +3,7 @@ import moment from "moment";
 import { storiesOf } from "@storybook/react";
 import { action } from "@storybook/addon-actions";
 
-import { Components } from "meteor/penpal";
+import { Components } from "PenPal";
 import { SetupProviders } from "stories/common.js";
 
 const projects = storiesOf("PenPal/Projects", module);

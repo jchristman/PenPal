@@ -1,4 +1,4 @@
-import PenPal from "meteor/penpal";
+import PenPal from "PenPal";
 
 const buildNode = () =>
   PenPal.N8n.NodeBuilder()

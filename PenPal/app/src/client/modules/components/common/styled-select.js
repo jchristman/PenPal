@@ -1,5 +1,5 @@
 import React, { useState, useEffect } from "react";
-import { Components, registerComponent } from "meteor/penpal";
+import { Components, registerComponent } from "PenPal";
 import { makeStyles, useTheme } from "@material-ui/core/styles";
 import { grey, indigo } from "@material-ui/core/colors";
 import TextField from "@material-ui/core/TextField";
@@ -7,7 +7,7 @@ import Select from "@material-ui/core/Select";
 import MenuItem from "@material-ui/core/MenuItem";
 import FormControl from "@material-ui/core/FormControl";
 import InputLabel from "@material-ui/core/InputLabel";
-import ExpandMoreIcon from "@material-ui/icons/ExpandMore";
+import ExpandMoreIcon from "@mui/icons-material/ExpandMore";
 import cx from "classnames";
 import { v4 as uuidv4 } from "uuid";
 
@@ -30,12 +30,12 @@ const useStyles = makeStyles((theme) => ({
     boxShadow: "0px 5px 8px -3px rgba(0,0,0,0.14)",
     "&:focus": {
       backgroundColor: "white",
-      borderRadius
-    }
+      borderRadius,
+    },
   },
   select_open: {
     borderColor: theme.palette.primary.main,
-    boxShadow: "0 1px 4px 0 rgba(0,0,0,0.24)"
+    boxShadow: "0 1px 4px 0 rgba(0,0,0,0.24)",
   },
   icon: {
     color: indigo[300],
@@ -43,11 +43,11 @@ const useStyles = makeStyles((theme) => ({
     right: 12,
     position: "absolute",
     userSelect: "none",
-    pointerEvents: "none"
+    pointerEvents: "none",
   },
   paper: {
     borderRadius,
-    marginTop: 8
+    marginTop: 8,
   },
   list: {
     paddingTop: 0,
@@ -56,29 +56,29 @@ const useStyles = makeStyles((theme) => ({
     "& li": {
       fontWeight: 200,
       paddingTop: 12,
-      paddingBottom: 12
+      paddingBottom: 12,
     },
     "& li:hover": {
-      background: indigo[100]
+      background: indigo[100],
     },
     "& li.Mui-selected": {
       color: "white",
-      background: indigo[400]
+      background: indigo[400],
     },
     "& li.Mui-selected:hover": {
-      background: indigo[500]
-    }
+      background: indigo[500],
+    },
   },
   input_label_root: {
     fontSize: "1rem",
     color: grey[700],
-    marginLeft: "0.75rem"
+    marginLeft: "0.75rem",
   },
   input_label_error: {},
   input_label_focused: {},
   input_label_shrink: {
-    transform: "translate(0, 1.5px) scale(1)"
-  }
+    transform: "translate(0, 1.5px) scale(1)",
+  },
 }));
 
 const StyledSelect = ({
@@ -103,17 +103,17 @@ const StyledSelect = ({
   const menuProps = {
     classes: {
       paper: classes.paper,
-      list: classes.list
+      list: classes.list,
     },
     anchorOrigin: {
       vertical: "bottom",
-      horizontal: "left"
+      horizontal: "left",
     },
     transformOrigin: {
       vertical: "top",
-      horizontal: "left"
+      horizontal: "left",
     },
-    getContentAnchorEl: null
+    getContentAnchorEl: null,
   };
 
   return (
@@ -126,7 +126,7 @@ const StyledSelect = ({
             root: classes.input_label_root,
             error: classes.input_label_error,
             shrink: classes.input_label_shrink,
-            focused: classes.input_label_focused
+            focused: classes.input_label_focused,
           }}
         >
           {label}

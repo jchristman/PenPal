@@ -1,5 +1,5 @@
 import React, { useState } from "react";
-import { Components, registerComponent } from "meteor/penpal";
+import { Components, registerComponent } from "PenPal";
 import { KeyboardDatePicker } from "@material-ui/pickers";
 
 const StyledDateField = ({

@@ -1,5 +1,5 @@
 import React, { createContext, useContext, useState, useEffect } from "react";
-import { Components, registerComponent, registerHook } from "meteor/penpal";
+import { Components, registerComponent, registerHook } from "PenPal";
 import { useQuery } from "@apollo/client";
 
 import IntrospectionQuery from "./introspection-provider-gql.js";
@@ -9,7 +9,7 @@ const IntrospectionProvider = ({ children }) => {
   const {
     loading: introspection_loading,
     error: introspection_error,
-    data: { __schema } = {}
+    data: { __schema } = {},
   } = useQuery(IntrospectionQuery);
 
   let types = {},
@@ -31,7 +31,7 @@ const IntrospectionProvider = ({ children }) => {
     loading: introspection_loading,
     types,
     queries,
-    mutations
+    mutations,
   };
 
   return (

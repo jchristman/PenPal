@@ -1,6 +1,6 @@
 import React from "react";
-import { Components, registerComponent } from "meteor/penpal";
-import ViewModuleIcon from "@material-ui/icons/ViewModule";
+import { Components, registerComponent } from "PenPal";
+import ViewModuleIcon from "@mui/icons-material/ViewModule";
 
 const ProjectsViewCardView = ({ projects }) => {
   return null;

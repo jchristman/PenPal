@@ -1,4 +1,4 @@
-import PenPal from "meteor/penpal";
+import PenPal from "PenPal";
 import { Mongo } from "meteor/mongo";
 import { Random } from "meteor/random";
 import { check, Match } from "meteor/check";
@@ -64,7 +64,7 @@ MongoAdapter.fetch = async (
     before,
     pageSize,
     pageNumber,
-    sort = 1
+    sort = 1,
   } = options;
 
   let cursor = get_collection(plugin_name, store_name).rawCollection();
@@ -127,7 +127,7 @@ MongoAdapter.getPaginationInfo = async (
     before,
     pageSize: _pageSize,
     pageNumber,
-    sort = 1
+    sort = 1,
   } = options;
 
   let normalized_selector = normalize_data(selector);
@@ -139,7 +139,7 @@ MongoAdapter.getPaginationInfo = async (
     startCursorOffset: 0,
     endCursor: null,
     endCursorOffset: first ?? totalCount - 1,
-    totalCount
+    totalCount,
   };
 
   if (first !== undefined) {
@@ -149,7 +149,7 @@ MongoAdapter.getPaginationInfo = async (
     if (after !== undefined) {
       page_selector = { $and: [{ _id: { $gt: after } }, normalized_selector] };
       page_offset_selector = {
-        $and: [{ _id: { $lt: after } }, normalized_selector]
+        $and: [{ _id: { $lt: after } }, normalized_selector],
       };
     }
 
@@ -185,7 +185,7 @@ MongoAdapter.getPaginationInfo = async (
     if (before !== undefined) {
       page_selector = { $and: [{ _id: { $lt: before } }, normalized_selector] };
       page_offset_selector = {
-        $and: [{ _id: { $gte: before } }, normalized_selector]
+        $and: [{ _id: { $gte: before } }, normalized_selector],
       };
     }
 
@@ -277,7 +277,7 @@ MongoAdapter.insertMany = async (plugin_name, store_name, data = []) => {
 
   return (
     Object.values(results.insertedIds)?.map((object_id) => ({
-      id: String(object_id)
+      id: String(object_id),
     })) ?? []
   );
 };

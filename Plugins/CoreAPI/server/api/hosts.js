@@ -1,4 +1,4 @@
-import PenPal from "meteor/penpal";
+import PenPal from "PenPal";
 import _ from "lodash";
 import ip from "ip";
 
@@ -18,7 +18,7 @@ export const getHost = async (host_id, options) => {
         "CoreAPI",
         "Hosts",
         {
-          id: host_id
+          id: host_id,
         },
         options
       );
@@ -33,7 +33,7 @@ export const getHosts = async (host_ids, options) => {
         "CoreAPI",
         "Hosts",
         {
-          id: { $in: host_ids }
+          id: { $in: host_ids },
         },
         options
       );
@@ -53,7 +53,7 @@ export const getHostsByProject = async (project_id, options) => {
     "CoreAPI",
     "Hosts",
     {
-      project: project_id
+      project: project_id,
     },
     options
   );
@@ -66,7 +66,7 @@ export const getHostsByNetwork = async (network_id, options) => {
     "CoreAPI",
     "Hosts",
     {
-      network: network_id
+      network: network_id,
     },
     options
   );
@@ -79,7 +79,7 @@ export const getHostsByNetworks = async (network_ids, options) => {
     "CoreAPI",
     "Hosts",
     {
-      network: { $in: network_ids }
+      network: { $in: network_ids },
     },
     options
   );
@@ -91,7 +91,7 @@ export const getHostsByNetworks = async (network_ids, options) => {
 
 const default_host = {
   hostnames: [],
-  services: []
+  services: [],
 };
 
 export const insertHost = async (host) => {
@@ -123,7 +123,7 @@ export const insertHosts = async (hosts) => {
         ...sum,
         [network.id]: ip.cidrSubnet(
           `${network.subnet.network_address}/${network.subnet.subnet_mask}`
-        )
+        ),
       }),
       {}
     );
@@ -144,7 +144,7 @@ export const insertHosts = async (hosts) => {
 
     const new_hosts = _.zipWith(new_host_ids, _accepted, ({ id }, _host) => ({
       id,
-      ..._host
+      ..._host,
     }));
 
     const network_new_hosts = _.groupBy(new_hosts, "network");
@@ -195,7 +195,7 @@ export const updateHosts = async (hosts) => {
   }
 
   let matched_hosts = await PenPal.DataStore.fetch("CoreAPI", "Hosts", {
-    id: { $in: _accepted.map((host) => host.id) }
+    id: { $in: _accepted.map((host) => host.id) },
   });
 
   if (matched_hosts.length !== _accepted.length) {
@@ -257,10 +257,10 @@ export const upsertHosts = async (project_id, hosts) => {
       {
         $or: [
           { ip_address: { $in: search_ips } },
-          { mac_address: { $in: search_macs } }
-        ]
-      }
-    ]
+          { mac_address: { $in: search_macs } },
+        ],
+      },
+    ],
   };
 
   let exists = await PenPal.DataStore.fetch("CoreAPI", "Hosts", selector);
@@ -305,7 +305,7 @@ export const upsertHosts = async (project_id, hosts) => {
   return {
     inserted,
     updated,
-    rejected
+    rejected,
   };
 };
 
@@ -318,11 +318,11 @@ export const removeHost = async (host_id) => {
 export const removeHosts = async (host_ids) => {
   // Get all the host data for hooks so the deleted host hook has some info for notifications and such
   let hosts = await PenPal.DataStore.fetch("CoreAPI", "Hosts", {
-    id: { $in: host_ids }
+    id: { $in: host_ids },
   });
 
   let res = await PenPal.DataStore.delete("CoreAPI", "Hosts", {
-    id: { $in: host_ids }
+    id: { $in: host_ids },
   });
 
   if (res > 0) {

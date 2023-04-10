@@ -1,5 +1,5 @@
 import React from "react";
-import { registerComponent, Components } from "meteor/penpal";
+import { registerComponent, Components } from "PenPal";
 
 import SOURCE from "./ubuntu-icon-src.js";
 const ICON_NAME = "UbuntuIcon";
@@ -7,16 +7,16 @@ const ICON_NAME = "UbuntuIcon";
 export const IconAttribution = {
   icon: {
     name: "Ubuntu icon",
-    link: "https://www.iconfinder.com/icons/386503/ubuntu_icon"
+    link: "https://www.iconfinder.com/icons/386503/ubuntu_icon",
   },
   by: {
     name: "Aha-Soft",
-    link: "https://www.iconfinder.com/aha-soft"
+    link: "https://www.iconfinder.com/aha-soft",
   },
   license: {
     name: "CC BY 3.0",
-    link: "https://creativecommons.org/licenses/by/3.0/us"
-  }
+    link: "https://creativecommons.org/licenses/by/3.0/us",
+  },
 };
 
 /* ------------------------------------------------ */

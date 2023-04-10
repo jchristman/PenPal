@@ -1,4 +1,4 @@
-import PenPal from "meteor/penpal";
+import PenPal from "PenPal";
 import { check, Match } from "meteor/check";
 import { dockerExec, dockerBuild, dockerRun } from "./docker.js";
 
@@ -56,16 +56,16 @@ const Docker = {
   loadPlugin() {
     PenPal.Docker = {
       Exec: dockerExec,
-      Build: dockerBuild
+      Build: dockerBuild,
     };
 
     return {
       hooks: {
         settings: { docker: check_docker },
-        startup: build_docker_images
-      }
+        startup: build_docker_images,
+      },
     };
-  }
+  },
 };
 
 export default Docker;

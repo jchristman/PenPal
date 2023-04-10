@@ -6,8 +6,8 @@ import {
   Routes,
   getRoute,
   Constants,
-  hasRole
-} from "meteor/penpal";
+  hasRole,
+} from "PenPal";
 import { makeStyles, useTheme } from "@material-ui/core/styles";
 import CssBaseline from "@material-ui/core/CssBaseline";
 import Drawer from "@material-ui/core/Drawer";
@@ -25,17 +25,17 @@ import Badge from "@material-ui/core/Badge";
 import Container from "@material-ui/core/Container";
 import Grid from "@material-ui/core/Grid";
 import Paper from "@material-ui/core/Paper";
-import MenuIcon from "@material-ui/icons/Menu";
-import ChevronLeftIcon from "@material-ui/icons/ChevronLeft";
-import NotificationsIcon from "@material-ui/icons/Notifications";
+import MenuIcon from "@mui/icons-material/Menu";
+import ChevronLeftIcon from "@mui/icons-material/ChevronLeft";
+import NotificationsIcon from "@mui/icons-material/Notifications";
 import Backdrop from "@material-ui/core/Backdrop";
 import SpeedDial from "@material-ui/lab/SpeedDial";
 import SpeedDialIcon from "@material-ui/lab/SpeedDialIcon";
 import SpeedDialAction from "@material-ui/lab/SpeedDialAction";
-import SettingsIcon from "@material-ui/icons/Settings";
-import CloseIcon from "@material-ui/icons/Close";
-import SupervisorAccountIcon from "@material-ui/icons/SupervisorAccount";
-import AssignmentIcon from "@material-ui/icons/Assignment";
+import SettingsIcon from "@mui/icons-material/Settings";
+import CloseIcon from "@mui/icons-material/Close";
+import SupervisorAccountIcon from "@mui/icons-material/SupervisorAccount";
+import AssignmentIcon from "@mui/icons-material/Assignment";
 
 import Clock from "react-live-clock";
 
@@ -56,49 +56,49 @@ const useStyles = makeStyles((theme) => ({
     height: "100%",
     position: "fixed",
     top: 0,
-    left: 0
+    left: 0,
   },
   toolbar: {
-    paddingRight: 24 // keep right padding when drawer closed
+    paddingRight: 24, // keep right padding when drawer closed
   },
   toolbarIcon: {
     display: "flex",
     alignItems: "center",
     justifyContent: "flex-end",
     padding: "0 8px",
-    ...theme.mixins.toolbar
+    ...theme.mixins.toolbar,
   },
   appBar: {
     zIndex: theme.zIndex.drawer + 1,
     transition: theme.transitions.create(["width", "margin"], {
       easing: theme.transitions.easing.sharp,
-      duration: theme.transitions.duration.leavingScreen
-    })
+      duration: theme.transitions.duration.leavingScreen,
+    }),
   },
   appBarShift: {
     marginLeft: drawerWidth,
     width: `calc(100% - ${drawerWidth}px)`,
     transition: theme.transitions.create(["width", "margin"], {
       easing: theme.transitions.easing.sharp,
-      duration: theme.transitions.duration.enteringScreen
-    })
+      duration: theme.transitions.duration.enteringScreen,
+    }),
   },
   userContainer: {
     display: "flex",
-    alignItems: "center"
+    alignItems: "center",
   },
   logoutButton: {
     color: theme.palette.getContrastText("#3f51b5"),
-    marginLeft: 15
+    marginLeft: 15,
   },
   menuButton: {
-    marginRight: 36
+    marginRight: 36,
   },
   menuButtonHidden: {
-    display: "none"
+    display: "none",
   },
   title: {
-    flexGrow: 1
+    flexGrow: 1,
   },
   drawerPaper: {
     position: "relative",
@@ -106,27 +106,27 @@ const useStyles = makeStyles((theme) => ({
     width: drawerWidth,
     transition: theme.transitions.create("width", {
       easing: theme.transitions.easing.sharp,
-      duration: theme.transitions.duration.enteringScreen
-    })
+      duration: theme.transitions.duration.enteringScreen,
+    }),
   },
   drawerPaperClose: {
     overflowX: "hidden",
     transition: theme.transitions.create("width", {
       easing: theme.transitions.easing.sharp,
-      duration: theme.transitions.duration.leavingScreen
+      duration: theme.transitions.duration.leavingScreen,
     }),
     width: 57,
     [theme.breakpoints.up("sm")]: {
-      width: 57
-    }
+      width: 57,
+    },
   },
   smDrawerPaperClose: {
     transition: theme.transitions.create("width", {
       easing: theme.transitions.easing.sharp,
-      duration: theme.transitions.duration.leavingScreen
+      duration: theme.transitions.duration.leavingScreen,
     }),
     overflowX: "hidden",
-    width: 0
+    width: 0,
   },
   appBarSpacer: theme.mixins.toolbar,
   main: {
@@ -135,11 +135,11 @@ const useStyles = makeStyles((theme) => ({
     overflow: "scroll",
     maxHeight: "100%",
     transform: "translateZ(0px)",
-    position: "relative"
+    position: "relative",
   },
   content: {
     backgroundColor: "#EEE",
-    flexGrow: 1
+    flexGrow: 1,
   },
   smContent: {
     backgroundColor: "#EEE",
@@ -152,8 +152,8 @@ const useStyles = makeStyles((theme) => ({
     padding: 0,
     transition: theme.transitions.create("width", {
       easing: theme.transitions.easing.sharp,
-      duration: theme.transitions.duration.leavingScreen
-    })
+      duration: theme.transitions.duration.leavingScreen,
+    }),
   },
   overlay: {
     position: "fixed",
@@ -163,51 +163,51 @@ const useStyles = makeStyles((theme) => ({
     bottom: 0,
     backgroundColor: "black",
     opacity: 0.3,
-    zIndex: 1
+    zIndex: 1,
   },
   container: {
     flex: 1,
     padding: theme.spacing(2),
     overflow: "hidden",
-    overflowY: "auto"
+    overflowY: "auto",
   },
   paper: {
     padding: theme.spacing(2),
     display: "flex",
     overflow: "auto",
-    flexDirection: "column"
+    flexDirection: "column",
   },
   fixedHeight: {
-    height: 240
+    height: 240,
   },
   admin: {
     position: "fixed",
     top: 0,
     zIndex: 1,
-    pointerEvents: "none"
+    pointerEvents: "none",
   },
   adminPanel: {
     position: "relative",
     height: "100vh",
-    width: "100vw"
+    width: "100vw",
   },
   speedDial: {
     position: "absolute",
     bottom: theme.spacing(2),
-    right: theme.spacing(2)
+    right: theme.spacing(2),
   },
   admin_action_tooltip: {
-    width: "max-content"
+    width: "max-content",
   },
   nav_drawer: {
     flex: 1,
     display: "flex",
-    flexDirection: "column"
+    flexDirection: "column",
   },
   clock_container: {
     textAlign: "center",
-    fontSize: 15
-  }
+    fontSize: 15,
+  },
 }));
 
 const Layout = () => {
@@ -283,7 +283,7 @@ const Layout = () => {
             classes.drawerPaper,
             !open &&
               (isMd ? classes.drawerPaperClose : classes.smDrawerPaperClose)
-          )
+          ),
         }}
         open={open}
       >

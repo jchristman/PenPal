@@ -1,5 +1,5 @@
 import React from "react";
-import { registerComponent, Components } from "meteor/penpal";
+import { registerComponent, Components } from "PenPal";
 
 import SOURCE from "./apple-icon-src.js";
 const ICON_NAME = "AppleIcon";
@@ -7,16 +7,16 @@ const ICON_NAME = "AppleIcon";
 export const IconAttribution = {
   icon: {
     name: "Apple, ios icon",
-    link: "https://www.iconfinder.com/icons/icons/386450/apple_ios_icon"
+    link: "https://www.iconfinder.com/icons/icons/386450/apple_ios_icon",
   },
   by: {
     name: "Aha-Soft",
-    link: "https://www.iconfinder.com/aha-soft"
+    link: "https://www.iconfinder.com/aha-soft",
   },
   license: {
     name: "CC BY 3.0",
-    link: "https://creativecommons.org/licenses/by/3.0/us"
-  }
+    link: "https://creativecommons.org/licenses/by/3.0/us",
+  },
 };
 
 /* ------------------------------------------------ */

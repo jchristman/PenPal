@@ -1,5 +1,5 @@
 import React, { useState } from "react";
-import { Components, registerComponent } from "meteor/penpal";
+import { Components, registerComponent } from "PenPal";
 import Table from "@material-ui/core/Table";
 import TableBody from "@material-ui/core/TableBody";
 import TableCell from "@material-ui/core/TableCell";
@@ -9,18 +9,18 @@ import TablePagination from "@material-ui/core/TablePagination";
 import TableRow from "@material-ui/core/TableRow";
 import Paper from "@material-ui/core/Paper";
 import IconButton from "@material-ui/core/IconButton";
-import FirstPageIcon from "@material-ui/icons/FirstPage";
-import KeyboardArrowLeft from "@material-ui/icons/KeyboardArrowLeft";
-import KeyboardArrowRight from "@material-ui/icons/KeyboardArrowRight";
-import LastPageIcon from "@material-ui/icons/LastPage";
-import ViewListIcon from "@material-ui/icons/ViewList";
+import FirstPageIcon from "@mui/icons-material/FirstPage";
+import KeyboardArrowLeft from "@mui/icons-material/KeyboardArrowLeft";
+import KeyboardArrowRight from "@mui/icons-material/KeyboardArrowRight";
+import LastPageIcon from "@mui/icons-material/LastPage";
+import ViewListIcon from "@mui/icons-material/ViewList";
 import { makeStyles, useTheme } from "@material-ui/core/styles";
 
 const useStyles1 = makeStyles((theme) => ({
   root: {
     flexShrink: 0,
-    marginLeft: theme.spacing(2.5)
-  }
+    marginLeft: theme.spacing(2.5),
+  },
 }));
 
 const TablePaginationActions = ({ count, page, rowsPerPage, onChangePage }) => {
@@ -68,7 +68,7 @@ const TablePaginationActions = ({ count, page, rowsPerPage, onChangePage }) => {
 
 const useStyles2 = makeStyles((theme) => ({
   table: {
-    minWidth: 500
+    minWidth: 500,
   },
   statContainer: {
     display: "flex",
@@ -76,12 +76,12 @@ const useStyles2 = makeStyles((theme) => ({
     justifyContent: "space-between",
     alignItems: "center",
     marginRight: theme.spacing(1.5),
-    marginLeft: theme.spacing(1.5)
+    marginLeft: theme.spacing(1.5),
   },
   statTitle: {},
   statTopBottom: {
     display: "flex",
-    flexDirection: "column"
+    flexDirection: "column",
   },
   statTop: {},
   summaryContainer: {
@@ -90,20 +90,20 @@ const useStyles2 = makeStyles((theme) => ({
     justifyContent: "flex-start",
     alignItems: "center",
     marginRight: theme.spacing(1.5),
-    marginLeft: theme.spacing(1.5)
+    marginLeft: theme.spacing(1.5),
   },
   summaryTitle: {
     width: 130,
     whiteSpace: "nowrap",
     overflow: "hidden",
     textOverflow: "ellipsis",
-    marginRight: theme.spacing(2)
+    marginRight: theme.spacing(2),
   },
   summaryTopBottom: {
     display: "flex",
-    flexDirection: "column"
+    flexDirection: "column",
   },
-  summaryTop: {}
+  summaryTop: {},
 }));
 
 const ProjectsViewTableView = ({
@@ -112,7 +112,7 @@ const ProjectsViewTableView = ({
   pageSize,
   setPageSize,
   pageSizeOptions,
-  projectSummaries: { projects, totalCount }
+  projectSummaries: { projects, totalCount },
 }) => {
   const classes = useStyles2();
 
@@ -212,7 +212,7 @@ const ProjectsViewTableView = ({
               }
               page={page}
               SelectProps={{
-                native: true
+                native: true,
               }}
               onChangePage={handleChangePage}
               onChangeRowsPerPage={handleChangeRowsPerPage}

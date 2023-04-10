@@ -1,6 +1,6 @@
 import React from "react";
 import { Meteor } from "meteor/meteor";
-import { Components, registerComponent } from "meteor/penpal";
+import { Components, registerComponent } from "PenPal";
 import { serializeError } from "serialize-error";
 
 class ErrorBoundary extends React.Component {
@@ -10,7 +10,7 @@ class ErrorBoundary extends React.Component {
       err_number: -1,
       err_message: "",
       err_stack: "",
-      hasError: false
+      hasError: false,
     };
   }
 
@@ -30,7 +30,7 @@ class ErrorBoundary extends React.Component {
         this.setState({
           err_number: res,
           err_message: serialized_error.message,
-          err_stack: serialized_error.stack
+          err_stack: serialized_error.stack,
         });
       }
     );

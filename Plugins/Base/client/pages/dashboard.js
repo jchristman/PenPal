@@ -1,10 +1,5 @@
 import React, { useState, useEffect } from "react";
-import {
-  Components,
-  registerComponent,
-  Hooks,
-  GraphQLUtils
-} from "meteor/penpal";
+import { Components, registerComponent, Hooks, GraphQLUtils } from "PenPal";
 import _ from "lodash";
 import { useSnackbar } from "notistack";
 import { useQuery } from "@apollo/client";
@@ -30,7 +25,7 @@ const Dashboard = () => {
 
   const {
     loading: plugins_loading,
-    data: { getDashboardablePlugins = [] } = {}
+    data: { getDashboardablePlugins = [] } = {},
   } = useQuery(GetDashboardablePluginsQuery);
 
   const loading = introspection_loading || plugins_loading;
@@ -39,7 +34,7 @@ const Dashboard = () => {
     types,
     getDashboardablePlugins.map((dashboardable_plugin) => ({
       schema_root: dashboardable_plugin.settings.dashboard.schema_root,
-      query_name: dashboardable_plugin.settings.dashboard.getter
+      query_name: dashboardable_plugin.settings.dashboard.getter,
     }))
   );
 

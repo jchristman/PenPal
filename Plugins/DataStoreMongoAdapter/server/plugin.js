@@ -1,4 +1,4 @@
-import PenPal from "meteor/penpal";
+import PenPal from "PenPal";
 import MongoAdapter from "./adapter.js";
 import { types, resolvers, loaders } from "./graphql";
 
@@ -6,13 +6,13 @@ const settings = {
   configuration: {
     schema_root: "MongoDataStoreConfiguration",
     getter: "getMongoDataStoreConfiguration",
-    setter: "setMongoDataStoreConfiguration"
+    setter: "setMongoDataStoreConfiguration",
   },
   datastores: [
     {
-      name: "Configuration"
-    }
-  ]
+      name: "Configuration",
+    },
+  ],
 };
 
 const MongoDataStorePlugin = {
@@ -22,11 +22,11 @@ const MongoDataStorePlugin = {
     return {
       graphql: {
         types,
-        resolvers
+        resolvers,
       },
-      settings
+      settings,
     };
-  }
+  },
 };
 
 export default MongoDataStorePlugin;

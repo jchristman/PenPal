@@ -1,6 +1,6 @@
 import React from "react";
-import { Components, registerComponent } from "meteor/penpal";
-import CalendarViewDayIcon from "@material-ui/icons/CalendarViewDay";
+import { Components, registerComponent } from "PenPal";
+import CalendarViewDayIcon from "@mui/icons-material/CalendarViewDay";
 
 const ProjectsViewTimelineView = ({ projects }) => {
   return null;

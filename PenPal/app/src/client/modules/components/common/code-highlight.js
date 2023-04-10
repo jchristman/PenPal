@@ -1,5 +1,5 @@
 import React, { useEffect } from "react";
-import { registerComponent, Components } from "meteor/penpal";
+import { registerComponent, Components } from "PenPal";
 import "clipboard"; // Load before prism so prism can use it
 import "./prism.js"; // Loads as a global
 import "./prism.css";
@@ -9,7 +9,7 @@ Prism.plugins.NormalizeWhitespace.setDefaults({
   "remove-indent": true,
   "left-trim": true,
   "right-trim": true,
-  "tabs-to-spaces": 4
+  "tabs-to-spaces": 4,
 });
 
 const CodeHighlight = ({ code: _code, language = "" }) => {

@@ -1,12 +1,12 @@
 import React from "react";
 
-import { Components } from "meteor/penpal";
+import { Components } from "PenPal";
 import { SetupProviders } from "stories/common.js";
 
 import Container from "@material-ui/core/Container";
 import Grid from "@material-ui/core/Grid";
-import DesktopWindowsIcon from "@material-ui/icons/DesktopWindows";
-import AccountTreeIcon from "@material-ui/icons/AccountTree";
+import DesktopWindowsIcon from "@mui/icons-material/DesktopWindows";
+import AccountTreeIcon from "@mui/icons-material/AccountTree";
 
 export const TrendingStatistic = () => (
   <SetupProviders>
@@ -36,5 +36,5 @@ export const TrendingStatistic = () => (
 );
 
 export default {
-  title: "PenPal/Base/Dashboard"
+  title: "PenPal/Base/Dashboard",
 };

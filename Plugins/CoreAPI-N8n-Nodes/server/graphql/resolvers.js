@@ -1,16 +1,16 @@
 import resolvers from "./resolvers/";
-import PenPal from "meteor/penpal";
+import PenPal from "PenPal";
 
 export default [
   {
     Query: {
-      ...resolvers.queries
-    }
+      ...resolvers.queries,
+    },
   },
   {
     Mutation: {
-      ...resolvers.mutations
-    }
+      ...resolvers.mutations,
+    },
   },
-  ...resolvers.default_resolvers
+  ...resolvers.default_resolvers,
 ];

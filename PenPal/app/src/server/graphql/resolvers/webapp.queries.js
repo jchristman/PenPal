@@ -1,5 +1,5 @@
 import { Meteor } from "meteor/meteor";
-import { Constants } from "meteor/penpal";
+import { Constants } from "PenPal";
 import _ from "lodash";
 
 import { restrictToRole, restrictToLoggedIn } from "./common.js";
@@ -38,5 +38,5 @@ export default {
 
   async nop() {
     return false;
-  }
+  },
 };

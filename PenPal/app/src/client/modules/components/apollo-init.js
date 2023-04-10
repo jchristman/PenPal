@@ -1,6 +1,4 @@
-import { Meteor } from "meteor/meteor";
 import _ from "lodash";
-import { Accounts } from "meteor/accounts-base";
 import {
   IntrospectionFragmentMatcher,
   InMemoryCache
@@ -8,7 +6,7 @@ import {
 import { ApolloClient, ApolloLink } from "@apollo/client";
 import { BatchHttpLink } from "@apollo/client/link/batch-http";
 
-const graphql_loc = Meteor?.settings.public?.graphql ?? "http://localhost:3000";
+const graphql_loc = "http://localhost:3000";
 const introspect_schema = async () => {
   const result = await fetch(`${graphql_loc}/graphql`, {
     method: "POST",
@@ -112,16 +110,16 @@ const apolloInit = async () => {
   });
 
   const auth_link = new ApolloLink((operation, forward) => {
-    const token = Accounts._storedLoginToken();
+    //const token = Accounts._storedLoginToken();
     //console.log(`Sending request with auth: ${token}`, operation);
 
-    if (token) {
-      operation.setContext(() => ({
-        headers: {
-          authorization_token: token
-        }
-      }));
-    }
+    //if (token) {
+    //  operation.setContext(() => ({
+    //    headers: {
+    //      authorization_token: token
+    //    }
+    //  }));
+    //}
 
     return forward(operation);
   });

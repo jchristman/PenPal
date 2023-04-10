@@ -1,5 +1,5 @@
 import React, { useState } from "react";
-import { Components, registerComponent, Regex } from "meteor/penpal";
+import { Components, registerComponent, Regex } from "PenPal";
 import _ from "lodash";
 import cx from "classnames";
 import { makeStyles, useTheme } from "@material-ui/core/styles";
@@ -15,7 +15,7 @@ const useStyles = makeStyles((theme) => ({
     justifyContent: "center",
     alignItems: "flex-start",
     height: "100%",
-    width: "100%"
+    width: "100%",
   },
   form_group: {
     display: "flex",
@@ -23,22 +23,22 @@ const useStyles = makeStyles((theme) => ({
     alignItems: "baseline",
     justifyContent: "flex-start",
     marginBottom: theme.spacing(1),
-    width: "100%"
+    width: "100%",
   },
   form_field: {
-    marginRight: theme.spacing(1)
+    marginRight: theme.spacing(1),
   },
   submit_container: {
-    marginTop: theme.spacing(4)
+    marginTop: theme.spacing(4),
   },
   submit: {
-    width: 300
+    width: 300,
   },
   extra_bottom_margin: {
-    marginBottom: 22
+    marginBottom: 22,
   },
   form_group_button: {
-    marginBottom: 22
+    marginBottom: 22,
   },
   scope: {
     display: "flex",
@@ -54,31 +54,31 @@ const useStyles = makeStyles((theme) => ({
     paddingBottom: theme.spacing(1),
 
     "& > *": {
-      marginTop: theme.spacing(1)
-    }
+      marginTop: theme.spacing(1),
+    },
   },
   scope_chip: {
     marginTop: theme.spacing(1),
-    marginRight: theme.spacing(1)
+    marginRight: theme.spacing(1),
   },
   subnet_mask_textfield: {
     width: 65,
-    marginLeft: theme.spacing(1)
+    marginLeft: theme.spacing(1),
   },
   divider: {
     width: "70%",
     marginLeft: "15%",
     marginRight: "15%",
     marginTop: theme.spacing(5),
-    marginBottom: theme.spacing(4)
-  }
+    marginBottom: theme.spacing(4),
+  },
 }));
 
 const ProjectScopeForm = ({
   projectIPs,
   setProjectIPs,
   projectNetworks,
-  setProjectNetworks
+  setProjectNetworks,
 }) => {
   // ----------------------------------------------------
 

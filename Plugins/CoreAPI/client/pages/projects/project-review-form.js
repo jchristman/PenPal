@@ -1,5 +1,5 @@
 import React, { useState } from "react";
-import { Components, registerComponent } from "meteor/penpal";
+import { Components, registerComponent } from "PenPal";
 import _ from "lodash";
 import cx from "classnames";
 
@@ -26,7 +26,7 @@ const useStyles = makeStyles((theme) => ({
     justifyContent: "center",
     alignItems: "center",
     height: "100%",
-    width: "100%"
+    width: "100%",
   },
   top_pane: {
     flex: 1,
@@ -36,7 +36,7 @@ const useStyles = makeStyles((theme) => ({
     flexDirection: "column",
     alignItems: "center",
     justifyContent: "center",
-    marginBottom: theme.spacing(2)
+    marginBottom: theme.spacing(2),
   },
   bottom_pane: {
     width: "70%",
@@ -45,11 +45,11 @@ const useStyles = makeStyles((theme) => ({
     flexDirection: "row",
     alignItems: "center",
     justifyContent: "flex-end",
-    marginBottom: theme.spacing(2)
+    marginBottom: theme.spacing(2),
   },
   table: {
-    width: "100%"
-  }
+    width: "100%",
+  },
 }));
 
 const ReviewTableRow = ({ title, data }) => (
@@ -72,16 +72,15 @@ const ProjectReviewForm = ({
   projectEndDate,
   projectIPs,
   projectNetworks,
-  handleClose = () => null
+  handleClose = () => null,
 }) => {
   // ----------------------------------------------------
 
   const classes = useStyles();
   const { enqueueSnackbar } = useSnackbar();
 
-  const [projectCreationInProgress, setProjectCreationInProgress] = useState(
-    false
-  );
+  const [projectCreationInProgress, setProjectCreationInProgress] =
+    useState(false);
 
   const [createProject] = useMutation(CreateProjectMutation, {
     update(cache, { data: { createProject: new_project } }) {
@@ -90,17 +89,17 @@ const ProjectReviewForm = ({
           getProjects({ projects, totalCount, ...other }) {
             const newProjectRef = cache.writeFragment({
               data: new_project,
-              fragment: ProjectFieldsFragment
+              fragment: ProjectFieldsFragment,
             });
             return {
               projects: [newProjectRef, ...projects],
               totalCount: totalCount + 1,
-              ...other
+              ...other,
             };
-          }
-        }
+          },
+        },
       });
-    }
+    },
   });
 
   // ----------------------------------------------------
@@ -115,12 +114,12 @@ const ProjectReviewForm = ({
       start_date: projectStartDate,
       end_date: projectEndDate,
       project_ips: projectIPs,
-      project_networks: projectNetworks
+      project_networks: projectNetworks,
     });
 
     try {
       const result = await createProject({
-        variables
+        variables,
       });
 
       handleClose();

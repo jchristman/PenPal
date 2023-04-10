@@ -1,5 +1,5 @@
 import React, { useState, useEffect } from "react";
-import { Components, registerComponent } from "meteor/penpal";
+import { Components, registerComponent } from "PenPal";
 
 import { makeStyles } from "@material-ui/core/styles";
 import Button from "@material-ui/core/Button";
@@ -12,23 +12,23 @@ import ToggleButton from "@material-ui/lab/ToggleButton";
 import ToggleButtonGroup from "@material-ui/lab/ToggleButtonGroup";
 import Divider from "@material-ui/core/Divider";
 import Paper from "@material-ui/core/Paper";
-import EditIcon from "@material-ui/icons/Edit";
-import CloseIcon from "@material-ui/icons/Close";
-import AddIcon from "@material-ui/icons/Add";
-import BuildIcon from "@material-ui/icons/Build";
-import ClearIcon from "@material-ui/icons/Clear";
+import EditIcon from "@mui/icons-material/Edit";
+import CloseIcon from "@mui/icons-material/Close";
+import AddIcon from "@mui/icons-material/Add";
+import BuildIcon from "@mui/icons-material/Build";
+import ClearIcon from "@mui/icons-material/Clear";
 
 import {
   Icon as CardViewIcon,
-  Name as CardViewName
+  Name as CardViewName,
 } from "./views-card-view.js";
 import {
   Icon as TableViewIcon,
-  Name as TableViewName
+  Name as TableViewName,
 } from "./views-table-view.js";
 import {
   Icon as TimelineViewIcon,
-  Name as TimelineViewName
+  Name as TimelineViewName,
 } from "./views-timeline-view.js";
 
 const useStyles = makeStyles((theme) => ({
@@ -36,26 +36,26 @@ const useStyles = makeStyles((theme) => ({
     height: "100%",
     width: "100%",
     flexGrow: 1,
-    zIndex: 1
+    zIndex: 1,
   },
   speedDial: {
     position: "absolute",
     bottom: theme.spacing(2),
     right: theme.spacing(2),
-    zIndex: 2
+    zIndex: 2,
   },
   action_tooltip: {
-    width: "max-content"
+    width: "max-content",
   },
   container: {
     height: "100%",
     display: "flex",
-    flexDirection: "column"
+    flexDirection: "column",
   },
   toolbar: {
     flexShrink: 0,
     width: "100%",
-    marginBottom: theme.spacing(2)
+    marginBottom: theme.spacing(2),
   },
   paper: {
     width: "auto",
@@ -63,31 +63,31 @@ const useStyles = makeStyles((theme) => ({
     display: "flex",
     border: `1px solid ${theme.palette.divider}`,
     flexWrap: "wrap",
-    padding: theme.spacing(0.5)
+    padding: theme.spacing(0.5),
   },
   projects_container: {
     flex: 1,
-    width: "100%"
+    width: "100%",
   },
   divider: {
-    margin: theme.spacing(1)
+    margin: theme.spacing(1),
   },
   grouped: {
     margin: theme.spacing(0.5),
     border: "none",
     "&:not(:first-child)": {
-      borderRadius: theme.shape.borderRadius
+      borderRadius: theme.shape.borderRadius,
     },
     "&:first-child": {
-      borderRadius: theme.shape.borderRadius
-    }
-  }
+      borderRadius: theme.shape.borderRadius,
+    },
+  },
 }));
 
 const _actions = [
   { icon: TableViewIcon, name: TableViewName },
   { icon: TimelineViewIcon, name: TimelineViewName },
-  { icon: CardViewIcon, name: CardViewName }
+  { icon: CardViewIcon, name: CardViewName },
 ];
 
 const Projects = () => {
@@ -111,11 +111,11 @@ const Projects = () => {
           onClick: () => {
             handleClose();
             setFabVisible(false);
-          }
+          },
         },
         ..._actions.map((action) => ({
           ...action,
-          onClick: () => setView(action.name)
+          onClick: () => setView(action.name),
         })),
         {
           icon: <AddIcon />,
@@ -123,8 +123,8 @@ const Projects = () => {
           onClick: () => {
             handleClose();
             setTimeout(handleNewProjectOpen, 200);
-          }
-        }
+          },
+        },
       ]
     : [
         {
@@ -134,14 +134,14 @@ const Projects = () => {
               onClick: (event) => {
                 event.preventDefault();
                 handleNewProjectOpen();
-              }
-            }
+              },
+            },
           ],
-          exclusive: false
+          exclusive: false,
         },
         {
           group: _actions,
-          exclusive: true
+          exclusive: true,
         },
         {
           group: [
@@ -151,11 +151,11 @@ const Projects = () => {
               onClick: (event) => {
                 event.preventDefault();
                 setFabVisible(true);
-              }
-            }
+              },
+            },
           ],
-          exclusive: false
-        }
+          exclusive: false,
+        },
       ];
 
   return (

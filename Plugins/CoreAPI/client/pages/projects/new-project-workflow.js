@@ -1,5 +1,5 @@
 import React, { useState, useEffect } from "react";
-import { Components, registerComponent } from "meteor/penpal";
+import { Components, registerComponent } from "PenPal";
 import { makeStyles, useTheme } from "@material-ui/core/styles";
 import MobileStepper from "@material-ui/core/MobileStepper";
 import Button from "@material-ui/core/Button";
@@ -9,24 +9,24 @@ import DialogContent from "@material-ui/core/DialogContent";
 import DialogContentText from "@material-ui/core/DialogContentText";
 import DialogTitle from "@material-ui/core/DialogTitle";
 import Divider from "@material-ui/core/Divider";
-import KeyboardArrowLeft from "@material-ui/icons/KeyboardArrowLeft";
-import KeyboardArrowRight from "@material-ui/icons/KeyboardArrowRight";
+import KeyboardArrowLeft from "@mui/icons-material/KeyboardArrowLeft";
+import KeyboardArrowRight from "@mui/icons-material/KeyboardArrowRight";
 
 import { useQuery } from "@apollo/client";
 import GetCustomersQuery from "../customers/queries/get-customers.js";
 
 const useStyles = makeStyles({
   dialog: {
-    height: "100%"
+    height: "100%",
   },
   dialog_paper: {
     height: "70%",
-    maxHeight: 600
+    maxHeight: 600,
   },
   stepper: {
     backgroundColor: "transparent",
-    flexGrow: 1
-  }
+    flexGrow: 1,
+  },
 });
 
 const NewProjectWorkflow = ({ open, handleClose: handleCloseProp }) => {
@@ -34,23 +34,23 @@ const NewProjectWorkflow = ({ open, handleClose: handleCloseProp }) => {
   const steps = [
     {
       name: "Customer",
-      component: Components.NewProjectWorkflowSelectCustomer
+      component: Components.NewProjectWorkflowSelectCustomer,
     },
     {
       name: "Project",
-      component: Components.NewProjectWorkflowProjectDetails
+      component: Components.NewProjectWorkflowProjectDetails,
     },
     {
       name: "Collaborators",
       component: ({ enableNext }) => {
         useEffect(() => enableNext(), []);
         return "Coming soon!";
-      }
+      },
     },
     {
       name: "Review",
-      component: Components.NewProjectWorkflowReview
-    }
+      component: Components.NewProjectWorkflowReview,
+    },
   ];
 
   const classes = useStyles();
@@ -69,9 +69,9 @@ const NewProjectWorkflow = ({ open, handleClose: handleCloseProp }) => {
   const {
     loading: customersLoading,
     error: customersError,
-    data: { getCustomers: currentCustomers } = {}
+    data: { getCustomers: currentCustomers } = {},
   } = useQuery(GetCustomersQuery, {
-    pollInterval: 15000
+    pollInterval: 15000,
   });
 
   // -------------------------------------------------------------

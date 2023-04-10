@@ -1,5 +1,3 @@
-//import { check, Match } from "meteor/check";
-
 // ----------------------------------------------------------------------------
 
 export const Regex = {};
@@ -9,8 +7,8 @@ Regex.ip_address =
 export const Constants = {
   Role: {
     Admin: "Role.Admin",
-    User: "Role.User"
-  }
+    User: "Role.User",
+  },
 };
 
 export const isFunction = (obj) =>
@@ -42,21 +40,18 @@ export const check_manifest = ({ name, version, dependsOn }) => {
 export const check_plugin = (plugin) => {
   let plugin_accept = true;
 
-  const try_check = (value, type, repr_value, repr_type) => {
+  const try_check = (value, type_checker, repr_value, repr_type) => {
     try {
-      //check(value, type);
+      if (!type_checker(value)) {
+        throw new Error();
+      }
     } catch (e) {
       console.error(`Plugin.${repr_value} must be of type ${repr_type}`);
       plugin_accept = false;
     }
   };
 
-  try_check(
-    plugin.loadPlugin,
-    Match.Where(isFunction),
-    "loadPlugin",
-    "Function"
-  );
+  try_check(plugin.loadPlugin, isFunction, "loadPlugin", "Function");
 
   return plugin_accept;
 };

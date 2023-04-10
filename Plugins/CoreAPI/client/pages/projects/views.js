@@ -1,5 +1,5 @@
 import React, { useState, useEffect } from "react";
-import { Components, registerComponent } from "meteor/penpal";
+import { Components, registerComponent } from "PenPal";
 
 import { useQuery } from "@apollo/client";
 import GetProjectSummaries from "./queries/get-project-summaries.js";
@@ -13,20 +13,20 @@ const ProjectsView = ({ view }) => {
   const [pageSize, setPageSize] = useState(10);
   const [projectSummaries, setProjectSummaries] = useState({
     projects: [],
-    totalCount: 0
+    totalCount: 0,
   });
   const pageSizeOptions = [5, 10, 20, { label: "All", value: -1 }];
 
   const {
     loading: projectSummariesLoading,
     error: projectSummariesError,
-    data: { getProjects } = {}
+    data: { getProjects } = {},
   } = useQuery(GetProjectSummaries, {
     pollInterval: 15000,
     variables: {
       pageSize,
-      pageNumber: page
-    }
+      pageNumber: page,
+    },
   });
 
   // This is a way to essentially buffer the changes from the GraphQL query so that it looks smoother in the UI

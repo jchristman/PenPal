@@ -1,4 +1,4 @@
-import PenPal from "meteor/penpal";
+import PenPal from "PenPal";
 import hjson from "hjson";
 import _ from "lodash";
 
@@ -14,7 +14,7 @@ const parseMasscan = async (project_id, jsonData) => {
   let res = {
     status: "Error Uploading Data",
     was_success: false,
-    affected_records: []
+    affected_records: [],
   };
 
   let parsedJson = hjson.parse(jsonData.toString());
@@ -58,7 +58,7 @@ const parseMasscan = async (project_id, jsonData) => {
         ip_protocol: port_info.proto,
         port: port_info.port,
         status: port_info.status,
-        ttl: port_info.ttl
+        ttl: port_info.ttl,
       })) ?? [];
 
     if (services.length > 0) {
@@ -105,7 +105,7 @@ export default {
     let res = {
       status: "Error Uploading Data",
       was_success: false,
-      affected_records: []
+      affected_records: [],
     };
     if (args.submissionDoc.format !== "JSON") {
       res.status = "Please Submit JSON Data";
@@ -140,7 +140,7 @@ export default {
     await PenPal.Utils.AsyncNOOP();
     let response = {
       status: "Masscan Failed",
-      was_success: false
+      was_success: false,
     };
     PenPal.Docker.Exec(command).then((res, err) => {
       if (err) {
@@ -153,5 +153,5 @@ export default {
     response.status = "Masscan Started";
     response.was_success = true;
     return response;
-  }
+  },
 };

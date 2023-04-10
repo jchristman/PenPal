@@ -1,4 +1,4 @@
-import PenPal from "meteor/penpal";
+import PenPal from "PenPal";
 import { name as PLUGIN_NAME } from "../manifest.json";
 import { WebhooksCollectionName } from "../constants.js";
 import fetch from "node-fetch";
@@ -23,14 +23,14 @@ const executeTestWebhook = (id, type, url) => {
       mockDataFunc = PenPal.Test.CoreAPI.mockHosts;
       WebhookManager.executeWebhook(id, url, {
         hostIDs: mockDataFunc().map((datum) => datum.id),
-        projectID: mockDataFunc()[0].project
+        projectID: mockDataFunc()[0].project,
       });
       break;
     case "network":
       mockDataFunc = PenPal.Test.CoreAPI.mockNetworks;
       WebhookManager.executeWebhook(id, url, {
         networkIDs: mockDataFunc().map((datum) => datum.id),
-        projectID: mockDataFunc()[0].project
+        projectID: mockDataFunc()[0].project,
       });
       break;
     case "service":
@@ -58,7 +58,7 @@ const WebhookManager = {
           type,
           trigger,
           name,
-          url
+          url,
         }
       );
     }
@@ -119,7 +119,7 @@ const WebhookManager = {
     const result = await fetch(url, {
       method: "POST",
       body: JSON.stringify(args),
-      headers: { "Content-Type": "application/json" }
+      headers: { "Content-Type": "application/json" },
     });
     if (result.status === 404) {
       // 404 so remove the webhook
@@ -128,7 +128,7 @@ const WebhookManager = {
       return null;
     }
     return await result.json();
-  }
+  },
 };
 
 export default WebhookManager;

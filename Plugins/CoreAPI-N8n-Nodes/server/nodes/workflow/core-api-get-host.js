@@ -1,4 +1,4 @@
-import PenPal from "meteor/penpal";
+import PenPal from "PenPal";
 import queries from "../../graphql/resolvers/queries.js";
 
 const buildNode = () =>

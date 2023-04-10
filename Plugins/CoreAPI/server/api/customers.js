@@ -1,12 +1,12 @@
-import PenPal from "meteor/penpal";
+import PenPal from "PenPal";
 import _ from "lodash";
 import { required_field } from "./common.js";
 
 // -----------------------------------------------------------
 
-export const getCustomer = async customer_id => {
+export const getCustomer = async (customer_id) => {
   return await PenPal.DataStore.fetchOne("CoreAPI", "Customers", {
-    id: customer_id
+    id: customer_id,
   });
 };
 
@@ -17,7 +17,7 @@ export const getCustomers = async (customer_ids = []) => {
     result = await PenPal.DataStore.fetch("CoreAPI", "Customers", {});
   } else {
     result = await PenPal.DataStore.fetch("CoreAPI", "Customers", {
-      id: { $in: customer_ids }
+      id: { $in: customer_ids },
     });
   }
   return result;
@@ -26,14 +26,14 @@ export const getCustomers = async (customer_ids = []) => {
 // -----------------------------------------------------------
 
 const default_customer = {
-  projects: []
+  projects: [],
 };
 
-export const insertCustomer = async customer => {
+export const insertCustomer = async (customer) => {
   return await insertCustomers([customer]);
 };
 
-export const insertCustomers = async customers => {
+export const insertCustomers = async (customers) => {
   const rejected = [];
   const _accepted = [];
   const accepted = [];
@@ -63,11 +63,11 @@ export const insertCustomers = async customers => {
 
 // -----------------------------------------------------------
 
-export const updateCustomer = async customer => {
+export const updateCustomer = async (customer) => {
   return await updateCustomers([customer]);
 };
 
-export const updateCustomers = async customers => {
+export const updateCustomers = async (customers) => {
   const rejected = [];
   const _accepted = [];
   const accepted = [];
@@ -82,7 +82,7 @@ export const updateCustomers = async customers => {
   }
 
   let matched_customers = await PenPal.DataStore.fetch("CoreAPI", "Customers", {
-    id: { $in: _accepted.map(customer => customer.id) }
+    id: { $in: _accepted.map((customer) => customer.id) },
   });
 
   if (matched_customers.length !== _accepted.length) {
@@ -108,7 +108,7 @@ export const updateCustomers = async customers => {
 
 // -----------------------------------------------------------
 
-export const upsertCustomers = async customers => {
+export const upsertCustomers = async (customers) => {
   const result = [];
   const to_insert = [];
   const to_update = [];
@@ -129,13 +129,13 @@ export const upsertCustomers = async customers => {
 
 // -----------------------------------------------------------
 
-export const removeCustomer = async customer_id => {
+export const removeCustomer = async (customer_id) => {
   return await removeCustomers([customer_id]);
 };
 
-export const removeCustomers = async customer_ids => {
+export const removeCustomers = async (customer_ids) => {
   let res = await PenPal.DataStore.delete("CoreAPI", "Customers", {
-    id: { $in: customer_ids }
+    id: { $in: customer_ids },
   });
 
   if (res > 0) {

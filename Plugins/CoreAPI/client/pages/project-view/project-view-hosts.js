@@ -1,5 +1,5 @@
 import React, { useState } from "react";
-import { Components, registerComponent } from "meteor/penpal";
+import { Components, registerComponent } from "PenPal";
 import { makeStyles } from "@material-ui/core/styles";
 import Paper from "@material-ui/core/Paper";
 import Tabs from "@material-ui/core/Tabs";
@@ -11,15 +11,15 @@ const useStyles = makeStyles((theme) => ({
   container: {
     flexGrow: 1,
     display: "flex",
-    height: "100%"
+    height: "100%",
   },
   tabs: {
-    borderRight: `1px solid ${theme.palette.divider}`
+    borderRight: `1px solid ${theme.palette.divider}`,
   },
   tab_panel_container: {
     paddingLeft: theme.spacing(2),
-    paddingRight: theme.spacing(2)
-  }
+    paddingRight: theme.spacing(2),
+  },
 }));
 
 const ProjectViewHosts = ({ project }) => {
@@ -33,16 +33,16 @@ const ProjectViewHosts = ({ project }) => {
   const tabs = [
     {
       title: "List",
-      content: () => "List"
+      content: () => "List",
     },
     {
       title: "Services",
-      content: () => "Services"
+      content: () => "Services",
     },
     {
       title: "Graph",
-      content: () => "Graph"
-    }
+      content: () => "Graph",
+    },
   ];
 
   return (

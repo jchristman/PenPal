@@ -1,5 +1,5 @@
 import React, { useState } from "react";
-import { Components, registerComponent, Hooks } from "meteor/penpal";
+import { Components, registerComponent, Hooks } from "PenPal";
 import { makeStyles, useTheme } from "@material-ui/core/styles";
 import { grey, indigo } from "@material-ui/core/colors";
 import TextField from "@material-ui/core/TextField";
@@ -18,17 +18,17 @@ const useStyles = makeStyles((theme) => ({
     justifyContent: "center",
     alignItems: "flex-start",
     height: "100%",
-    width: "100%"
+    width: "100%",
   },
   form_field: {
-    marginBottom: theme.spacing(2)
+    marginBottom: theme.spacing(2),
   },
   submit_container: {
-    marginTop: theme.spacing(4)
+    marginTop: theme.spacing(4),
   },
   submit: {
-    width: 300
-  }
+    width: 300,
+  },
 }));
 
 const NewCustomerForm = ({ newCustomerHook = () => null }) => {
@@ -43,7 +43,7 @@ const NewCustomerForm = ({ newCustomerHook = () => null }) => {
 
   const [
     createNewCustomer,
-    { loading: create_customer_loading, error: create_customer_error }
+    { loading: create_customer_loading, error: create_customer_error },
   ] = useMutation(CreateNewCustomer, {
     update(cache, { data: { createCustomer: new_customer } }) {
       const current_customers =
@@ -51,11 +51,11 @@ const NewCustomerForm = ({ newCustomerHook = () => null }) => {
       const data = { getCustomers: [...current_customers, new_customer] };
       cache.writeQuery({
         query: GetCustomers,
-        data
+        data,
       });
 
       newCustomerHook(data.getCustomers, new_customer);
-    }
+    },
   });
 
   // ----------------------------------------------------
@@ -75,8 +75,8 @@ const NewCustomerForm = ({ newCustomerHook = () => null }) => {
     createNewCustomer({
       variables: {
         name: customerName,
-        industry: industries[customerIndustry]
-      }
+        industry: industries[customerIndustry],
+      },
     });
     setCustomerName("");
     setCustomerIndustry("");

@@ -1,6 +1,6 @@
 import { types, resolvers, loaders } from "./graphql/";
 import _ from "lodash";
-import PenPal from "meteor/penpal";
+import PenPal from "PenPal";
 
 import { name as PLUGIN_NAME } from "./manifest.json";
 import startN8nServer from "./n8n/n8n.js";
@@ -14,9 +14,9 @@ PenPal.N8n = { NodeBuilder };
 const settings = {
   datastores: [
     {
-      name: WebhooksCollectionName
-    }
-  ]
+      name: WebhooksCollectionName,
+    },
+  ],
 };
 
 const loadN8n = async () => {
@@ -40,15 +40,15 @@ const N8nPlugin = {
     return {
       graphql: {
         types,
-        resolvers
+        resolvers,
       },
       settings,
       hooks: {
         settings: { n8n: check_n8n },
-        startup: loadN8n
-      }
+        startup: loadN8n,
+      },
     };
-  }
+  },
 };
 
 export default N8nPlugin;

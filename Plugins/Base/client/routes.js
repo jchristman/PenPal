@@ -1,7 +1,7 @@
-import { registerRoute } from "meteor/penpal";
+import { registerRoute } from "PenPal";
 
-import HomeIcon from "@material-ui/icons/Home";
-import SettingsInputSvideoIcon from "@material-ui/icons/SettingsInputSvideo";
+import HomeIcon from "@mui/icons-material/Home";
+import SettingsInputSvideoIcon from "@mui/icons-material/SettingsInputSvideo";
 
 const registerRoutes = () => {
   const Dashboard = {
@@ -9,7 +9,7 @@ const registerRoutes = () => {
     path: "/",
     componentName: "Dashboard",
     prettyName: "Dashboard",
-    icon: HomeIcon
+    icon: HomeIcon,
   };
   registerRoute(Dashboard);
 
@@ -18,7 +18,7 @@ const registerRoutes = () => {
     path: "/configure",
     componentName: "Configuration",
     prettyName: "Configure Plugins",
-    icon: SettingsInputSvideoIcon
+    icon: SettingsInputSvideoIcon,
   };
   registerRoute(Configuration);
 };

@@ -1,40 +1,9 @@
 version: "2"
 services:
-    penpal-server:
-        volumes:
-            - ./PenPal/app/:/penpal/app:consistent
-            - ./Plugins/:/penpal/plugins:consistent
-            - /var/run/docker.sock:/var/run/docker.sock
-        environment:
-            - LOCAL_USER_ID=${LOCAL_USER_ID}
-
-              # Temporarily disabled until I can rewrite the Dockerfile for bullseye and ARM
-              #storybook:
-              #    build:
-              #        context: ./
-              #        dockerfile: ./Dev-Tools/Storybook/Dockerfile
-              #    ports:
-              #        - "6006:6006"
-              #    command: npm run storybook
-              #    volumes:
-              #        - penpal-storybook-npm-cache:/home/node/.npm
-              #          #- ./Server/src:/app
-              #        - ./Server/src/client/:/app/client:consistent
-              #        - ./Server/src/server/:/app/server:consistent
-              #        - ./Server/src/stories/:/app/stories:consistent
-              #        - ./Server/src/package.json:/app/package.json:consistent
-              #        - ./Server/src/settings.json:/app/settings.json:consistent
-              #        - ./Server/src/.meteor/packages:/app/.meteor/packages:consistent
-              #        - ./Server/src/.storybook:/app/.storybook
-              #        - ./Server/src/storybook_watch.sh:/app/storybook_watch.sh
-              #        - ./Server/src/lib/:/app/lib:consistent
-              #        - ./Server/src/public:/app/public:consistent
-              #        - ./Server/src/packages:/app/packages:consistent
-              #        - ./Plugins/:/app/plugins:consistent
-              #        - ./Server/src/.babelrc:/app/.babelrc:consistent
-              #    networks:
-              #        - public
-
-volumes:
-    penpal-storybook-npm-cache:
-        external: false
+  penpal-server:
+    volumes:
+      - ./PenPal/app/:/penpal/app:consistent
+      - ./Plugins/:/penpal/plugins:consistent
+      - /var/run/docker.sock:/var/run/docker.sock
+    environment:
+      - LOCAL_USER_ID=${LOCAL_USER_ID}

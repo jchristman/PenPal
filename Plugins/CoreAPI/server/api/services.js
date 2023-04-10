@@ -1,4 +1,4 @@
-import PenPal from "meteor/penpal";
+import PenPal from "PenPal";
 import _ from "lodash";
 
 import { required_field, isTestData } from "./common.js";
@@ -17,7 +17,7 @@ export const getService = async (service_id, options) => {
         "CoreAPI",
         "Services",
         {
-          id: service_id
+          id: service_id,
         },
         options
       );
@@ -33,7 +33,7 @@ export const getServices = async (service_ids, options) => {
         "CoreAPI",
         "Services",
         {
-          id: { $in: service_ids }
+          id: { $in: service_ids },
         },
         options
       );
@@ -53,7 +53,7 @@ export const getServicesByProject = async (project_id, options) => {
     "CoreAPI",
     "Services",
     {
-      project: project_id
+      project: project_id,
     },
     options
   );
@@ -66,7 +66,7 @@ export const getServicesByNetwork = async (network_id, options) => {
     "CoreAPI",
     "Services",
     {
-      network: network_id
+      network: network_id,
     },
     options
   );
@@ -79,7 +79,7 @@ export const getServicesByHost = async (host_id, options) => {
     "CoreAPI",
     "Services",
     {
-      host: host_id
+      host: host_id,
     },
     options
   );
@@ -92,7 +92,7 @@ export const getServicesByHosts = async (host_ids, options) => {
     "CoreAPI",
     "Services",
     {
-      host: { $in: host_ids }
+      host: { $in: host_ids },
     },
     options
   );
@@ -138,7 +138,7 @@ export const insertServices = async (services) => {
       _accepted,
       ({ id }, _service) => ({
         id,
-        ..._service
+        ..._service,
       })
     );
 
@@ -184,7 +184,7 @@ export const updateServices = async (services) => {
   }
 
   let matched_services = await PenPal.DataStore.fetch("CoreAPI", "Services", {
-    id: { $in: _accepted.map((service) => service.id) }
+    id: { $in: _accepted.map((service) => service.id) },
   });
 
   if (matched_services.length !== _accepted.length) {
@@ -220,11 +220,11 @@ export const removeService = async (service_id) => {
 export const removeServices = async (service_ids) => {
   // Get all the service data for hooks so the deleted service hook has some info for notifications and such
   let services = await PenPal.DataStore.fetch("CoreAPI", "Services", {
-    id: { $in: service_ids }
+    id: { $in: service_ids },
   });
 
   let res = await PenPal.DataStore.delete("CoreAPI", "Services", {
-    id: { $in: service_ids }
+    id: { $in: service_ids },
   });
 
   if (res > 0) {

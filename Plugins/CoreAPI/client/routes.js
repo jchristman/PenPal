@@ -1,6 +1,6 @@
-import { registerRoute } from "meteor/penpal";
+import { registerRoute } from "PenPal";
 
-import AccountTreeIcon from "@material-ui/icons/AccountTree";
+import AccountTreeIcon from "@mui/icons-material/AccountTree";
 
 const registerRoutes = () => {
   const Projects = {
@@ -8,14 +8,14 @@ const registerRoutes = () => {
     path: "/projects",
     componentName: "Projects",
     prettyName: "Projects",
-    icon: AccountTreeIcon
+    icon: AccountTreeIcon,
   };
   registerRoute(Projects, 1);
 
   const Project = {
     name: "project",
     path: "/projects/:project_id",
-    componentName: "Project"
+    componentName: "Project",
   };
   registerRoute(Project);
 };

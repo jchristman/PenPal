@@ -1,7 +1,7 @@
 import React, { useState } from "react";
 import moment from "moment";
 
-import { Components } from "meteor/penpal";
+import { Components } from "PenPal";
 import { SetupProviders } from "stories/common.js";
 
 export const Workflow = () => (
@@ -17,7 +17,7 @@ export const Step1SelectCustomer = () => (
         width: 1000,
         height: 600,
         border: "1px solid black",
-        background: "white"
+        background: "white",
       }}
     >
       <Components.NewProjectWorkflowSelectCustomer customers={[]} />
@@ -40,7 +40,7 @@ export const Step2DetailsAndScope = () => {
           width: 1000,
           height: 600,
           border: "1px solid black",
-          background: "white"
+          background: "white",
         }}
       >
         <Components.NewProjectWorkflowProjectDetails
@@ -81,7 +81,7 @@ export const Step3Review = () => {
           width: 1000,
           height: 600,
           border: "1px solid black",
-          background: "white"
+          background: "white",
         }}
       >
         <Components.NewProjectWorkflowReview
@@ -100,5 +100,5 @@ export const Step3Review = () => {
 };
 
 export default {
-  title: "PenPal/CoreAPI/New Project Workflow"
+  title: "PenPal/CoreAPI/New Project Workflow",
 };

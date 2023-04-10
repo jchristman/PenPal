@@ -1,5 +1,5 @@
 import React, { createContext, useContext, useState, useEffect } from "react";
-import { Components, registerComponent, registerHook } from "meteor/penpal";
+import { Components, registerComponent, registerHook } from "PenPal";
 import { Accounts } from "meteor/accounts-base";
 import { useMutation, useQuery, useApolloClient } from "@apollo/client";
 import { useSnackbar } from "notistack";
@@ -10,7 +10,7 @@ import {
   AUTHENTICATE_WITH_PASSWORD,
   SIGNUP,
   CURRENT_USER,
-  LOGOUT
+  LOGOUT,
 } from "./user-provider-gql.js";
 
 const AccountContext = createContext({});
@@ -25,10 +25,10 @@ const AccountProvider = ({ children }) => {
   const {
     loading: user_loading,
     error: user_error,
-    data: { currentUser } = {}
+    data: { currentUser } = {},
   } = useQuery(CURRENT_USER, {
     skip: !authTokenLoaded,
-    pollInterval: authTokenLoaded ? 15000 : 0
+    pollInterval: authTokenLoaded ? 15000 : 0,
   });
 
   const [authenticateWithPassword] = useMutation(AUTHENTICATE_WITH_PASSWORD, {
@@ -36,25 +36,25 @@ const AccountProvider = ({ children }) => {
       cache,
       {
         data: {
-          authenticateWithPassword: { user }
-        }
+          authenticateWithPassword: { user },
+        },
       }
     ) {
       const data = { currentUser: user };
       cache.writeQuery({
         query: CURRENT_USER,
-        data
+        data,
       });
-    }
+    },
   });
   const login_func = async (email, password) => {
     try {
       const {
         data: {
-          authenticateWithPassword: { userId, token, tokenExpires }
-        }
+          authenticateWithPassword: { userId, token, tokenExpires },
+        },
       } = await authenticateWithPassword({
-        variables: { email, password }
+        variables: { email, password },
       });
 
       await storeLoginToken(userId, token, new Date(tokenExpires));
@@ -63,7 +63,7 @@ const AccountProvider = ({ children }) => {
       console.error(e);
       enqueueSnackbar(e.message, {
         variant: "error",
-        autoHideDuration: 5000
+        autoHideDuration: 5000,
       });
     }
   };
@@ -80,7 +80,7 @@ const AccountProvider = ({ children }) => {
       if (logout) {
         cache.writeQuery({ query: CURRENT_USER, data: { currentUser: null } });
       }
-    }
+    },
   });
   const logout_func = async () => {
     const token = await getLoginToken();
@@ -89,8 +89,8 @@ const AccountProvider = ({ children }) => {
         variables: { token },
         optimisticResponse: {
           __typename: "Mutation",
-          logout: true
-        }
+          logout: true,
+        },
       });
 
       // While logging in, we manipulate our stored auth tokens after successful login.
@@ -101,7 +101,7 @@ const AccountProvider = ({ children }) => {
       console.error(e);
       enqueueSnackbar(e.message, {
         variant: "error",
-        autoHideDuration: 10000
+        autoHideDuration: 10000,
       });
     }
   };
@@ -111,25 +111,25 @@ const AccountProvider = ({ children }) => {
       cache,
       {
         data: {
-          signup: { user }
-        }
+          signup: { user },
+        },
       }
     ) {
       const data = { currentUser: user };
       cache.writeQuery({
         query: CURRENT_USER,
-        data
+        data,
       });
-    }
+    },
   });
   const signup_func = async (email, password) => {
     try {
       const {
         data: {
-          signup: { userId, token, tokenExpires }
-        }
+          signup: { userId, token, tokenExpires },
+        },
       } = await signup({
-        variables: { email, password }
+        variables: { email, password },
       });
 
       await storeLoginToken(userId, token, new Date(tokenExpires));
@@ -146,7 +146,7 @@ const AccountProvider = ({ children }) => {
 
       enqueueSnackbar(e.message, {
         variant: "error",
-        autoHideDuration: 5000
+        autoHideDuration: 5000,
       });
       return false;
     }
@@ -171,7 +171,7 @@ const AccountProvider = ({ children }) => {
     loading: user_loading,
     login: login_func,
     logout: logout_func,
-    signup: signup_func
+    signup: signup_func,
   };
 
   //console.log(data, authTokenLoaded);

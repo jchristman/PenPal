@@ -1,5 +1,5 @@
 import React, { useState, useEffect } from "react";
-import { Components, registerComponent } from "meteor/penpal";
+import { Components, registerComponent } from "PenPal";
 import _ from "lodash";
 import { makeStyles, useTheme } from "@material-ui/core/styles";
 import { indigo } from "@material-ui/core/colors";
@@ -7,7 +7,7 @@ import Select from "@material-ui/core/Select";
 import Divider from "@material-ui/core/Divider";
 import MenuItem from "@material-ui/core/MenuItem";
 import FormControl from "@material-ui/core/FormControl";
-import ExpandMoreIcon from "@material-ui/icons/ExpandMore";
+import ExpandMoreIcon from "@mui/icons-material/ExpandMore";
 import cx from "classnames";
 
 const useStyles = makeStyles((theme) => ({
@@ -17,7 +17,7 @@ const useStyles = makeStyles((theme) => ({
     display: "flex",
     flexDirection: "row",
     justifyContent: "space-evenly",
-    alignItems: "center"
+    alignItems: "center",
   },
   pane: {
     height: `calc(100% - ${theme.spacing(4)}px)`,
@@ -26,7 +26,7 @@ const useStyles = makeStyles((theme) => ({
     justifyContent: "center",
     alignItems: "flex-start",
     flex: 1,
-    margin: theme.spacing(2)
+    margin: theme.spacing(2),
   },
   pane_title: {
     color: "#555",
@@ -34,7 +34,7 @@ const useStyles = makeStyles((theme) => ({
     textTransform: "uppercase",
     width: "100%",
     textAlign: "center",
-    marginBottom: theme.spacing(1)
+    marginBottom: theme.spacing(1),
   },
   pane_rest: {
     flex: 1,
@@ -42,9 +42,9 @@ const useStyles = makeStyles((theme) => ({
     display: "flex",
     flexDirection: "column",
     justifyContent: "center",
-    alignItems: "flex-start"
+    alignItems: "flex-start",
   },
-  divider: {}
+  divider: {},
 }));
 
 const ProjectDetails = ({
@@ -61,7 +61,7 @@ const ProjectDetails = ({
   projectIPs,
   setProjectIPs,
   projectNetworks,
-  setProjectNetworks
+  setProjectNetworks,
 }) => {
   // ----------------------------------------------------
 
