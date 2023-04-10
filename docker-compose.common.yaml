@@ -1,29 +1,38 @@
 version: "2"
 services:
-    penpal-server:
-        build: ./PenPal
-        volumes:
-            - penpal-npm-cache:/home/node/.npm
-        ports:
-            - "3000:3000"
-            - "5678:5678"
-        command: npm run start
-        networks:
-            - public
+  penpal-frontend:
+    build: ./PenPal
+    volumes:
+      - penpal-npm-cache:/home/node/.npm
+    ports:
+      - "3000:3000"
+    command: npm run dev-serve-frontend
+    networks:
+      - public
 
-    node-red:
-        image: nodered/node-red
-        volumes:
-            - node-red-data:/data
-        ports:
-            - "1880:1880"
+  penpal-server:
+    build: ./PenPal
+    volumes:
+      - penpal-npm-cache:/home/node/.npm
+    ports:
+      - "3000:3000"
+    command: npm run dev-run-server
+    networks:
+      - public
+
+  node-red:
+    image: nodered/node-red
+    volumes:
+      - node-red-data:/data
+    ports:
+      - "1880:1880"
 
 volumes:
-    penpal-npm-cache:
-        external: false
-    node-red-data:
-        external: false
+  penpal-npm-cache:
+    external: false
+  node-red-data:
+    external: false
 
 networks:
-    public:
-        driver: bridge
+  public:
+    driver: bridge

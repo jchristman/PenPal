@@ -1,0 +1,11 @@
+{
+  "watch": ["./src/server", "./src/common", "../plugins"],
+  "ext": "js",
+  "execMap": {
+    "js": "node --experimental-remap-exports",
+    "mjs": "node --experimental-modules --experimental-remap-exports"
+  },
+  "module-alias": {
+    "PenPal": "./src/server/penpal/server.js"
+  }
+}

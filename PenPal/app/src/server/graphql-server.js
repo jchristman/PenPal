@@ -10,6 +10,8 @@ import _ from "lodash";
 const app = express();
 const port = 3001;
 
+app.listen(port, () => console.log(`Server listening on port ${port}`));
+
 import { types, resolvers, buildLoaders } from "./graphql";
 
 const startGraphQLServer = (
