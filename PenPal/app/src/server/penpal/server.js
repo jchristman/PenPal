@@ -4,8 +4,8 @@ import {
   Constants as _Constants,
   isFunction,
   check_manifest,
-  check_plugin
-} from "./common.js";
+  check_plugin,
+} from "@penpal/common";
 export const Constants = _Constants;
 
 // ----------------------------------------------------------------------------
@@ -42,7 +42,7 @@ PenPal.registerPlugin = (manifest, plugin) => {
     version,
     dependsOn,
     requiresImplementation = false,
-    implements = ""
+    implements: imp = "", // Renaming happens because of the reserved keyword implements, but naming is better, I think
   } = manifest;
 
   const name_version = `${name}@${version}`;
@@ -54,7 +54,7 @@ PenPal.registerPlugin = (manifest, plugin) => {
     name,
     version,
     plugin,
-    implements
+    implements: imp,
   };
 };
 
@@ -64,7 +64,7 @@ PenPal.loadPlugins = async () => {
   PenPal.LoadedPlugins = _.mapValues(PenPal.RegisteredPlugins, (plugin) => ({
     loaded: false,
     name: plugin.name,
-    version: plugin.version
+    version: plugin.version,
   }));
 
   let plugins_types = {};
@@ -76,11 +76,8 @@ PenPal.loadPlugins = async () => {
   const plugins_to_load = Object.keys(PenPal.RegisteredPlugins);
   while (plugins_to_load.length > 0) {
     const plugin_name = plugins_to_load.shift();
-    const {
-      requiresImplementation,
-      dependsOn,
-      plugin
-    } = PenPal.RegisteredPlugins[plugin_name];
+    const { requiresImplementation, dependsOn, plugin } =
+      PenPal.RegisteredPlugins[plugin_name];
 
     // Ensure that all prerequisites are available.  If not, it's impossible to load
     const all_prereqs_available = _.reduce(
@@ -200,7 +197,7 @@ PenPal.loadPlugins = async () => {
   return {
     plugins_types,
     plugins_resolvers,
-    plugins_loaders
+    plugins_loaders,
   };
 };
 

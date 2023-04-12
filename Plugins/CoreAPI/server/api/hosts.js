@@ -1,4 +1,4 @@
-import PenPal from "PenPal";
+import PenPal from "@penpal/core";
 import _ from "lodash";
 import ip from "ip";
 

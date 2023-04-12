@@ -1,4 +1,4 @@
-import PenPal from "PenPal";
+import PenPal from "@penpal/core";
 import {
   DEFAULT_PENPAL_SETTINGS,
   SETTINGS_STORE,

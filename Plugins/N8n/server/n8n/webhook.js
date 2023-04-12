@@ -1,4 +1,4 @@
-import PenPal from "PenPal";
+import PenPal from "@penpal/core";
 import { name as PLUGIN_NAME } from "../manifest.json";
 import { WebhooksCollectionName } from "../constants.js";
 import fetch from "node-fetch";

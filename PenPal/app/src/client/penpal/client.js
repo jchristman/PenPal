@@ -1,9 +1,5 @@
 import _ from "lodash";
-import {
-  check_manifest,
-  check_plugin,
-  isFunction,
-} from "../../common/penpal.js";
+import { check_manifest, check_plugin, isFunction } from "@penpal/common";
 
 // ----------------------------------------------------------------------------
 
@@ -57,7 +53,7 @@ PenPal.getRoute = getRoute;
 
 // ----------------------------------------------------------------------------
 
-import { Regex as _Regex } from "../../common/penpal.js";
+import { Regex as _Regex } from "../../common/common.js";
 export const Regex = _Regex;
 PenPal.Regex = Regex;
 

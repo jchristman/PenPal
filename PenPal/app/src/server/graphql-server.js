@@ -4,7 +4,7 @@ import { makeExecutableSchema } from "graphql-tools";
 import { mergeTypeDefs } from "@graphql-tools/merge";
 import { applyMiddleware } from "graphql-middleware";
 // TODO: Get PenPal again
-//import PenPal from "PenPal";
+//import PenPal from "@penpal/core";
 import _ from "lodash";
 
 const app = express();

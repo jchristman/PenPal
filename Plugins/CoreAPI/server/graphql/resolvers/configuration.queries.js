@@ -1,4 +1,4 @@
-import PenPal from "PenPal";
+import PenPal from "@penpal/core";
 
 export default {
   async getCoreAPIConfiguration(root, args, { PenPalCachingAPI }) {

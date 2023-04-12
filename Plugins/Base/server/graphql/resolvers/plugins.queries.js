@@ -1,5 +1,5 @@
 import { Meteor } from "meteor/meteor";
-import PenPal from "PenPal";
+import PenPal from "@penpal/core";
 
 const getXablePlugins = (settings_field) => {
   const plugins_name_version = Object.keys(PenPal.LoadedPlugins);

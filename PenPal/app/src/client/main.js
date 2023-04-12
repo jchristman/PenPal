@@ -11,7 +11,7 @@ import { render } from "react-dom";
 import "./modules/components/root.js";
 
 // Load the plugins' code
-import Plugins from "Plugins";
+import Plugins from "@penpal/plugins";
 
 // Render the root component
 (async () => {

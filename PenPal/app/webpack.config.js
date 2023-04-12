@@ -32,12 +32,14 @@ module.exports = {
   ].filter(Boolean),
   resolve: {
     alias: {
-      PenPal: "penpal/client.js", // Relative to './src/client' root
-      Plugins: "plugins-loader.js", // Relative to '../plugins'
+      "@penpal/core": "penpal/client.js", // Relative to './src/client' root
+      "@penpal/plugins": "./common.js", // Relative to './src/common'
+      "@penpal/common": "plugins-loader.js", // Relative to '../plugins'
     },
     roots: [path.resolve("."), path.resolve("../plugins")],
     modules: [
       path.resolve(__dirname, "./src/client"),
+      path.resolve(__dirname, "./src/common"),
       path.resolve(__dirname, "../plugins"),
       path.resolve(__dirname, "./node_modules"),
     ],

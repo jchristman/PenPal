@@ -4,7 +4,7 @@
   "scripts": {
     "prestart": "echo [.] Installing npm dependencies... && npm install",
     "dev-serve-frontend": "webpack-dev-server --hot --mode development --port 3000",
-    "dev-run-server": "nodemon --config ./nodemon.config.json ./src/server/main.js"
+    "dev-run-server": "nodemon --config ./nodemon.config.json --exec babel-node ./src/server/main.js"
   },
   "dependencies": {
     "@apollo/client": "^3.3.9",
@@ -40,13 +40,16 @@
     "uuid": "^8.3.1"
   },
   "devDependencies": {
-    "@babel/core": "^7.10.2",
-    "@babel/preset-env": "^7.12.13",
+    "@babel/core": "^7.21.4",
+    "@babel/node": "^7.20.7",
+    "@babel/preset-env": "^7.21.4",
     "@babel/preset-react": "^7.12.13",
     "@pmmmwh/react-refresh-webpack-plugin": "^0.5.4",
     "babel-loader": "^8.2.3",
+    "babel-plugin-module-resolver": "^5.0.0",
     "depcheck": "^1.4.3",
     "html-webpack-plugin": "^5.5.0",
+    "module-alias": "^2.2.2",
     "nodemon": "^2.0.22",
     "react-refresh": "^0.11.0",
     "webpack": "^5.66.0",

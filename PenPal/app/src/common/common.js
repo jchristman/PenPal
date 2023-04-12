@@ -1,3 +1,5 @@
+import { check as _check } from "./check.js";
+
 // ----------------------------------------------------------------------------
 
 export const Regex = {};
@@ -16,21 +18,27 @@ export const isFunction = (obj) =>
 
 // ----------------------------------------------------------------------------
 
+export const check = (value, type, repr_value, repr_type) => {
+  let pass = _check(value, type);
+  if (!pass) {
+    console.error(`${repr_value} must be of type ${repr_type}`);
+  }
+  return pass;
+};
+
+// ----------------------------------------------------------------------------
+
 export const check_manifest = ({ name, version, dependsOn }) => {
   let manifest_accept = true;
 
-  const try_check = (value, type, repr_value, repr_type) => {
-    try {
-      //check(value, type);
-    } catch (e) {
-      console.error(`Manifest.${repr_value} must be of type ${repr_type}`);
-      manifest_accept = false;
-    }
-  };
-
-  try_check(name, String, "name", "String");
-  try_check(version, String, "version", "String");
-  try_check(dependsOn, [String], "dependsOn", "[String]");
+  manifest_accept &= check(name, String, "Manifest.name", "String");
+  manifest_accept &= check(version, String, "Manifest.version", "String");
+  manifest_accept &= check(
+    dependsOn,
+    [String],
+    "Manifest.dependsOn",
+    "[String]"
+  );
 
   return manifest_accept;
 };
@@ -40,18 +48,12 @@ export const check_manifest = ({ name, version, dependsOn }) => {
 export const check_plugin = (plugin) => {
   let plugin_accept = true;
 
-  const try_check = (value, type_checker, repr_value, repr_type) => {
-    try {
-      if (!type_checker(value)) {
-        throw new Error();
-      }
-    } catch (e) {
-      console.error(`Plugin.${repr_value} must be of type ${repr_type}`);
-      plugin_accept = false;
-    }
-  };
-
-  try_check(plugin.loadPlugin, isFunction, "loadPlugin", "Function");
+  plugin_accept &= check(
+    plugin.loadPlugin,
+    Function,
+    "Plugin.loadPlugin",
+    "Function"
+  );
 
   return plugin_accept;
 };

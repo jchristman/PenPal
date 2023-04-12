@@ -1,4 +1,4 @@
-import PenPal from "PenPal";
+import PenPal from "@penpal/core";
 import { check, Match } from "meteor/check";
 import { dockerExec, dockerBuild, dockerRun } from "./docker.js";
 

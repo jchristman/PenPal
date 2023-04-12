@@ -1,11 +1,11 @@
-import PenPal from "./penpal";
+import PenPal from "./penpal/server.js";
 import _ from "lodash";
 
 import startGraphQLServer from "./graphql-server.js";
 
 // Load all plugins (after registrations are complete)
-const { plugins_types, plugins_resolvers, plugins_buildLoaders } =
-  await PenPal.loadPlugins();
+//const { plugins_types, plugins_resolvers, plugins_buildLoaders } =
+//   await PenPal.loadPlugins();
 
 // Startup Hooks
 // FIXME

@@ -10,5 +10,16 @@
     ],
     "@babel/preset-react"
   ],
-  "plugins": []
+  "plugins": [
+    [
+      "module-resolver",
+      {
+        "root": ["."],
+        "alias": {
+          "@penpal/common": "./src/common/common.js",
+          "@penpal/core": "./src/server/penpal/server.js"
+        }
+      }
+    ]
+  ]
 }

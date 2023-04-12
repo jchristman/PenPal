@@ -1,4 +1,4 @@
-import PenPal from "PenPal";
+import PenPal from "@penpal/core";
 import { Mongo } from "meteor/mongo";
 import _ from "lodash";
 

@@ -1,4 +1,4 @@
-import PenPal from "PenPal";
+import PenPal from "@penpal/core";
 
 const buildNode = () =>
   PenPal.N8n.NodeBuilder()

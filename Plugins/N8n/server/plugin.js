@@ -1,6 +1,6 @@
 import { types, resolvers, loaders } from "./graphql/";
 import _ from "lodash";
-import PenPal from "PenPal";
+import PenPal from "@penpal/core";
 
 import { name as PLUGIN_NAME } from "./manifest.json";
 import startN8nServer from "./n8n/n8n.js";

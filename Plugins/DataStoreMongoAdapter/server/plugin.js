@@ -1,4 +1,4 @@
-import PenPal from "PenPal";
+import PenPal from "@penpal/core";
 import MongoAdapter from "./adapter.js";
 import { types, resolvers, loaders } from "./graphql";
 

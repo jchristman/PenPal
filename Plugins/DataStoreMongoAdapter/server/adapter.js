@@ -1,4 +1,4 @@
-import PenPal from "PenPal";
+import PenPal from "@penpal/core";
 import { Mongo } from "meteor/mongo";
 import { Random } from "meteor/random";
 import { check, Match } from "meteor/check";

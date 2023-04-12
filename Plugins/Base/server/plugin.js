@@ -1,5 +1,5 @@
 import { types, resolvers, loaders } from "./graphql";
-import PenPal from "PenPal";
+import PenPal from "@penpal/core";
 
 PenPal.Test = {};
 

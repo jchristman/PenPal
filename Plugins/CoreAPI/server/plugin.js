@@ -1,5 +1,5 @@
 import _ from "lodash";
-import PenPal from "PenPal";
+import PenPal from "@penpal/core";
 import DataLoader from "dataloader";
 import stable_stringify from "fast-json-stable-stringify";
 
