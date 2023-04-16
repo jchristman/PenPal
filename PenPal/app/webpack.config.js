@@ -21,6 +21,10 @@ module.exports = {
           },
         },
       },
+      {
+        test: /\.css$/,
+        use: ["style-loader", "css-loader"],
+      },
     ],
   },
   plugins: [
@@ -33,8 +37,8 @@ module.exports = {
   resolve: {
     alias: {
       "@penpal/core": "penpal/client.js", // Relative to './src/client' root
-      "@penpal/plugins": "./common.js", // Relative to './src/common'
-      "@penpal/common": "plugins-loader.js", // Relative to '../plugins'
+      "@penpal/common": "common.js", // Relative to './src/common'
+      "@penpal/plugins": "plugins-loader.js", // Relative to '../plugins'
     },
     roots: [path.resolve("."), path.resolve("../plugins")],
     modules: [

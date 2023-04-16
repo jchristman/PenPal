@@ -1,10 +1,10 @@
 import React from "react";
 
-import { Components } from "PenPal";
+import { Components } from "@penpal/core";
 import { SetupProviders } from "stories/common.js";
 
-import Container from "@material-ui/core/Container";
-import Grid from "@material-ui/core/Grid";
+import Container from "@mui/material/Container";
+import Grid from "@mui/material/Grid";
 import DesktopWindowsIcon from "@mui/icons-material/DesktopWindows";
 import AccountTreeIcon from "@mui/icons-material/AccountTree";
 

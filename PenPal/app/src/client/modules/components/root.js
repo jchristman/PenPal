@@ -1,14 +1,25 @@
 import React, { useState, useEffect } from "react";
-import { Components, registerComponent } from "PenPal";
+import { Components, registerComponent } from "@penpal/core";
 import { BrowserRouter } from "react-router-dom";
 import { SnackbarProvider } from "notistack";
 import { ApolloProvider } from "@apollo/client";
-import { MuiPickersUtilsProvider } from "@material-ui/pickers";
+import { ThemeProvider, createTheme } from "@mui/material/styles";
+//import { MuiPickersUtilsProvider } from "@mui/lab";
 import moment from "moment";
 import MomentUtils from "@date-io/moment";
 moment.locale("en");
 
+function requireAll(r) {
+  r.keys().forEach(r);
+}
+requireAll(require.context("./cc-icons", true, /\.js$/));
+requireAll(require.context("./common", true, /\.js$/));
+requireAll(require.context("./layout", true, /\.js$/));
+requireAll(require.context("./pages", true, /\.js$/));
+
 import apolloInit from "./apollo-init.js";
+
+const theme = createTheme();
 
 const removeLoadingDiv = () => {
   document.getElementById("loading").remove();
@@ -31,11 +42,7 @@ const Root = () => {
       <BrowserRouter>
         {loading ? null : (
           <ApolloProvider client={apolloClient}>
-            <MuiPickersUtilsProvider
-              libInstance={moment}
-              utils={MomentUtils}
-              locale="en"
-            >
+            <ThemeProvider theme={theme}>
               <Components.ErrorBoundary>
                 <Components.IntrospectionProvider>
                   <Components.AccountProvider>
@@ -45,7 +52,7 @@ const Root = () => {
                   </Components.AccountProvider>
                 </Components.IntrospectionProvider>
               </Components.ErrorBoundary>
-            </MuiPickersUtilsProvider>
+            </ThemeProvider>
           </ApolloProvider>
         )}
       </BrowserRouter>

@@ -1,12 +1,12 @@
 import _ from "lodash";
 import {
   IntrospectionFragmentMatcher,
-  InMemoryCache
+  InMemoryCache,
 } from "@apollo/client/cache";
 import { ApolloClient, ApolloLink } from "@apollo/client";
 import { BatchHttpLink } from "@apollo/client/link/batch-http";
 
-const graphql_loc = "http://localhost:3000";
+const graphql_loc = "http://localhost:3001";
 const introspect_schema = async () => {
   const result = await fetch(`${graphql_loc}/graphql`, {
     method: "POST",
@@ -25,8 +25,8 @@ const introspect_schema = async () => {
             }
           }
         }
-      `
-    })
+      `,
+    }),
   });
 
   const result_json = await result.json();
@@ -102,11 +102,11 @@ const apolloInit = async () => {
               }
 
               return existing;
-            }
-          }
-        }
-      }
-    }
+            },
+          },
+        },
+      },
+    },
   });
 
   const auth_link = new ApolloLink((operation, forward) => {
@@ -124,11 +124,13 @@ const apolloInit = async () => {
     return forward(operation);
   });
 
-  const batch_link = new BatchHttpLink();
+  const batch_link = new BatchHttpLink({
+    uri: `${graphql_loc}/graphql`,
+  });
 
   const apollo_client = new ApolloClient({
     cache,
-    link: ApolloLink.from([auth_link, batch_link])
+    link: ApolloLink.from([auth_link, batch_link]),
   });
 
   return apollo_client;

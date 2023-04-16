@@ -10,16 +10,18 @@ import _ from "lodash";
 const app = express();
 const port = 3001;
 
-app.listen(port, () => console.log(`Server listening on port ${port}`));
+app.listen(port, () => console.log(`[+] Server listening on port ${port}`));
 
-import { types, resolvers, buildLoaders } from "./graphql";
+import { loadGraphQLFiles, resolvers, buildLoaders } from "./graphql";
 
-const startGraphQLServer = (
+const startGraphQLServer = async (
   plugins_types = {},
   plugins_resolvers = {},
   plugins_buildLoaders = () => null
 ) => {
   console.log("[.] Starting GraphQL Server");
+  console.log("[.] Loading GraphQL Files...");
+  const types = await loadGraphQLFiles();
   const _resolvers = _.merge(resolvers, plugins_resolvers);
   const _typeDefs = mergeTypeDefs([types, plugins_types]);
 
@@ -49,23 +51,25 @@ const startGraphQLServer = (
       loaders = _.extend(loaders, buildLoaders());
       loaders = _.extend(loaders, plugins_buildLoaders());
 
-      const user = await getUser(req.headers.authorization_token);
-      if (user !== undefined) {
-        user.id = user._id;
-        await loaders.webappUsersLoader.prime(user.id, user);
-      }
+      //const user = await getUser(req.headers.authorization_token);
+      //if (user !== undefined) {
+      //  user.id = user._id;
+      //  await loaders.webappUsersLoader.prime(user.id, user);
+      //}
 
       // FIXME
       //const PenPalCachingAPI = PenPal.API.CachingAPI();
 
       return {
-        user: user,
+        //user: user,
         loaders,
         // FIXME
         //PenPalCachingAPI
       };
     },
   });
+
+  await server.start();
 
   // Replace with Express
   server.applyMiddleware({

@@ -1,5 +1,5 @@
 import React from "react";
-import { Components, registerComponent } from "PenPal";
+import { Components, registerComponent } from "@penpal/core";
 import {
   Avatar,
   Box,
@@ -9,7 +9,7 @@ import {
   Typography,
   colors,
   makeStyles,
-} from "@material-ui/core";
+} from "@mui/material";
 import ArrowUpwardIcon from "@mui/icons-material/ArrowUpward";
 import CheckBoxOutlineBlankIcon from "@mui/icons-material/CheckBoxOutlineBlank";
 import cx from "classnames";

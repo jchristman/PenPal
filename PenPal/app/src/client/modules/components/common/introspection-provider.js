@@ -1,5 +1,5 @@
 import React, { createContext, useContext, useState, useEffect } from "react";
-import { Components, registerComponent, registerHook } from "PenPal";
+import { Components, registerComponent, registerHook } from "@penpal/core";
 import { useQuery } from "@apollo/client";
 
 import IntrospectionQuery from "./introspection-provider-gql.js";

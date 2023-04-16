@@ -1,6 +1,6 @@
 import React from "react";
 
-import { Components } from "PenPal";
+import { Components } from "@penpal/core";
 import { SetupProviders } from "stories/common.js";
 
 export const NewCustomerForm = () => (

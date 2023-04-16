@@ -1,5 +1,5 @@
 import React from "react";
-import { registerComponent, Components } from "PenPal";
+import { registerComponent, Components } from "@penpal/core";
 
 import SOURCE from "./windows-new-icon-src.js";
 const ICON_NAME = "Windows10Icon";

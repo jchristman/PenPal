@@ -1,7 +1,7 @@
 import React, { useState } from "react";
 import moment from "moment";
 
-import { Components } from "PenPal";
+import { Components } from "@penpal/core";
 import { SetupProviders } from "stories/common.js";
 
 export const Workflow = () => (

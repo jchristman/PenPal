@@ -1,6 +1,6 @@
 import React, { useState } from "react";
 
-import { Components } from "PenPal";
+import { Components } from "@penpal/core";
 import { SetupProviders } from "stories/common.js";
 import { project } from "./mocks/get-project-details.js";
 

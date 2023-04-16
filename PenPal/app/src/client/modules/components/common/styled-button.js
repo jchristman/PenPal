@@ -1,8 +1,8 @@
 import React, { useState } from "react";
-import { Components, registerComponent } from "PenPal";
+import { Components, registerComponent } from "@penpal/core";
 import _ from "lodash";
-import { makeStyles, useTheme } from "@material-ui/core/styles";
-import Button from "@material-ui/core/Button";
+import { makeStyles, useTheme } from "@mui/styles";
+import Button from "@mui/material/Button";
 
 import { borderRadius } from "./styled-common.js";
 

@@ -1,12 +1,12 @@
 import React, { useState, useEffect } from "react";
-import { Components, registerComponent } from "PenPal";
+import { Components, registerComponent } from "@penpal/core";
 import _ from "lodash";
-import { makeStyles, useTheme } from "@material-ui/core/styles";
-import { indigo } from "@material-ui/core/colors";
-import Select from "@material-ui/core/Select";
-import Divider from "@material-ui/core/Divider";
-import MenuItem from "@material-ui/core/MenuItem";
-import FormControl from "@material-ui/core/FormControl";
+import { makeStyles, useTheme } from "@mui/styles";
+import { indigo } from "@mui/material/colors";
+import Select from "@mui/material/Select";
+import Divider from "@mui/material/Divider";
+import MenuItem from "@mui/material/MenuItem";
+import FormControl from "@mui/material/FormControl";
 import ExpandMoreIcon from "@mui/icons-material/ExpandMore";
 import cx from "classnames";
 

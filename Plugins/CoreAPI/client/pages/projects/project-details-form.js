@@ -1,6 +1,6 @@
 import React, { useState } from "react";
-import { Components, registerComponent } from "PenPal";
-import { makeStyles, useTheme } from "@material-ui/core/styles";
+import { Components, registerComponent } from "@penpal/core";
+import { makeStyles, useTheme } from "@mui/styles";
 
 const useStyles = makeStyles((theme) => ({
   root: {

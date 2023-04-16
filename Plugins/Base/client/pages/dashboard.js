@@ -1,14 +1,19 @@
 import React, { useState, useEffect } from "react";
-import { Components, registerComponent, Hooks, GraphQLUtils } from "PenPal";
+import {
+  Components,
+  registerComponent,
+  Hooks,
+  GraphQLUtils,
+} from "@penpal/core";
 import _ from "lodash";
 import { useSnackbar } from "notistack";
 import { useQuery } from "@apollo/client";
 
-import Container from "@material-ui/core/Container";
-import Grid from "@material-ui/core/Grid";
-import Paper from "@material-ui/core/Paper";
-import Select from "@material-ui/core/Select";
-import { makeStyles } from "@material-ui/core/styles";
+import Container from "@mui/material/Container";
+import Grid from "@mui/material/Grid";
+import Paper from "@mui/material/Paper";
+import Select from "@mui/material/Select";
+import { makeStyles } from "@mui/styles";
 
 import GetDashboardablePluginsQuery from "./dashboard/queries/get-dashboardable-plugins.js";
 

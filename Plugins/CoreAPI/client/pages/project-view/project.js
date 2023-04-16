@@ -1,5 +1,5 @@
 import React, { useState, useEffect } from "react";
-import { Components, registerComponent } from "PenPal";
+import { Components, registerComponent } from "@penpal/core";
 import { useParams } from "react-router-dom";
 
 const Project = (props) => {

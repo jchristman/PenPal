@@ -1,4 +1,4 @@
-import { registerRoute } from "PenPal";
+import { registerRoute } from "@penpal/core";
 
 import AccountTreeIcon from "@mui/icons-material/AccountTree";
 

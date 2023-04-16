@@ -1,6 +1,5 @@
 import React, { createContext, useContext, useState, useEffect } from "react";
-import { Components, registerComponent, registerHook } from "PenPal";
-import { Accounts } from "meteor/accounts-base";
+import { Components, registerComponent, registerHook } from "@penpal/core";
 import { useMutation, useQuery, useApolloClient } from "@apollo/client";
 import { useSnackbar } from "notistack";
 
@@ -19,7 +18,9 @@ const AccountProvider = ({ children }) => {
   const { enqueueSnackbar } = useSnackbar();
   const apollo_client = useApolloClient();
   const [authTokenLoaded, setAuthTokenLoaded] = useState(
-    Accounts._storedLoginToken() !== null
+    //Accounts._storedLoginToken() !== null
+    // TODO: fix auth
+    true
   ); // Needed to avoid a race condition on cache writing
 
   const {

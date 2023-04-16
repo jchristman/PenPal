@@ -1,7 +1,7 @@
 import React from "react";
-import { Components, registerComponent } from "PenPal";
+import { Components, registerComponent } from "@penpal/core";
 import _ from "lodash";
-import Grid from "@material-ui/core/Grid";
+import Grid from "@mui/material/Grid";
 import moment from "moment";
 
 const DashboardTrendingStatistic = ({ title, value, delta, since }) => (

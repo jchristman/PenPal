@@ -4,6 +4,6 @@ export const check = (data, arg) => {
   if (_check.function(arg)) {
     return arg(data);
   } else {
-    return check.instance(data, arg);
+    return _check.instance(data, arg);
   }
 };

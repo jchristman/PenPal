@@ -1,5 +1,5 @@
 import React from "react";
-import { registerComponent, Components } from "PenPal";
+import { registerComponent, Components } from "@penpal/core";
 import _ from "lodash";
 
 const _check = (os_name, query) => _.includes(os_name, query);

@@ -1,15 +1,20 @@
 import React, { useState, useEffect } from "react";
-import { Components, registerComponent, Hooks, GraphQLUtils } from "PenPal";
+import {
+  Components,
+  registerComponent,
+  Hooks,
+  GraphQLUtils,
+} from "@penpal/core";
 import _ from "lodash";
-import Grid from "@material-ui/core/Grid";
-import Paper from "@material-ui/core/Paper";
-import Select from "@material-ui/core/Select";
-import MenuItem from "@material-ui/core/MenuItem";
-import FormControl from "@material-ui/core/FormControl";
+import Grid from "@mui/material/Grid";
+import Paper from "@mui/material/Paper";
+import Select from "@mui/material/Select";
+import MenuItem from "@mui/material/MenuItem";
+import FormControl from "@mui/material/FormControl";
 import ExpandMoreIcon from "@mui/icons-material/ExpandMore";
-import Button from "@material-ui/core/Button";
-import { makeStyles } from "@material-ui/core/styles";
-import { indigo } from "@material-ui/core/colors";
+import Button from "@mui/material/Button";
+import { makeStyles } from "@mui/styles";
+import { indigo } from "@mui/material/colors";
 import cx from "classnames";
 
 import { useQuery, useMutation } from "@apollo/client";

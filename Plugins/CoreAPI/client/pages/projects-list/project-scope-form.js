@@ -1,12 +1,12 @@
 import React, { useState } from "react";
-import { Components, registerComponent, Regex } from "PenPal";
+import { Components, registerComponent, Regex } from "@penpal/core";
 import _ from "lodash";
 import cx from "classnames";
-import { makeStyles, useTheme } from "@material-ui/core/styles";
-import { grey, indigo } from "@material-ui/core/colors";
+import { makeStyles, useTheme } from "@mui/styles";
+import { grey, indigo } from "@mui/material/colors";
 
-import Chip from "@material-ui/core/Chip";
-import Divider from "@material-ui/core/Divider";
+import Chip from "@mui/material/Chip";
+import Divider from "@mui/material/Divider";
 
 const useStyles = makeStyles((theme) => ({
   root: {

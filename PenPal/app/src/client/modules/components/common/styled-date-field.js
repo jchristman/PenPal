@@ -1,6 +1,6 @@
 import React, { useState } from "react";
-import { Components, registerComponent } from "PenPal";
-import { KeyboardDatePicker } from "@material-ui/pickers";
+import { Components, registerComponent } from "@penpal/core";
+import { DesktopDatePicker } from "@mui/lab";
 
 const StyledDateField = ({
   margin = "normal",
@@ -11,7 +11,7 @@ const StyledDateField = ({
   ...rest
 }) => {
   return (
-    <KeyboardDatePicker
+    <DesktopDatePicker
       autoOk
       variant={variant}
       format={format}

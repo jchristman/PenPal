@@ -1,4 +1,4 @@
-import { registerRoute } from "PenPal";
+import { registerRoute } from "@penpal/core";
 
 import HomeIcon from "@mui/icons-material/Home";
 import SettingsInputSvideoIcon from "@mui/icons-material/SettingsInputSvideo";

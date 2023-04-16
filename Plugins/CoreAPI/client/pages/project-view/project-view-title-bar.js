@@ -1,8 +1,8 @@
 import React, { useState, useEffect } from "react";
-import { Components, registerComponent } from "PenPal";
-import { makeStyles } from "@material-ui/core/styles";
-import Paper from "@material-ui/core/Paper";
-import IconButton from "@material-ui/core/IconButton";
+import { Components, registerComponent } from "@penpal/core";
+import { makeStyles } from "@mui/styles";
+import Paper from "@mui/material/Paper";
+import IconButton from "@mui/material/IconButton";
 import OpenInNewIcon from "@mui/icons-material/OpenInNew";
 
 const useStyles = makeStyles((theme) => ({

@@ -1,16 +1,16 @@
 import React, { useState } from "react";
-import { Components, registerComponent } from "PenPal";
+import { Components, registerComponent } from "@penpal/core";
 import _ from "lodash";
 import cx from "classnames";
 
-import { makeStyles, useTheme } from "@material-ui/core/styles";
-import { grey, indigo } from "@material-ui/core/colors";
-import Divider from "@material-ui/core/Divider";
-import Table from "@material-ui/core/Table";
-import TableBody from "@material-ui/core/TableBody";
-import TableCell from "@material-ui/core/TableCell";
-import TableRow from "@material-ui/core/TableRow";
-import TableContainer from "@material-ui/core/TableContainer";
+import { makeStyles, useTheme } from "@mui/styles";
+import { grey, indigo } from "@mui/material/colors";
+import Divider from "@mui/material/Divider";
+import Table from "@mui/material/Table";
+import TableBody from "@mui/material/TableBody";
+import TableCell from "@mui/material/TableCell";
+import TableRow from "@mui/material/TableRow";
+import TableContainer from "@mui/material/TableContainer";
 
 import { useSnackbar } from "notistack";
 import { useMutation } from "@apollo/client";

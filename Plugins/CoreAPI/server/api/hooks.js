@@ -1,4 +1,3 @@
-import { Meteor } from "meteor/meteor";
 import _ from "lodash";
 
 // Hooks for getting IDs
@@ -29,10 +28,7 @@ export function registerHook(target, trigger, id, func) {
   }
 
   if (hook_location === null) {
-    throw new Meteor.Error(
-      404,
-      `${target}.${trigger} trigger not yet implemented`
-    );
+    throw new Error(`[404] ${target}.${trigger} trigger not yet implemented`);
   }
 
   hook_location.push(hook);

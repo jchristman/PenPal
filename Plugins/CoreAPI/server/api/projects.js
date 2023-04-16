@@ -55,7 +55,7 @@ export const insertProjects = async (projects) => {
       });
 
       if (customer?.id === undefined) {
-        throw new Meteor.Error(404, `Customer ${project.customer} not found`);
+        throw new Error(`[404] Customer ${project.customer} not found`);
       }
 
       const _project = _.merge(default_project, project);

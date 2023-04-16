@@ -2,10 +2,11 @@ FROM debian:bullseye-slim
 
 ARG UID=1000
 ARG PLATFORM=x86_64
+ARG IS_SERVER=0
 
 # Last updated on 01-19-2021
 # https://github.com/nodesource/distributions#installation-instructions
-ARG NODE_VERSION=17
+ARG NODE_VERSION=19
 # https://github.com/tianon/gosu/releases
 ARG GOSU_VERSION=1.14
 # https://github.com/tianon/gosu#installation
@@ -51,26 +52,7 @@ RUN chown -R node:node /penpal
 
 # Install npm-recursive-install for merging of package.json dependencies
 RUN npm install -g recursive-install
-
-# Now install PenPal dependencies
-# Make /penpal the working directory
-WORKDIR /penpal/app
-
-# Now copy all of the src into /app
-COPY --chown=node:node app/ /penpal/app
-USER node
-RUN npm install -g npm
-RUN npm install
-
-# Export ports
-RUN export BIND_IP=0.0.0.0
-EXPOSE 3000
-
-# Drop back to root. The docker entrypoint will drop to node user privileges
-USER root
-
-# Uncomment if you need node to have sudo privs and then rebuild
-#RUN echo 'node ALL=(ALL) NOPASSWD: ALL' >> /etc/sudoers
+RUN npm install -g npm@9.6.4
 
 # For `docker run CONTAINER_ID`
 COPY ./docker-entrypoint.sh /usr/bin/docker-entrypoint.sh

@@ -1,0 +1,22 @@
+FROM penpal/base
+
+# Now install PenPal dependencies
+# Make /penpal the working directory
+WORKDIR /penpal/app
+
+# Now copy all of the src into /app
+COPY --chown=node:node app/ /penpal/app
+
+RUN mv package-frontend.json package.json
+RUN rm -f nodemon.config.json package-server.json .babelrc
+
+USER node
+RUN rm -rf node_modules
+#RUN npm install
+
+# Export ports
+RUN export BIND_IP=0.0.0.0
+EXPOSE 3000
+
+# Drop back to root. The docker entrypoint will drop to node user privileges
+USER root

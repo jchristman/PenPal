@@ -1,5 +1,5 @@
 import React from "react";
-import { Components, registerComponent } from "PenPal";
+import { Components, registerComponent } from "@penpal/core";
 import CalendarViewDayIcon from "@mui/icons-material/CalendarViewDay";
 
 const ProjectsViewTimelineView = ({ projects }) => {

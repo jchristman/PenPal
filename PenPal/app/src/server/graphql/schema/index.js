@@ -1,10 +1,17 @@
 import { mergeTypeDefs } from "@graphql-tools/merge";
+const { loadFiles } = require("@graphql-tools/load-files");
+const { join } = require("path");
 
-import mutations from "./mutations";
-import queries from "./queries";
-import webapp_typeDefs from "./webapp.graphql";
-import typeDefs from "./schema.graphql";
+const subdir_graphql_files = join(__dirname, "./**/*.graphql");
+const graphql_files = join(__dirname, "./*.graphql");
 
-const types = [mutations, queries, typeDefs, webapp_typeDefs];
+const loadGraphQLFiles = async () => {
+  const typeDefs = [
+    ...(await loadFiles(subdir_graphql_files)),
+    ...(await loadFiles(graphql_files)),
+  ];
 
-export default mergeTypeDefs(types);
+  return mergeTypeDefs(typeDefs);
+};
+
+export default loadGraphQLFiles;

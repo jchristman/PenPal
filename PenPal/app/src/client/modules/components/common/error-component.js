@@ -1,8 +1,8 @@
 import React from "react";
-import { Components, registerComponent } from "PenPal";
+import { Components, registerComponent } from "@penpal/core";
 
-import { makeStyles } from "@material-ui/core/styles";
-import Paper from "@material-ui/core/Paper";
+import { makeStyles } from "@mui/styles";
+import Paper from "@mui/material/Paper";
 import ErrorOutlineIcon from "@mui/icons-material/ErrorOutline";
 
 const useStyles = makeStyles({

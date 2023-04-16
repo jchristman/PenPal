@@ -1,7 +1,7 @@
 import React, { useState, useEffect } from "react";
-import { Components, registerComponent } from "PenPal";
+import { Components, registerComponent } from "@penpal/core";
 import { useSnackbar } from "notistack";
-import { makeStyles } from "@material-ui/core/styles";
+import { makeStyles } from "@mui/styles";
 
 import { useQuery } from "@apollo/client";
 import GetProjectDetails from "./queries/get-project-details.js";

@@ -1,4 +1,3 @@
-import { Meteor } from "meteor/meteor";
 import PenPal from "@penpal/core";
 
 const getXablePlugins = (settings_field) => {
@@ -17,7 +16,7 @@ const getXablePlugins = (settings_field) => {
 const getPluginXSettings = (plugin_id, settings_field) => {
   const plugin = PenPal.LoadedPlugins[plugin_id];
   if (plugin === undefined) {
-    throw new Meteor.Error(404, "Plugin not found");
+    throw new Error("[404] Plugin not found");
   }
   return plugin.settings?.[settings_field];
 };

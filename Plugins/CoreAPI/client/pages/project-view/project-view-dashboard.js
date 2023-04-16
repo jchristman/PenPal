@@ -1,7 +1,7 @@
 import React, { useState, useEffect } from "react";
-import { Components, registerComponent } from "PenPal";
-import { makeStyles } from "@material-ui/core/styles";
-import Grid from "@material-ui/core/Grid";
+import { Components, registerComponent } from "@penpal/core";
+import { makeStyles } from "@mui/styles";
+import Grid from "@mui/material/Grid";
 import DesktopWindowsIcon from "@mui/icons-material/DesktopWindows";
 
 const useStyles = makeStyles((theme) => ({}));

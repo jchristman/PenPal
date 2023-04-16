@@ -1,10 +1,10 @@
 import React, { useState } from "react";
-import { Components, registerComponent, Hooks } from "PenPal";
-import { makeStyles, useTheme } from "@material-ui/core/styles";
-import { grey, indigo } from "@material-ui/core/colors";
-import TextField from "@material-ui/core/TextField";
-import Divider from "@material-ui/core/Divider";
-import MenuItem from "@material-ui/core/MenuItem";
+import { Components, registerComponent, Hooks } from "@penpal/core";
+import { makeStyles, useTheme } from "@mui/styles";
+import { grey, indigo } from "@mui/material/colors";
+import TextField from "@mui/material/TextField";
+import Divider from "@mui/material/Divider";
+import MenuItem from "@mui/material/MenuItem";
 import cx from "classnames";
 
 import { useMutation, useQuery, useApolloClient } from "@apollo/client";

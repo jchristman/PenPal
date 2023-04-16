@@ -1,9 +1,9 @@
 import React, { useState } from "react";
-import { Components, registerComponent } from "PenPal";
+import { Components, registerComponent } from "@penpal/core";
 import _ from "lodash";
-import { makeStyles, useTheme } from "@material-ui/core/styles";
-import { grey, indigo } from "@material-ui/core/colors";
-import TextField from "@material-ui/core/TextField";
+import { makeStyles, useTheme } from "@mui/styles";
+import { grey, indigo } from "@mui/material/colors";
+import TextField from "@mui/material/TextField";
 
 import { borderRadius, textFieldWidth } from "./styled-common.js";
 

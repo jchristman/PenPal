@@ -1,6 +1,5 @@
 import React from "react";
-import { Meteor } from "meteor/meteor";
-import { Components, registerComponent } from "PenPal";
+import { Components, registerComponent } from "@penpal/core";
 import { serializeError } from "serialize-error";
 
 class ErrorBoundary extends React.Component {
@@ -22,18 +21,19 @@ class ErrorBoundary extends React.Component {
   componentDidCatch(error, errorInfo) {
     // You can also log the error to an error reporting service
     const serialized_error = serializeError(error);
-    Meteor.call(
-      "logErrorToServerConsole",
-      serialized_error,
-      errorInfo,
-      (err, res) => {
-        this.setState({
-          err_number: res,
-          err_message: serialized_error.message,
-          err_stack: serialized_error.stack,
-        });
-      }
-    );
+    //Meteor.call(
+    //  "logErrorToServerConsole",
+    //  serialized_error,
+    //  errorInfo,
+    //  (err, res) => {
+    //    this.setState({
+    //      err_number: res,
+    //      err_message: serialized_error.message,
+    //      err_stack: serialized_error.stack,
+    //    });
+    //  }
+    //);
+    console.error(error);
   }
 
   render() {

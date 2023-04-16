@@ -1,22 +1,33 @@
 version: "2"
 services:
-  penpal-frontend:
+  penpal-base:
     build: ./PenPal
+    image: penpal/base
+    pull_policy: never
+
+  penpal-frontend:
+    build:
+      context: ./PenPal
+      dockerfile: ./Dockerfile-frontend
+    pull_policy: never
     volumes:
-      - penpal-npm-cache:/home/node/.npm
+      - penpal-frontend-npm-cache:/home/node/.npm
     ports:
       - "3000:3000"
-    command: npm run dev-serve-frontend
+    command: npm run frontend
     networks:
       - public
 
   penpal-server:
-    build: ./PenPal
+    build:
+      context: ./PenPal
+      dockerfile: ./Dockerfile-server
+    pull_policy: never
     volumes:
-      - penpal-npm-cache:/home/node/.npm
+      - penpal-server-npm-cache:/home/node/.npm
     ports:
-      - "3000:3000"
-    command: npm run dev-run-server
+      - "3001:3001"
+    command: npm run server
     networks:
       - public
 
@@ -28,7 +39,9 @@ services:
       - "1880:1880"
 
 volumes:
-  penpal-npm-cache:
+  penpal-frontend-npm-cache:
+    external: false
+  penpal-server-npm-cache:
     external: false
   node-red-data:
     external: false

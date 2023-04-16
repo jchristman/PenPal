@@ -1,5 +1,4 @@
-import { Meteor } from "meteor/meteor";
-import { Constants } from "PenPal";
+import { Constants } from "@penpal/common";
 import _ from "lodash";
 
 import { restrictToRole, restrictToLoggedIn } from "./common.js";
@@ -25,7 +24,8 @@ export default {
         break;
     }
 
-    let users = await Meteor.users.find(query).fetch();
+    // TODO: Add new authentication
+    let users = []; //await Meteor.users.find(query).fetch();
     users = users.map(({ _id, ...rest }) => ({ _id, id: _id, ...rest }));
 
     // TODO: Re-implement loaders

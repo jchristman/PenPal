@@ -1,5 +1,5 @@
 import PenPal from "@penpal/core";
-import { check, Match } from "meteor/check";
+import { check } from "@penpal/common";
 
 const check_n8n = (n8n) => {
   let n8n_accept = true;
@@ -22,12 +22,7 @@ const check_n8n = (n8n) => {
     } else {
       for (let i = 0; i < n8n.workflow_nodes.length; i++) {
         const nodeBuilder = n8n.workflow_nodes[i];
-        try_check(
-          nodeBuilder,
-          Match.Where(PenPal.Utils.isFunction),
-          `workflow_nodes.${i}`,
-          "Function"
-        );
+        try_check(nodeBuilder, Function, `workflow_nodes.${i}`, "Function");
       }
     }
   }
@@ -39,12 +34,7 @@ const check_n8n = (n8n) => {
     } else {
       for (let i = 0; i < n8n.trigger_nodes.length; i++) {
         const nodeBuilder = n8n.trigger_nodes[i];
-        try_check(
-          nodeBuilder,
-          Match.Where(PenPal.Utils.isFunction),
-          `trigger_nodes.${i}`,
-          "Function"
-        );
+        try_check(nodeBuilder, Function, `trigger_nodes.${i}`, "Function");
       }
     }
   }

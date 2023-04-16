@@ -3,35 +3,35 @@ import {
   Components,
   registerComponent,
   Hooks,
-  Routes,
+  Routes as _Routes,
   getRoute,
   Constants,
   hasRole,
-} from "PenPal";
-import { makeStyles, useTheme } from "@material-ui/core/styles";
-import CssBaseline from "@material-ui/core/CssBaseline";
-import Drawer from "@material-ui/core/Drawer";
-import AppBar from "@material-ui/core/AppBar";
-import Toolbar from "@material-ui/core/Toolbar";
-import List from "@material-ui/core/List";
-import ListItem from "@material-ui/core/ListItem";
-import ListItemIcon from "@material-ui/core/ListItemIcon";
-import ListItemText from "@material-ui/core/ListItemText";
-import Button from "@material-ui/core/Button";
-import Typography from "@material-ui/core/Typography";
-import Divider from "@material-ui/core/Divider";
-import IconButton from "@material-ui/core/IconButton";
-import Badge from "@material-ui/core/Badge";
-import Container from "@material-ui/core/Container";
-import Grid from "@material-ui/core/Grid";
-import Paper from "@material-ui/core/Paper";
+} from "@penpal/core";
+import { makeStyles, useTheme } from "@mui/styles";
+import CssBaseline from "@mui/material/CssBaseline";
+import Drawer from "@mui/material/Drawer";
+import AppBar from "@mui/material/AppBar";
+import Toolbar from "@mui/material/Toolbar";
+import List from "@mui/material/List";
+import ListItem from "@mui/material/ListItem";
+import ListItemIcon from "@mui/material/ListItemIcon";
+import ListItemText from "@mui/material/ListItemText";
+import Button from "@mui/material/Button";
+import Typography from "@mui/material/Typography";
+import Divider from "@mui/material/Divider";
+import IconButton from "@mui/material/IconButton";
+import Badge from "@mui/material/Badge";
+import Container from "@mui/material/Container";
+import Grid from "@mui/material/Grid";
+import Paper from "@mui/material/Paper";
 import MenuIcon from "@mui/icons-material/Menu";
 import ChevronLeftIcon from "@mui/icons-material/ChevronLeft";
 import NotificationsIcon from "@mui/icons-material/Notifications";
-import Backdrop from "@material-ui/core/Backdrop";
-import SpeedDial from "@material-ui/lab/SpeedDial";
-import SpeedDialIcon from "@material-ui/lab/SpeedDialIcon";
-import SpeedDialAction from "@material-ui/lab/SpeedDialAction";
+import Backdrop from "@mui/material/Backdrop";
+import SpeedDial from "@mui/lab/SpeedDial";
+import SpeedDialIcon from "@mui/lab/SpeedDialIcon";
+import SpeedDialAction from "@mui/lab/SpeedDialAction";
 import SettingsIcon from "@mui/icons-material/Settings";
 import CloseIcon from "@mui/icons-material/Close";
 import SupervisorAccountIcon from "@mui/icons-material/SupervisorAccount";
@@ -39,12 +39,12 @@ import AssignmentIcon from "@mui/icons-material/Assignment";
 
 import Clock from "react-live-clock";
 
-import useMediaQuery from "@material-ui/core/useMediaQuery";
+import useMediaQuery from "@mui/material/useMediaQuery";
 import { Link } from "react-router-dom";
 import cx from "classnames";
 
 import { matchPath } from "react-router";
-import { Switch, Route, useLocation } from "react-router-dom";
+import { Routes, Route, useLocation } from "react-router-dom";
 const { useAccount } = Hooks;
 
 const drawerWidth = 240;
@@ -213,7 +213,7 @@ const useStyles = makeStyles((theme) => ({
 const Layout = () => {
   const location = useLocation();
   let activeRoutePrettyName = "";
-  const routes = Routes.map((_route) => {
+  const routes = _Routes.map((_route) => {
     const route = _route.name === "" ? null : _route;
     if (!!matchPath(location.pathname, route?.path)) {
       activeRoutePrettyName = route.prettyName;
@@ -329,7 +329,7 @@ const Layout = () => {
         <div className={classes.appBarSpacer} />
         {isSm || !open ? null : <div className={classes.overlay} />}
         <div className={classes.container}>
-          <Switch>
+          <Routes>
             {routes.map((route) => {
               if (route === null) return null;
               const Component = Components[route.componentName];
@@ -339,7 +339,7 @@ const Layout = () => {
                 </Route>
               );
             })}
-          </Switch>
+          </Routes>
         </div>
       </main>
     </div>

@@ -1,5 +1,5 @@
 import React, { createContext, useContext, useState } from "react";
-import { Components, registerComponent, registerHook } from "PenPal";
+import { Components, registerComponent, registerHook } from "@penpal/core";
 import useInterval from "@use-it/interval";
 
 const SynchronizationContext = createContext({});

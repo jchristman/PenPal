@@ -1,7 +1,4 @@
-import PenPal from "@penpal/core";
-import { Mongo } from "meteor/mongo";
-import { Random } from "meteor/random";
-import { check, Match } from "meteor/check";
+import { check } from "@penpal/common";
 
 const MongoAdapter = {};
 MongoAdapter.MongoCollections = {};
@@ -25,13 +22,13 @@ const normalize_result = ({ _id = null, ...rest } = {}) => {
 
 const check_options = (options) => {
   const { first, after, last, before, pageSize, pageNumber, sort } = options;
-  check(first, Match.Maybe(Number));
-  check(after, Match.Maybe(String));
-  check(last, Match.Maybe(Number));
-  check(before, Match.Maybe(String));
-  check(pageSize, Match.Maybe(Number));
-  check(pageNumber, Match.Maybe(Number));
-  check(sort, Match.Maybe(Match.Where((x) => x === 1 || x === -1)));
+  check(first, Number);
+  check(after, String);
+  check(last, Number);
+  check(before, String);
+  check(pageSize, Number);
+  check(pageNumber, Number);
+  check(sort, (x) => x === 1 || x === -1);
 };
 
 // -----------------------------------------------------------------------
@@ -40,7 +37,9 @@ const check_options = (options) => {
 MongoAdapter.CreateStore = async (plugin_name, store_name) => {
   return (MongoAdapter.MongoCollections[
     collection_name(plugin_name, store_name)
-  ] = new Mongo.Collection(collection_name(plugin_name, store_name)));
+  ] = {});
+  // TODO: replace with Mongoose
+  //] = new Mongo.Collection(collection_name(plugin_name, store_name)));
 };
 
 MongoAdapter.DeleteStore = async (plugin_name, store_name) => {

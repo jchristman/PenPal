@@ -1,5 +1,5 @@
 import PenPal from "@penpal/core";
-import { check, Match } from "meteor/check";
+import { check } from "@penpal/common";
 import { dockerExec, dockerBuild, dockerRun } from "./docker.js";
 
 const check_docker = (docker) => {

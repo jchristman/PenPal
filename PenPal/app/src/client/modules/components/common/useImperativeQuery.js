@@ -1,5 +1,5 @@
 import React from "react";
-import { registerHook } from "PenPal";
+import { registerHook } from "@penpal/core";
 import { useApolloClient } from "@apollo/client";
 
 const useImperativeQuery = (query) => {
