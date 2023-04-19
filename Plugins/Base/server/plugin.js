@@ -1,10 +1,12 @@
-import { types, resolvers, loaders } from "./graphql";
+import { loadGraphQLFiles, resolvers, loaders } from "./graphql";
 import PenPal from "@penpal/core";
 
 PenPal.Test = {};
 
 const BasePlugin = {
-  loadPlugin() {
+  async loadPlugin() {
+    const types = await loadGraphQLFiles();
+
     return {
       graphql: {
         types,

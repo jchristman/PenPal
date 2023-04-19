@@ -6,7 +6,7 @@ services:
       - ./PenPal/app/static/:/penpal/app/static
       - ./PenPal/app/package-frontend.json:/penpal/app/package.json
       - ./PenPal/app/webpack.config.js:/penpal/app/webpack.config.js
-      - ./Plugins/:/penpal/plugins
+      - ./Plugins/:/penpal/app/plugins
     environment:
       - LOCAL_USER_ID=${LOCAL_USER_ID}
 
@@ -16,7 +16,7 @@ services:
       - ./PenPal/app/.babelrc:/penpal/app/.babelrc
       - ./PenPal/app/nodemon.config.json:/penpal/app/nodemon.config.json
       - ./PenPal/app/package-server.json:/penpal/app/package.json
-      - ./Plugins/:/penpal/plugins:consistent
+      - ./Plugins/:/penpal/app/plugins:consistent
       - /var/run/docker.sock:/var/run/docker.sock
     environment:
       - LOCAL_USER_ID=${LOCAL_USER_ID}

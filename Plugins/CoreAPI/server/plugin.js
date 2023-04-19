@@ -3,7 +3,7 @@ import PenPal from "@penpal/core";
 import DataLoader from "dataloader";
 import stable_stringify from "fast-json-stable-stringify";
 
-import { types, resolvers, loaders } from "./graphql";
+import { loadGraphQLFiles, resolvers, loaders } from "./graphql";
 import * as API from "./api/";
 import { mocks } from "./test/";
 
@@ -40,7 +40,7 @@ const settings = {
 };
 
 const CoreAPIPlugin = {
-  loadPlugin() {
+  async loadPlugin() {
     // Register API Hooks
     PenPal.API.Customers = {
       Get: API.getCustomer,
@@ -253,6 +253,8 @@ const CoreAPIPlugin = {
     PenPal.API.deleteHook = API.deleteHook;
 
     PenPal.Test.CoreAPI = { ...mocks };
+
+    const types = await loadGraphQLFiles();
 
     return {
       graphql: {

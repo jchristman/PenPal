@@ -1,11 +1,11 @@
-import { types, resolvers, loaders } from "./graphql";
+import { loadGraphQLFiles, resolvers, loaders } from "./graphql";
 import { SETTINGS_STORE } from "./constants.js";
 
 const settings = {
   configuration: {
     schema_root: "BurpsuiteProConfiguration",
     getter: "getBurpsuiteProConfiguration",
-    setter: "setBurpsuiteProConfiguration"
+    setter: "setBurpsuiteProConfiguration",
   },
   /*n8n: {
     displayName: "Burpsuite Pro",
@@ -29,21 +29,23 @@ const settings = {
   },*/
   datastores: [
     {
-      name: SETTINGS_STORE
-    }
-  ]
+      name: SETTINGS_STORE,
+    },
+  ],
 };
 
 const BurpsuiteProPlugin = {
-  loadPlugin() {
+  async loadPlugin() {
+    const types = await loadGraphQLFiles();
+
     return {
       graphql: {
         types,
         resolvers,
       },
-      settings
+      settings,
     };
-  }
+  },
 };
 
 export default BurpsuiteProPlugin;

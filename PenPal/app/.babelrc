@@ -7,7 +7,8 @@
         "root": ["."],
         "alias": {
           "@penpal/common": "./src/common/common.js",
-          "@penpal/core": "./src/server/penpal/server.js"
+          "@penpal/core": "./src/server/penpal/server.js",
+          "@penpal/plugins": "./plugins/plugins-loader.js"
         }
       }
     ]

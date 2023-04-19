@@ -1,5 +1,6 @@
 import _ from "lodash";
 import { mergeTypeDefs } from "@graphql-tools/merge";
+const { loadFiles } = require("@graphql-tools/load-files");
 import {
   Constants as _Constants,
   isFunction,
@@ -23,6 +24,14 @@ PenPal.Utils.Sleep = async (ms) =>
 
 PenPal.Utils.AsyncNOOP = async () => {
   await PenPal.Utils.Sleep(0);
+};
+
+PenPal.Utils.LoadGraphQLDirectories = async (paths) => {
+  let typeDefs = [];
+  for (let path of paths) {
+    typeDefs.push(...(await loadFiles(path)));
+  }
+  return mergeTypeDefs(typeDefs);
 };
 
 // ----------------------------------------------------------------------------

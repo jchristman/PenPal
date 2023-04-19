@@ -1,9 +1,12 @@
-import PenPal from "./penpal/server.js";
+import PenPal from "@penpal/core";
+import Plugins from "@penpal/plugins";
 import _ from "lodash";
 
 import startGraphQLServer from "./graphql-server.js";
 
 const run = async () => {
+  await Plugins.registerPlugins();
+
   // Load all plugins (after registrations are complete)
   //const { plugins_types, plugins_resolvers, plugins_buildLoaders } =
   //   await PenPal.loadPlugins();

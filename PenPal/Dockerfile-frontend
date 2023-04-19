@@ -12,7 +12,6 @@ RUN rm -f nodemon.config.json package-server.json .babelrc
 
 USER node
 RUN rm -rf node_modules
-#RUN npm install
 
 # Export ports
 RUN export BIND_IP=0.0.0.0

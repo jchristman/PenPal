@@ -1,4 +1,4 @@
 {
-  "watch": ["./src/server", "./src/common", "../plugins"],
+  "watch": ["./src/server", "./src/common", "./plugins"],
   "ext": "js"
 }

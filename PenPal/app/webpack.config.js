@@ -1,3 +1,4 @@
+const webpack = require("webpack");
 const path = require("path");
 const ReactRefreshWebpackPlugin = require("@pmmmwh/react-refresh-webpack-plugin");
 const HtmlWebpackPlugin = require("html-webpack-plugin");
@@ -28,6 +29,11 @@ module.exports = {
     ],
   },
   plugins: [
+    new webpack.DefinePlugin({
+      "process.env": {
+        APP_ENV: JSON.stringify("browser"),
+      },
+    }),
     isDevelopment && new ReactRefreshWebpackPlugin(),
     new HtmlWebpackPlugin({
       title: "PenPal",
@@ -40,11 +46,11 @@ module.exports = {
       "@penpal/common": "common.js", // Relative to './src/common'
       "@penpal/plugins": "plugins-loader.js", // Relative to '../plugins'
     },
-    roots: [path.resolve("."), path.resolve("../plugins")],
+    roots: [path.resolve(".")],
     modules: [
       path.resolve(__dirname, "./src/client"),
       path.resolve(__dirname, "./src/common"),
-      path.resolve(__dirname, "../plugins"),
+      path.resolve(__dirname, "./plugins"),
       path.resolve(__dirname, "./node_modules"),
     ],
   },
