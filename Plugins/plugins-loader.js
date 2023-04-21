@@ -15,38 +15,41 @@ if (process.env.APP_ENV === "browser") {
   const glob = require("glob");
   const path = require("path");
 
-  // Pattern to match all Plugin index.js files
-  const pattern = "*/**/server/index.js";
-
   // Get the current file's path
   const currentFilePath = path.resolve(__dirname, __filename);
 
+  // Pattern to match all Plugin index.js files
+  const pattern = `${path.resolve(__dirname)}/**/server/index.js`;
+
   Plugins = {
     registerPlugins: async () => {
-      // Use glob to find all files that match the pattern
-      glob(pattern, {}, (err, files) => {
-        if (err) {
-          console.error(err);
-          return;
-        }
+      try {
+        const files = await new Promise((resolve, reject) => {
+          glob(pattern, {}, (err, files) => {
+            console.log(pattern, files);
+            if (err) {
+              reject(err);
+            } else {
+              resolve(files);
+            }
+          });
+        });
 
         // Import each file using require()
-        files.forEach((file) => {
-          // Get the absolute path of the file
-          const absoluteFilePath = path.resolve(__dirname, file);
-
-          // Get the relative path of the file
-          const relativeFilePath = path.relative(
-            currentFilePath,
-            absoluteFilePath
-          );
-
-          // Import the module using require()
-          const importedModule = require(`./${relativeFilePath}`);
-
-          // Do something with the imported module
-        });
-      });
+        for (let file of files) {
+          console.error(`Importing ${file}`);
+          try {
+            // Import the module using require()
+            await import(file);
+          } catch (error) {
+            console.error(`[!] Failed to load ${file}`);
+            console.error(error);
+            return;
+          }
+        }
+      } catch (error) {
+        console.error(error);
+      }
     },
   };
 }

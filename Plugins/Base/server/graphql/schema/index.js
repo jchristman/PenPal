@@ -4,10 +4,7 @@ import { join } from "path";
 const graphql_files = join(__dirname, "./*.graphql");
 
 const loadGraphQLFiles = async () => {
-  return PenPal.Utils.LoadGraphQLDirectories([
-    subdir_graphql_files,
-    graphql_files,
-  ]);
+  return PenPal.Utils.LoadGraphQLDirectories([graphql_files]);
 };
 
 export default loadGraphQLFiles;

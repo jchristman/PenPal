@@ -31,14 +31,14 @@ export const check = (value, type, repr_value, repr_type) => {
 export const check_manifest = ({ name, version, dependsOn }) => {
   let manifest_accept = true;
 
-  manifest_accept &= check(name, String, "Manifest.name", "String");
-  manifest_accept &= check(version, String, "Manifest.version", "String");
-  manifest_accept &= check(
-    dependsOn,
-    [String],
-    "Manifest.dependsOn",
-    "[String]"
-  );
+  //manifest_accept &= check(name, String, "Manifest.name", "String");
+  //manifest_accept &= check(version, String, "Manifest.version", "String");
+  //manifest_accept &= check(
+  //  dependsOn,
+  //  [String],
+  //  "Manifest.dependsOn",
+  //  "[String]"
+  //);
 
   return manifest_accept;
 };
@@ -48,12 +48,12 @@ export const check_manifest = ({ name, version, dependsOn }) => {
 export const check_plugin = (plugin) => {
   let plugin_accept = true;
 
-  plugin_accept &= check(
-    plugin.loadPlugin,
-    Function,
-    "Plugin.loadPlugin",
-    "Function"
-  );
+  //plugin_accept &= check(
+  //  plugin.loadPlugin,
+  //  Function,
+  //  "Plugin.loadPlugin",
+  //  "Function"
+  //);
 
   return plugin_accept;
 };

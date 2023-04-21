@@ -1,4 +1,4 @@
-import { types, resolvers, loaders } from "./graphql";
+import { loadGraphQLFiles, resolvers, loaders } from "./graphql";
 import dockerfile from "./Dockerfile.js";
 
 import { workflow_nodes } from "./nodes";
@@ -7,24 +7,26 @@ import new_network_host_discovery_workflow from "./workflows/New_Network_Host_Di
 const settings = {
   docker: {
     name: "masscan",
-    dockerfile
+    dockerfile,
   },
   n8n: {
     workflow_nodes,
-    workflows: [new_network_host_discovery_workflow]
-  }
+    workflows: [new_network_host_discovery_workflow],
+  },
 };
 
 const MasscanPlugin = {
-  loadPlugin() {
+  async loadPlugin() {
+    const types = await loadGraphQLFiles();
+
     return {
       graphql: {
         types,
-        resolvers
+        resolvers,
       },
-      settings
+      settings,
     };
-  }
+  },
 };
 
 export default MasscanPlugin;

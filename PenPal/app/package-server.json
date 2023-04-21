@@ -21,8 +21,10 @@
     "uuid": "^8.3.1"
   },
   "devDependencies": {
+    "@babel/cli": "^7.21.0",
     "@babel/core": "^7.21.4",
     "@babel/node": "^7.20.7",
+    "@babel/plugin-transform-modules-commonjs": "^7.21.2",
     "@babel/preset-env": "^7.21.4",
     "babel-loader": "^8.2.3",
     "babel-plugin-module-resolver": "^5.0.0",

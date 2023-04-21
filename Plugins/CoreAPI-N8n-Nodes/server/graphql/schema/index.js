@@ -1,9 +1,10 @@
-import { mergeTypeDefs } from "@graphql-tools/merge";
+import PenPal from "@penpal/core";
+import { join } from "path";
 
-//import mutations from "./mutations.graphql";
-import queries from "./queries.graphql";
-//import typeDefs from "./schema.graphql";
+const graphql_files = join(__dirname, "./*.graphql");
 
-const types = [queries];
+const loadGraphQLFiles = async () => {
+  return PenPal.Utils.LoadGraphQLDirectories([graphql_files]);
+};
 
-export default mergeTypeDefs(types);
+export default loadGraphQLFiles;

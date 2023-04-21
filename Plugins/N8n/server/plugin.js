@@ -1,4 +1,4 @@
-import { types, resolvers, loaders } from "./graphql/";
+import { loadGraphQLFiles, resolvers, loaders } from "./graphql/";
 import _ from "lodash";
 import PenPal from "@penpal/core";
 
@@ -36,7 +36,9 @@ const loadN8n = async () => {
 };
 
 const N8nPlugin = {
-  loadPlugin() {
+  async loadPlugin() {
+    const types = await loadGraphQLFiles();
+
     return {
       graphql: {
         types,

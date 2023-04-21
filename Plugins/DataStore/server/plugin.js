@@ -1,6 +1,6 @@
 import PenPal from "@penpal/core";
 
-import { types, resolvers } from "./graphql";
+import { loadGraphQLFiles, resolvers } from "./graphql";
 import DataStore from "./datastore.js";
 
 const check_datastores = (datastores) => {
@@ -21,8 +21,9 @@ const create_datastores = (plugin_name) => {
 };
 
 const DataStorePlugin = {
-  loadPlugin() {
+  async loadPlugin() {
     PenPal.DataStore = DataStore;
+    const types = await loadGraphQLFiles();
 
     return {
       graphql: {

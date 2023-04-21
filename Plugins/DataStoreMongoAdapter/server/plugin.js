@@ -1,6 +1,6 @@
 import PenPal from "@penpal/core";
 import MongoAdapter from "./adapter.js";
-import { types, resolvers, loaders } from "./graphql";
+import { loadGraphQLFiles, resolvers, loaders } from "./graphql";
 
 const settings = {
   configuration: {
@@ -16,8 +16,9 @@ const settings = {
 };
 
 const MongoDataStorePlugin = {
-  loadPlugin() {
+  async loadPlugin() {
     PenPal.DataStore.RegisterAdapter("MongoAdapter", MongoAdapter);
+    const types = await loadGraphQLFiles();
 
     return {
       graphql: {
