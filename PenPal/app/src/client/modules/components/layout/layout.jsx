@@ -4,9 +4,6 @@ import {
   registerComponent,
   Hooks,
   Routes as _Routes,
-  getRoute,
-  Constants,
-  hasRole,
 } from "@penpal/core";
 import { makeStyles, useTheme } from "@mui/styles";
 import CssBaseline from "@mui/material/CssBaseline";
@@ -21,23 +18,8 @@ import Button from "@mui/material/Button";
 import Typography from "@mui/material/Typography";
 import Divider from "@mui/material/Divider";
 import IconButton from "@mui/material/IconButton";
-import Badge from "@mui/material/Badge";
-import Container from "@mui/material/Container";
-import Grid from "@mui/material/Grid";
-import Paper from "@mui/material/Paper";
 import MenuIcon from "@mui/icons-material/Menu";
 import ChevronLeftIcon from "@mui/icons-material/ChevronLeft";
-import NotificationsIcon from "@mui/icons-material/Notifications";
-import Backdrop from "@mui/material/Backdrop";
-import SpeedDial from "@mui/lab/SpeedDial";
-import SpeedDialIcon from "@mui/lab/SpeedDialIcon";
-import SpeedDialAction from "@mui/lab/SpeedDialAction";
-import SettingsIcon from "@mui/icons-material/Settings";
-import CloseIcon from "@mui/icons-material/Close";
-import SupervisorAccountIcon from "@mui/icons-material/SupervisorAccount";
-import AssignmentIcon from "@mui/icons-material/Assignment";
-
-import Clock from "react-live-clock";
 
 import useMediaQuery from "@mui/material/useMediaQuery";
 import { Link } from "react-router-dom";
@@ -212,6 +194,16 @@ const useStyles = makeStyles((theme) => ({
 
 const Layout = () => {
   const location = useLocation();
+  const classes = useStyles();
+  const theme = useTheme();
+  const isSm = useMediaQuery(theme.breakpoints.up("sm"));
+  const isMd = useMediaQuery(theme.breakpoints.up("md"));
+  const [open, setOpen] = useState(true);
+  const toggleDrawerOpen = () => setOpen((prev) => !prev);
+  const { user, logout } = useAccount();
+
+  useEffect(() => setOpen(isMd), [isMd]);
+
   let activeRoutePrettyName = "";
   const routes = _Routes.map((_route) => {
     const route = _route.name === "" ? null : _route;
@@ -221,17 +213,7 @@ const Layout = () => {
     return route;
   });
 
-  const classes = useStyles();
-  const theme = useTheme();
-  const isSm = useMediaQuery(theme.breakpoints.up("sm"));
-  const isMd = useMediaQuery(theme.breakpoints.up("md"));
-  const [open, setOpen] = useState(true);
-  const { user, logout } = useAccount();
-  const handleDrawerOpen = () => setOpen(true);
-  const handleDrawerClose = () => setOpen(false);
-  const toggleDrawerOpen = () => setOpen(!open);
-
-  useEffect(() => setOpen(isMd), [isMd]);
+  console.log(routes, open);
 
   const fixedHeightPaper = cx(classes.paper, classes.fixedHeight);
 
@@ -268,7 +250,7 @@ const Layout = () => {
             {`Hi, ${user?.emails[0]}`}
             <Button
               className={classes.logoutButton}
-              color="default"
+              color="warning"
               onClick={logout}
             >
               Logout
@@ -288,7 +270,7 @@ const Layout = () => {
         open={open}
       >
         <div className={classes.toolbarIcon}>
-          <IconButton onClick={handleDrawerClose}>
+          <IconButton onClick={toggleDrawerOpen}>
             <ChevronLeftIcon />
           </IconButton>
         </div>
@@ -313,13 +295,7 @@ const Layout = () => {
             );
           })}
           <div style={{ flex: 1 }} />
-          <div className={classes.clock_container}>
-            <Clock
-              timezone="Etc/UTC"
-              format={!open ? "HH:mm" : "HH:mm:ssZ"}
-              ticking={!open}
-            />
-          </div>
+          <div className={classes.clock_container}>Clock Unavailable</div>
         </List>
       </Drawer>
       <main
@@ -334,9 +310,11 @@ const Layout = () => {
               if (route === null) return null;
               const Component = Components[route.componentName];
               return (
-                <Route key={route.componentName} exact path={route.path}>
-                  <Component />
-                </Route>
+                <Route
+                  key={route.componentName}
+                  path={route.path}
+                  element={<Component />}
+                />
               );
             })}
           </Routes>

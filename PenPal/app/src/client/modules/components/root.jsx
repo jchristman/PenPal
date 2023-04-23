@@ -6,16 +6,12 @@ import { ApolloProvider } from "@apollo/client";
 import { ThemeProvider, createTheme } from "@mui/material/styles";
 //import { MuiPickersUtilsProvider } from "@mui/lab";
 import moment from "moment";
-import MomentUtils from "@date-io/moment";
 moment.locale("en");
 
-function requireAll(r) {
-  r.keys().forEach(r);
-}
-requireAll(require.context("./cc-icons", true, /\.js$/));
-requireAll(require.context("./common", true, /\.js$/));
-requireAll(require.context("./layout", true, /\.js$/));
-requireAll(require.context("./pages", true, /\.js$/));
+import.meta.glob("./cc-icons/*.jsx", { eager: true });
+import.meta.glob("./common/*.jsx", { eager: true });
+import.meta.glob("./layout/*.jsx", { eager: true });
+import.meta.glob("./pages/*.jsx", { eager: true });
 
 import apolloInit from "./apollo-init.js";
 
@@ -36,6 +32,8 @@ const Root = () => {
       removeLoadingDiv();
     })();
   }, []);
+
+  console.log(Components);
 
   return (
     <SnackbarProvider maxSnack={3}>

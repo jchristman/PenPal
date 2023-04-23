@@ -8,7 +8,7 @@ import PenPal, { Components } from "./penpal/client.js";
 import React from "react";
 import { render } from "react-dom";
 
-import "./modules/components/root.js";
+import "./modules/components/root.jsx";
 
 // Load the plugins' code
 import Plugins from "@penpal/plugins";

@@ -1,6 +1,6 @@
-import PenPal from "@penpal/core";
+import PenPal from "#penpal/core";
 import MongoAdapter from "./adapter.js";
-import { loadGraphQLFiles, resolvers, loaders } from "./graphql";
+import { loadGraphQLFiles, resolvers } from "./graphql/index.js";
 
 const settings = {
   configuration: {

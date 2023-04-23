@@ -1,4 +1,4 @@
-import { loadGraphQLFiles, resolvers, loaders } from "./graphql";
+import { loadGraphQLFiles, resolvers } from "./graphql/index.js";
 import { SETTINGS_STORE } from "./constants.js";
 
 const settings = {

@@ -50,8 +50,8 @@ const ErrorDisplay = ({ err_number, message, stack }) => {
           &nbsp;&nbsp;Error #{err_number}
         </h3>
         <p>
-          An error has occured. Please inform the PLEXworx dev team of this
-          error and any steps you took to trigger it.
+          An error has occured. Please inform the dev team of this error and any
+          steps you took to trigger it.
         </p>
         <p className={classes.message_container}>
           <pre>{message}</pre>

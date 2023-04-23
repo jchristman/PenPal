@@ -1,5 +1,5 @@
-import PenPal from "@penpal/core";
-import { check } from "@penpal/common";
+import PenPal from "#penpal/core";
+import { check } from "#penpal/common";
 
 const check_n8n = (n8n) => {
   let n8n_accept = true;

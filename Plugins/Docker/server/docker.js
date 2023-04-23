@@ -1,4 +1,4 @@
-import PenPal from "@penpal/core";
+import PenPal from "#penpal/core";
 import { exec } from "child_process";
 
 const runCommand = (args) => {

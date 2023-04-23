@@ -132,7 +132,7 @@ const ConfigurationPage = ({ localConfig, handleConfigChange }) => {
 
   return (
     <>
-      <AppBar position="static" color="default">
+      <AppBar position="static" color="primary">
         <Tabs
           value={selectedTab}
           onChange={handleChange}

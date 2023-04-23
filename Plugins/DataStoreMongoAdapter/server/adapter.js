@@ -1,4 +1,4 @@
-import { check } from "@penpal/common";
+import { check } from "#penpal/common";
 
 const MongoAdapter = {};
 MongoAdapter.MongoCollections = {};

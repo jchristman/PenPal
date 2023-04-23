@@ -4,8 +4,8 @@ services:
     volumes:
       - ./PenPal/app/src/:/penpal/app/src
       - ./PenPal/app/static/:/penpal/app/static
-      - ./PenPal/app/package-frontend.json:/penpal/app/package.json
-      - ./PenPal/app/webpack.config.js:/penpal/app/webpack.config.js
+      - ./PenPal/app/package-frontend.json:/penpal/app/package-tmp.json
+      - ./PenPal/app/vite.config.js:/penpal/app/vite.config.js
       - ./Plugins/:/penpal/app/plugins
     environment:
       - LOCAL_USER_ID=${LOCAL_USER_ID}
@@ -13,9 +13,8 @@ services:
   penpal-server:
     volumes:
       - ./PenPal/app/src/:/penpal/app/src
-      - ./PenPal/app/.babelrc:/penpal/app/.babelrc
       - ./PenPal/app/nodemon.config.json:/penpal/app/nodemon.config.json
-      - ./PenPal/app/package-server.json:/penpal/app/package.json
+      - ./PenPal/app/package-server.json:/penpal/app/package-tmp.json
       - ./Plugins/:/penpal/app/plugins:consistent
       - /var/run/docker.sock:/var/run/docker.sock
     environment:

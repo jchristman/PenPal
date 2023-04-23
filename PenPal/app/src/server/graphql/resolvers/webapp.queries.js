@@ -1,4 +1,4 @@
-import { Constants } from "@penpal/common";
+import { Constants } from "#penpal/common";
 import _ from "lodash";
 
 import { restrictToRole, restrictToLoggedIn } from "./common.js";

@@ -20,7 +20,7 @@ class ErrorBoundary extends React.Component {
 
   componentDidCatch(error, errorInfo) {
     // You can also log the error to an error reporting service
-    const serialized_error = serializeError(error);
+    //const serialized_error = serializeError(error);
     //Meteor.call(
     //  "logErrorToServerConsole",
     //  serialized_error,

@@ -1,4 +1,4 @@
-import PenPal from "@penpal/core";
+import PenPal from "#penpal/core";
 
 export default {
   Plugin: {

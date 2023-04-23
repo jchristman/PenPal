@@ -56,4 +56,5 @@ RUN npm install -g npm@9.6.4
 
 # For `docker run CONTAINER_ID`
 COPY ./docker-entrypoint.sh /usr/bin/docker-entrypoint.sh
+COPY ./install-dependencies.sh /usr/bin/install-dependencies.sh
 ENTRYPOINT ["docker-entrypoint.sh"]

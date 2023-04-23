@@ -1,7 +1,9 @@
-import PenPal from "@penpal/core";
-import { name as PLUGIN_NAME } from "../manifest.json";
+import PenPal from "#penpal/core";
+import Manifest from "../manifest.json" assert { type: "json" };
 import { WebhooksCollectionName } from "../constants.js";
 import fetch from "node-fetch";
+
+const { name: PLUGIN_NAME } = Manifest;
 
 const webhookGenerator = (id, url, arg_field_name) => {
   return async (data) => {

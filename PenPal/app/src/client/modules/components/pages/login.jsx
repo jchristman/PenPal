@@ -25,15 +25,9 @@ const BACKGROUND_IMAGE = "/images/landing-page-background.jpg";
 const Copyright = () => {
   return (
     <Typography variant="body2" color="textSecondary" align="center">
-      {"Copyright © "}
-      <Link
-        color="inherit"
-        href="https://plex-llc.com/capabilities/government-solutions/plexworx/"
-      >
-        PLEXWorx
+      <Link color="inherit" href="https://github.com/jchristman/PenPal">
+        PenPal
       </Link>{" "}
-      {new Date().getFullYear()}
-      {"."}
     </Typography>
   );
 };

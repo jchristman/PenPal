@@ -165,10 +165,35 @@ const AccountProvider = ({ children }) => {
     }
   }, [user_error]);
 
+  //const data = {
+  //  user: currentUser,
+  //  loggedIn:
+  //    currentUser !== undefined && currentUser !== null && authTokenLoaded,
+  //  loading: user_loading,
+  //  login: login_func,
+  //  logout: logout_func,
+  //  signup: signup_func,
+  //};
+
+  // id
+  // emails
+  // createdAt
+  // profile {
+  //   display_name
+  // }
+  // settings {
+  //   roles
+  // }
+
   const data = {
-    user: currentUser,
-    loggedIn:
-      currentUser !== undefined && currentUser !== null && authTokenLoaded,
+    user: {
+      id: "1",
+      emails: ["test@test.com"],
+      createdAt: new Date(),
+      profile: { display_name: "test" },
+      settings: { roles: ["Role.Admin"] },
+    },
+    loggedIn: true,
     loading: user_loading,
     login: login_func,
     logout: logout_func,

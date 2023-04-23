@@ -1,10 +1,10 @@
 import express from "express";
 import { ApolloServer } from "apollo-server-express";
-import { makeExecutableSchema } from "graphql-tools";
+import { makeExecutableSchema } from "@graphql-tools/schema";
 import { mergeTypeDefs } from "@graphql-tools/merge";
 import { applyMiddleware } from "graphql-middleware";
 // TODO: Get PenPal again
-//import PenPal from "@penpal/core";
+//import PenPal from "#penpal/core";
 import _ from "lodash";
 
 const app = express();
@@ -12,7 +12,7 @@ const port = 3001;
 
 app.listen(port, () => console.log(`[+] Server listening on port ${port}`));
 
-import { loadGraphQLFiles, resolvers, buildLoaders } from "./graphql";
+import { loadGraphQLFiles, resolvers, buildLoaders } from "./graphql/index.js";
 
 const startGraphQLServer = async (
   plugins_types = {},

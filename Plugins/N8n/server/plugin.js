@@ -1,13 +1,15 @@
-import { loadGraphQLFiles, resolvers, loaders } from "./graphql/";
+import { loadGraphQLFiles, resolvers } from "./graphql/index.js";
 import _ from "lodash";
-import PenPal from "@penpal/core";
+import PenPal from "#penpal/core";
 
-import { name as PLUGIN_NAME } from "./manifest.json";
+import Manifest from "./manifest.json" assert { type: "json" };
 import startN8nServer from "./n8n/n8n.js";
 import WebhookManager from "./n8n/webhook.js";
 import { WebhooksCollectionName } from "./constants.js";
 import NodeBuilder from "./n8n/node-builder.js";
 import check_n8n from "./n8n/check-n8n.js";
+
+const { name: PLUGIN_NAME } = Manifest;
 
 PenPal.N8n = { NodeBuilder };
 

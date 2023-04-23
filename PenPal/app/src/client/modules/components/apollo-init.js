@@ -1,8 +1,5 @@
 import _ from "lodash";
-import {
-  IntrospectionFragmentMatcher,
-  InMemoryCache,
-} from "@apollo/client/cache";
+import { InMemoryCache } from "@apollo/client/cache";
 import { ApolloClient, ApolloLink } from "@apollo/client";
 import { BatchHttpLink } from "@apollo/client/link/batch-http";
 

@@ -1,11 +1,12 @@
-import PenPal from "@penpal/core";
+import PenPal from "#penpal/core";
 import _ from "lodash";
 import ip from "ip";
 
 import { required_field, isTestData } from "./common.js";
 
 import { getNetworksByProject, addHostsToNetwork } from "./networks.js";
-import { hosts as mockHosts } from "../test/mock-hosts.json";
+//import { hosts as mockHosts } from "../test/mock-hosts.json" assert { type: "json" };
+const mockHosts = [];
 import { newHostHooks, deletedHostHooks, updatedHostHooks } from "./hooks.js";
 
 // -----------------------------------------------------------

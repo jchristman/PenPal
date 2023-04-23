@@ -1,4 +1,4 @@
-import PenPal from "@penpal/core";
+import PenPal from "#penpal/core";
 import _ from "lodash";
 
 import { required_field } from "./common.js";

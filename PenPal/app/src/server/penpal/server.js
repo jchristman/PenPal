@@ -1,12 +1,12 @@
 import _ from "lodash";
 import { mergeTypeDefs } from "@graphql-tools/merge";
-const { loadFiles } = require("@graphql-tools/load-files");
+import { loadFiles } from "@graphql-tools/load-files";
 import {
   Constants as _Constants,
   isFunction,
   check_manifest,
   check_plugin,
-} from "@penpal/common";
+} from "#penpal/common";
 export const Constants = _Constants;
 
 // ----------------------------------------------------------------------------
@@ -26,12 +26,12 @@ PenPal.Utils.AsyncNOOP = async () => {
   await PenPal.Utils.Sleep(0);
 };
 
-PenPal.Utils.LoadGraphQLDirectories = async (paths) => {
-  let typeDefs = [];
-  for (let path of paths) {
-    typeDefs.push(...(await loadFiles(path)));
-  }
-  return mergeTypeDefs(typeDefs);
+PenPal.Utils.LoadGraphQLDirectories = async (root_dir) => {
+  const typesArray = await loadFiles(root_dir, {
+    recursive: true,
+    extensions: ["graphql"],
+  });
+  return mergeTypeDefs(typesArray);
 };
 
 // ----------------------------------------------------------------------------
@@ -76,7 +76,7 @@ PenPal.loadPlugins = async () => {
     version: plugin.version,
   }));
 
-  let plugins_types = {};
+  let plugins_types = null;
   let plugins_resolvers = [{ Query: {} }, { Mutation: {} }];
   let plugins_loaders = {};
   let extra_settings_checkers = {};
@@ -180,7 +180,11 @@ PenPal.loadPlugins = async () => {
     if (graphql !== undefined) {
       const { types, resolvers, loaders } = graphql;
       if (types !== undefined)
-        plugins_types = mergeTypeDefs([plugins_types, types]);
+        if (plugins_types === null) {
+          plugins_types = types;
+        } else {
+          plugins_types = mergeTypeDefs([plugins_types, types]);
+        }
       if (resolvers !== undefined)
         plugins_resolvers = _.merge(plugins_resolvers, resolvers);
       if (loaders !== undefined)
@@ -197,7 +201,7 @@ PenPal.loadPlugins = async () => {
     console.log(`[+] Loaded ${plugin_name}`);
   }
 
-  for (plugin_name of Object.keys(PenPal.LoadedPlugins)) {
+  for (let plugin_name of Object.keys(PenPal.LoadedPlugins)) {
     if (PenPal.LoadedPlugins[plugin_name].loaded === false) {
       delete PenPal.LoadedPlugins[plugin_name];
     }

@@ -1,5 +1,5 @@
-import { loadGraphQLFiles, resolvers, loaders } from "./graphql";
-import { workflow_nodes, trigger_nodes } from "./nodes";
+import { loadGraphQLFiles, resolvers } from "./graphql/index.js";
+import { workflow_nodes, trigger_nodes } from "./nodes/index.js";
 
 const settings = {
   n8n: {

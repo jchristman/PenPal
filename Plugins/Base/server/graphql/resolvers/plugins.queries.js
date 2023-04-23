@@ -1,4 +1,4 @@
-import PenPal from "@penpal/core";
+import PenPal from "#penpal/core";
 
 const getXablePlugins = (settings_field) => {
   const plugins_name_version = Object.keys(PenPal.LoadedPlugins);

@@ -1,11 +1,11 @@
 import _ from "lodash";
-import PenPal from "@penpal/core";
+import PenPal from "#penpal/core";
 import DataLoader from "dataloader";
 import stable_stringify from "fast-json-stable-stringify";
 
-import { loadGraphQLFiles, resolvers, loaders } from "./graphql";
-import * as API from "./api/";
-import { mocks } from "./test/";
+import { loadGraphQLFiles, resolvers } from "./graphql/index.js";
+import * as API from "./api/index.js";
+import { mocks } from "./test/index.js";
 
 const settings = {
   configuration: {

@@ -1,5 +1,5 @@
-import resolvers from "./resolvers/";
-import PenPal from "@penpal/core";
+import resolvers from "./resolvers/index.js";
+import PenPal from "#penpal/core";
 
 export default [
   {

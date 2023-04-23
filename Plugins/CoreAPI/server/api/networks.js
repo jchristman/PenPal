@@ -1,8 +1,9 @@
-import PenPal from "@penpal/core";
+import PenPal from "#penpal/core";
 import _ from "lodash";
 
 import { required_field, isTestData } from "./common.js";
-import { networks as mockNetworks } from "../test/mock-networks.json";
+//import { networks as mockNetworks } from "../test/mock-networks.json" assert { type: "json" };
+const mockNetworks = [];
 import {
   newNetworkHooks,
   deletedNetworkHooks,

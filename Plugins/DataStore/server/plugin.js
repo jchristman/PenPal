@@ -1,6 +1,6 @@
-import PenPal from "@penpal/core";
+import PenPal from "#penpal/core";
 
-import { loadGraphQLFiles, resolvers } from "./graphql";
+import { loadGraphQLFiles, resolvers } from "./graphql/index.js";
 import DataStore from "./datastore.js";
 
 const check_datastores = (datastores) => {

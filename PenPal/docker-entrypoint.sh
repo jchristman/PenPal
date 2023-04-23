@@ -8,8 +8,8 @@ if [[ $USER_ID -eq 0 ]]; then
 	echo Sleeping 10 seconds before continuing...
 	sleep 10
 
-	echo Installing packages from all package.json files
-	npm-recursive-install --rootDir=/penpal/plugins
+    cp -p package-tmp.json package.json
+    install-dependencies.sh
 
 	exec "$@"
 
@@ -29,7 +29,8 @@ else
 	echo UID matches inside container. Moving on
 fi
 
-echo Installing packages from all package.json files
-npm-recursive-install --rootDir=/penpal/plugins
+cp -p package-tmp.json package.json
+chown -R node:node package*.json
+/usr/local/bin/gosu node install-dependencies.sh
 
 exec /usr/local/bin/gosu node "$@"

@@ -1,6 +1,6 @@
-import PenPal from "@penpal/core";
-import { check } from "@penpal/common";
-import { dockerExec, dockerBuild, dockerRun } from "./docker.js";
+import PenPal from "#penpal/core";
+import { check } from "#penpal/common";
+import { dockerExec, dockerBuild } from "./docker.js";
 
 const check_docker = (docker) => {
   let docker_accept = true;

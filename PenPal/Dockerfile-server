@@ -8,7 +8,7 @@ WORKDIR /penpal/app
 COPY --chown=node:node app/ /penpal/app
 
 RUN mv package-server.json package.json
-RUN rm -f package-frontend.json
+RUN rm -f package-frontend.json webpack.config.js
 
 USER node
 RUN rm -rf node_modules
