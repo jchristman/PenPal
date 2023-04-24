@@ -8,6 +8,7 @@ import PenPal, { Components } from "./penpal/client.js";
 import React from "react";
 import { render } from "react-dom";
 
+// This needs to happen before importing the plugins so that some core functionalities get registered
 import "./modules/components/root.jsx";
 
 // Load the plugins' code

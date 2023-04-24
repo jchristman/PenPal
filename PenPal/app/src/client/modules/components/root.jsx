@@ -8,10 +8,8 @@ import { ThemeProvider, createTheme } from "@mui/material/styles";
 import moment from "moment";
 moment.locale("en");
 
-import.meta.glob("./cc-icons/*.jsx", { eager: true });
-import.meta.glob("./common/*.jsx", { eager: true });
-import.meta.glob("./layout/*.jsx", { eager: true });
-import.meta.glob("./pages/*.jsx", { eager: true });
+import.meta.glob("./*/*.jsx", { eager: true });
+import.meta.glob("./*/*.js", { eager: true });
 
 import apolloInit from "./apollo-init.js";
 

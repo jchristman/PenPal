@@ -30,6 +30,7 @@ import { Routes, Route, useLocation } from "react-router-dom";
 const { useAccount } = Hooks;
 
 const drawerWidth = 240;
+const closedDrawerWidth = 57;
 
 const useStyles = makeStyles((theme) => ({
   root: {
@@ -97,9 +98,9 @@ const useStyles = makeStyles((theme) => ({
       easing: theme.transitions.easing.sharp,
       duration: theme.transitions.duration.leavingScreen,
     }),
-    width: 57,
+    width: closedDrawerWidth,
     [theme.breakpoints.up("sm")]: {
-      width: 57,
+      width: closedDrawerWidth,
     },
   },
   smDrawerPaperClose: {
@@ -152,6 +153,8 @@ const useStyles = makeStyles((theme) => ({
     padding: theme.spacing(2),
     overflow: "hidden",
     overflowY: "auto",
+    width: `calc(100% - ${drawerWidth}px)`,
+    marginLeft: drawerWidth,
   },
   paper: {
     padding: theme.spacing(2),
@@ -212,8 +215,6 @@ const Layout = () => {
     }
     return route;
   });
-
-  console.log(routes, open);
 
   const fixedHeightPaper = cx(classes.paper, classes.fixedHeight);
 

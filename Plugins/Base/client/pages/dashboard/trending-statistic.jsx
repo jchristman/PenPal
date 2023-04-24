@@ -8,8 +8,8 @@ import {
   Grid,
   Typography,
   colors,
-  makeStyles,
 } from "@mui/material";
+import { makeStyles } from "@mui/styles";
 import ArrowUpwardIcon from "@mui/icons-material/ArrowUpward";
 import CheckBoxOutlineBlankIcon from "@mui/icons-material/CheckBoxOutlineBlank";
 import cx from "classnames";

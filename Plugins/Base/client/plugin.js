@@ -1,5 +1,4 @@
-import PenPal from "@penpal/core";
-
+import.meta.glob("./**/*.jsx", { eager: true });
 import registerRoutes from "./routes.js";
 
 const BasePlugin = {

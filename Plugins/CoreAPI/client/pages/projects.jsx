@@ -21,15 +21,15 @@ import ClearIcon from "@mui/icons-material/Clear";
 import {
   Icon as CardViewIcon,
   Name as CardViewName,
-} from "./views-card-view.js";
+} from "./projects/views-card-view.jsx";
 import {
   Icon as TableViewIcon,
   Name as TableViewName,
-} from "./views-table-view.js";
+} from "./projects/views-table-view.jsx";
 import {
   Icon as TimelineViewIcon,
   Name as TimelineViewName,
-} from "./views-timeline-view.js";
+} from "./projects/views-timeline-view.jsx";
 
 const useStyles = makeStyles((theme) => ({
   root: {

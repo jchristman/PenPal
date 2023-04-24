@@ -5,7 +5,7 @@ import Paper from "@mui/material/Paper";
 import Tabs from "@mui/material/Tabs";
 import Tab from "@mui/material/Tab";
 
-import { TabPanel } from "./project-view-data-container.js";
+import { TabPanel } from "./project-view-data-container.jsx";
 
 const useStyles = makeStyles((theme) => ({
   container: {
@@ -22,7 +22,7 @@ const useStyles = makeStyles((theme) => ({
   },
 }));
 
-const ProjectViewNetworks = ({ project }) => {
+const ProjectViewHosts = ({ project }) => {
   const classes = useStyles();
   const [value, setValue] = useState(0);
 
@@ -34,10 +34,6 @@ const ProjectViewNetworks = ({ project }) => {
     {
       title: "List",
       content: () => "List",
-    },
-    {
-      title: "Hosts",
-      content: () => "Hosts",
     },
     {
       title: "Services",
@@ -73,4 +69,4 @@ const ProjectViewNetworks = ({ project }) => {
   );
 };
 
-registerComponent("ProjectViewNetworks", ProjectViewNetworks);
+registerComponent("ProjectViewHosts", ProjectViewHosts);

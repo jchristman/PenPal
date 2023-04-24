@@ -4,9 +4,9 @@ import { Components, registerComponent } from "@penpal/core";
 import { useQuery } from "@apollo/client";
 import GetProjectSummaries from "./queries/get-project-summaries.js";
 
-import { Name as CardViewName } from "./views-card-view.js";
-import { Name as TableViewName } from "./views-table-view.js";
-import { Name as TimelineViewName } from "./views-timeline-view.js";
+import { Name as CardViewName } from "./views-card-view.jsx";
+import { Name as TableViewName } from "./views-table-view.jsx";
+import { Name as TimelineViewName } from "./views-timeline-view.jsx";
 
 const ProjectsView = ({ view }) => {
   const [page, setPage] = useState(0);

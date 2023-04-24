@@ -221,7 +221,7 @@ const Selector = () => {
                 value={selected}
                 onChange={handleChange}
               >
-                {getConfigurablePlugins.map((plugin, index) => (
+                {getConfigurablePlugins?.map((plugin, index) => (
                   <MenuItem key={plugin.id} value={index}>
                     {plugin.name}
                   </MenuItem>

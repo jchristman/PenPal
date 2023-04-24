@@ -1,6 +1,6 @@
 import React, { useState } from "react";
 import { Components, registerComponent } from "@penpal/core";
-import { useHistory } from "react-router-dom";
+import { useNavigate } from "react-router-dom";
 import Table from "@mui/material/Table";
 import TableBody from "@mui/material/TableBody";
 import TableCell from "@mui/material/TableCell";
@@ -138,10 +138,10 @@ const ProjectsViewTableView = ({
   projectSummaries: { projects, totalCount },
 }) => {
   const classes = useStyles2();
-  const history = useHistory();
+  const navigate = useNavigate();
 
   const navToProject = (id) => {
-    history.push(`/projects/${id}`);
+    navigate(`/projects/${id}`);
   };
 
   const emptyRows = pageSize - Math.min(pageSize, projects.length);

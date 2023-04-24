@@ -1,4 +1,4 @@
-let context = import.meta.glob("./*/client/index.js", { eager: true });
+import.meta.glob("./*/client/index.js", { eager: true });
 
 export default {
   registerPlugins: async () => {

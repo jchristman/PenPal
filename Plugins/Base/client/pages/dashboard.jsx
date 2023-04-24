@@ -37,7 +37,7 @@ const Dashboard = () => {
 
   const query = generateQueryFromSchemas(
     types,
-    getDashboardablePlugins.map((dashboardable_plugin) => ({
+    getDashboardablePlugins?.map((dashboardable_plugin) => ({
       schema_root: dashboardable_plugin.settings.dashboard.schema_root,
       query_name: dashboardable_plugin.settings.dashboard.getter,
     }))
