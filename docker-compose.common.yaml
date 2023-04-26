@@ -16,7 +16,7 @@ services:
       - "3000:3000"
     command: npm run frontend
     networks:
-      - public
+      - penpal
 
   penpal-server:
     build:
@@ -25,11 +25,12 @@ services:
     pull_policy: never
     volumes:
       - penpal-server-npm-cache:/home/node/.npm
+      - ./docker-compose.common.yaml:/penpal/app/docker-compose.common.yaml
     ports:
       - "3001:3001"
     command: npm run server
     networks:
-      - public
+      - penpal
 
   node-red:
     image: nodered/node-red
@@ -47,5 +48,5 @@ volumes:
     external: false
 
 networks:
-  public:
+  penpal:
     driver: bridge

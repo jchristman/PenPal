@@ -1,5 +1,5 @@
 import _ from "lodash";
-import { mergeTypeDefs } from "@graphql-tools/merge";
+import { mergeTypeDefs, mergeResolvers } from "@graphql-tools/merge";
 import { loadFiles } from "@graphql-tools/load-files";
 import {
   Constants as _Constants,
@@ -186,7 +186,7 @@ PenPal.loadPlugins = async () => {
           plugins_types = mergeTypeDefs([plugins_types, types]);
         }
       if (resolvers !== undefined)
-        plugins_resolvers = _.merge(plugins_resolvers, resolvers);
+        plugins_resolvers = mergeResolvers([plugins_resolvers, resolvers]);
       if (loaders !== undefined)
         plugins_loaders = _.merge(plugins_loaders, loaders);
     }
@@ -216,9 +216,9 @@ PenPal.loadPlugins = async () => {
 
 // ----------------------------------------------------------------------------
 
-PenPal.runStartupHooks = () => {
+PenPal.runStartupHooks = async () => {
   for (let plugin_name in PenPal.LoadedPlugins) {
-    PenPal.LoadedPlugins[plugin_name].startupHook?.();
+    await PenPal.LoadedPlugins[plugin_name].startupHook?.();
   }
 };
 

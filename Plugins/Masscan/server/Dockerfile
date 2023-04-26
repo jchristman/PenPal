@@ -1,4 +1,4 @@
-export default `FROM debian:bullseye-slim
+FROM penpal/base
 
 # Install dependencies
 RUN apt-get update
@@ -15,4 +15,4 @@ RUN make -j
 RUN cp /opt/masscan/bin/masscan /usr/local/bin
 
 # Launch Bash
-CMD ["/bin/bash"]`;
+CMD ["/bin/bash"]

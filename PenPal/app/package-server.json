@@ -19,6 +19,7 @@
     "graphql-scalars": "^1.21.3",
     "graphql-tag": "^2.12.6",
     "lodash": "^4.17.15",
+    "mongodb": "^5.3.0",
     "uuid": "^8.3.1"
   },
   "devDependencies": {

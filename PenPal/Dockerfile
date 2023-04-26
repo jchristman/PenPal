@@ -16,7 +16,7 @@ SHELL ["/bin/bash", "-c"]
 
 # Generic necessities
 RUN apt-get update
-RUN apt-get install -y curl build-essential
+RUN apt-get install -y sudo curl build-essential
 
 # Install node.js and Mongo
 RUN curl -sL https://deb.nodesource.com/setup_${NODE_VERSION}.x | bash -
@@ -44,6 +44,7 @@ RUN groupadd -r node
 RUN useradd --no-log-init -r -u $UID -g node node
 RUN cp -rT /etc/skel /home/node
 RUN chown -R node:node /home/node
+RUN echo 'node ALL=(ALL) NOPASSWD: ALL' >> /etc/sudoers
 
 # Make our source directory and chown it to the new user
 RUN mkdir -p /penpal/app

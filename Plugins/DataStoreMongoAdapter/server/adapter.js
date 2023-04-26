@@ -1,7 +1,23 @@
 import { check } from "#penpal/common";
+import { MongoClient } from "mongodb";
 
 const MongoAdapter = {};
 MongoAdapter.MongoCollections = {};
+MongoAdapter.client = null;
+
+MongoAdapter.connect = async () => {
+  console.log("[.] Connecting to mongo database");
+  MongoAdapter.client = await MongoClient.connect(
+    "mongodb://penpal-mongo:27017",
+    {
+      useNewUrlParser: true,
+      useUnifiedTopology: true,
+    }
+  );
+
+  MongoAdapter.db = MongoAdapter.client.db("PenPal");
+  console.log("[+] Connected to DB");
+};
 
 // -----------------------------------------------------------------------
 // MongoAdapter convenience functions
@@ -37,13 +53,11 @@ const check_options = (options) => {
 MongoAdapter.CreateStore = async (plugin_name, store_name) => {
   return (MongoAdapter.MongoCollections[
     collection_name(plugin_name, store_name)
-  ] = {});
-  // TODO: replace with Mongoose
-  //] = new Mongo.Collection(collection_name(plugin_name, store_name)));
+  ] = MongoAdapter.db.collection(collection_name(plugin_name, store_name)));
 };
 
 MongoAdapter.DeleteStore = async (plugin_name, store_name) => {
-  return await get_collection(plugin_name, store_name).rawCollection().drop();
+  return await get_collection(plugin_name, store_name).drop();
 };
 
 // -----------------------------------------------------------------------
@@ -66,7 +80,7 @@ MongoAdapter.fetch = async (
     sort = 1,
   } = options;
 
-  let cursor = get_collection(plugin_name, store_name).rawCollection();
+  let cursor = get_collection(plugin_name, store_name);
 
   if (first !== undefined) {
     let _selector = normalize_data(selector);
@@ -130,7 +144,7 @@ MongoAdapter.getPaginationInfo = async (
   } = options;
 
   let normalized_selector = normalize_data(selector);
-  const cursor = () => get_collection(plugin_name, store_name).rawCollection();
+  const cursor = () => get_collection(plugin_name, store_name);
   let totalCount = await cursor().find(normalized_selector).count();
 
   let result = {
@@ -227,7 +241,7 @@ MongoAdapter.getPaginationInfo = async (
     );
     result.endCursorOffset = result.startCursorOffset + page_count - 1;
 
-    page = cursor()
+    let page = cursor()
       .find(normalized_selector)
       .sort({ _id: sort })
       .skip(Math.max(result.startCursorOffset, 0))
@@ -257,22 +271,24 @@ MongoAdapter.getPaginationInfo = async (
 
 MongoAdapter.fetchOne = async (plugin_name, store_name, selector, options) => {
   return normalize_result(
-    get_collection(plugin_name, store_name).findOne(normalize_data(selector))
+    await get_collection(plugin_name, store_name).findOne(
+      normalize_data(selector)
+    )
   );
 };
 
 MongoAdapter.insert = async (plugin_name, store_name, data) => {
   // This will return an ObjectId, so cast it to a string
   return String(
-    get_collection(plugin_name, store_name).insert(normalize_data(data))
+    await get_collection(plugin_name, store_name).insert(normalize_data(data))
   );
 };
 
 MongoAdapter.insertMany = async (plugin_name, store_name, data = []) => {
   // We don't use normalize_result on this because it returns an array of ObjectIds instead of an array of objects
-  const results = await get_collection(plugin_name, store_name)
-    .rawCollection()
-    .insertMany(data.map((datum) => normalize_data(datum)));
+  const results = await get_collection(plugin_name, store_name).insertMany(
+    data.map((datum) => normalize_data(datum))
+  );
 
   return (
     Object.values(results.insertedIds)?.map((object_id) => ({
@@ -281,9 +297,18 @@ MongoAdapter.insertMany = async (plugin_name, store_name, data = []) => {
   );
 };
 
-MongoAdapter.update = async (plugin_name, store_name, selector, data) => {
+MongoAdapter.updateOne = async (plugin_name, store_name, selector, data) => {
   return normalize_result(
-    get_collection(plugin_name, store_name).update(
+    await get_collection(plugin_name, store_name).updateOne(
+      normalize_data(selector),
+      data
+    )
+  );
+};
+
+MongoAdapter.updateMany = async (plugin_name, store_name, selector, data) => {
+  return normalize_result(
+    await get_collection(plugin_name, store_name).updateMany(
       normalize_data(selector),
       data
     )
@@ -291,7 +316,7 @@ MongoAdapter.update = async (plugin_name, store_name, selector, data) => {
 };
 
 MongoAdapter.delete = async (plugin_name, store_name, selector) => {
-  return get_collection(plugin_name, store_name).remove(
+  return await get_collection(plugin_name, store_name).remove(
     normalize_data(selector)
   );
 };

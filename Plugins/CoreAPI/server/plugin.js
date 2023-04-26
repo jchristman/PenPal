@@ -145,7 +145,8 @@ const CoreAPIPlugin = {
         // Build the object that's going to hold all the caching functions
         caching_apis[api_key] = {
           async Get(key) {
-            return await api_dataloader.load(key);
+            const result = await api_dataloader.load(key);
+            return result;
           },
 
           async GetMany(keys, options) {

@@ -127,7 +127,7 @@ const useStyles = makeStyles((theme) => ({
   smContent: {
     backgroundColor: "#EEE",
     position: "fixed",
-    left: 0,
+    left: closedDrawerWidth,
     right: 0,
     top: 0,
     bottom: 0,
@@ -153,7 +153,6 @@ const useStyles = makeStyles((theme) => ({
     padding: theme.spacing(2),
     overflow: "hidden",
     overflowY: "auto",
-    width: `calc(100% - ${drawerWidth}px)`,
     marginLeft: drawerWidth,
   },
   paper: {

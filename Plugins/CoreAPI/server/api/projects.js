@@ -1,5 +1,6 @@
 import PenPal from "#penpal/core";
 import _ from "lodash";
+import { getCustomer, getCustomers } from "./customers.js";
 
 import { required_field } from "./common.js";
 
@@ -50,9 +51,7 @@ export const insertProjects = async (projects) => {
       required_field(project, "customer", "insertion");
       required_field(project, "name", "insertion");
 
-      let customer = await PenPal.DataStore.fetchOne("CoreAPI", "Customers", {
-        id: project.customer,
-      });
+      let customer = await getCustomer(project.customer);
 
       if (customer?.id === undefined) {
         throw new Error(`[404] Customer ${project.customer} not found`);
@@ -86,7 +85,7 @@ export const insertProjects = async (projects) => {
 
     customer.projects.push(...accepted.map((p) => p.id));
 
-    await PenPal.DataStore.update(
+    await PenPal.DataStore.updateOne(
       "CoreAPI",
       "Customers",
       { id: customer.id },
@@ -129,7 +128,8 @@ export const updateProjects = async (projects) => {
     }
 
     for (let { id, ...project } of _accepted) {
-      let res = await PenPal.DataStore.update(
+      // TODO: Optimize with updateMany
+      let res = await PenPal.DataStore.updateOne(
         "CoreAPI",
         "Projects",
         { id },

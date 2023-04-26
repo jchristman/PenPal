@@ -47,6 +47,10 @@ const cleanOldNodes = async () => {
           resolve();
         }
       });
+
+      process.on("error", (error) => {
+        //console.error("error called");
+      });
     }
   });
 };
@@ -249,12 +253,13 @@ const createDefaultWorkflows = async () => {
 
 export default async () => {
   await PenPal.Utils.AsyncNOOP();
-  console.log();
-  killOldServer();
-  await cleanOldNodes();
-  await generateNodes();
-  await buildNodes();
-  startN8nServer();
-  await PenPal.Utils.Sleep(5000);
-  await createDefaultWorkflows();
+  try {
+    //killOldServer();
+    //await cleanOldNodes();
+    //await generateNodes();
+    //await buildNodes();
+    //startN8nServer();
+    //await PenPal.Utils.Sleep(5000);
+    //await createDefaultWorkflows();
+  } catch (e) {}
 };

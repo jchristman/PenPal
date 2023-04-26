@@ -3,6 +3,8 @@ import _ from "lodash";
 
 import startGraphQLServer from "./graphql-server.js";
 
+Error.stackTraceLimit = Infinity;
+
 const run = async () => {
   console.log("[.] Registering Plugins...");
   const Plugins = await import("#penpal/plugins");
@@ -12,10 +14,12 @@ const run = async () => {
   console.log("[.] Loading Plugins...");
   const { plugins_types, plugins_resolvers, plugins_buildLoaders } =
     await PenPal.loadPlugins();
+  console.log("[+] Plugins loaded");
 
   // Startup Hooks
-  // FIXME
-  //PenPal.runStartupHooks();
+  console.log("[.] Executing Plugin Startup hooks...");
+  await PenPal.runStartupHooks();
+  console.log("[+] Startup Hooks executed");
 
   // Start the graphql server
   console.log("[.] Starting GraphQL Server");

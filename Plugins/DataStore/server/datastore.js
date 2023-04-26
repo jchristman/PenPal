@@ -15,8 +15,9 @@ DataStore._Analytics = {
   fetchOne: 0,
   insert: 0,
   insertMany: 0,
-  update: 0,
-  delete: 0
+  updateOne: 0,
+  updateMany: 0,
+  delete: 0,
 };
 
 // -----------------------------------------------------------------------
@@ -45,7 +46,7 @@ DataStore.CreateStore = async (plugin_name, store_name) => {
   return await Promise.all(
     DataStore._Adapters.map(async ({ AdapterName, Adapter }) => ({
       AdapterName,
-      result: (await Adapter.CreateStore?.(plugin_name, store_name)) ?? null
+      result: (await Adapter.CreateStore?.(plugin_name, store_name)) ?? null,
     }))
   );
 };
@@ -63,7 +64,7 @@ DataStore.DeleteStore = async (plugin_name, store_name) => {
   return await Promise.all(
     DataStore._Adapters.map(async ({ AdapterName, Adapter }) => ({
       AdapterName,
-      result: (await Adapter.DeleteStore?.(plugin_name, store_name)) ?? null
+      result: (await Adapter.DeleteStore?.(plugin_name, store_name)) ?? null,
     }))
   );
 };
@@ -79,7 +80,7 @@ DataStore.fetch = async (plugin_name, store_name, selector, options) => {
       DataStore._Adapters.map(async ({ AdapterName, Adapter }) => ({
         AdapterName,
         result:
-          Adapter.fetch?.(plugin_name, store_name, selector, options) ?? null
+          Adapter.fetch?.(plugin_name, store_name, selector, options) ?? null,
       }))
     )
   )[0].result;
@@ -102,7 +103,7 @@ DataStore.getPaginationInfo = async (
             store_name,
             selector,
             options
-          ) ?? null
+          ) ?? null,
       }))
     )
   )[0].result;
@@ -120,7 +121,7 @@ DataStore.fetchOne = async (plugin_name, store_name, selector, options) => {
             store_name,
             selector,
             options
-          )) ?? null
+          )) ?? null,
       }))
     )
   )[0].result;
@@ -138,8 +139,8 @@ DataStore.insert = async (plugin_name, store_name, data) => {
         result:
           (await Adapter.insert?.(plugin_name, store_name, {
             id,
-            ...data
-          })) ?? null
+            ...data,
+          })) ?? null,
       }))
     )
   )[0].result;
@@ -150,7 +151,7 @@ DataStore.insertMany = async (plugin_name, store_name, data) => {
   DataStore._Analytics.insertMany += 1;
   const data_with_ids = data.map((datum) => ({
     id: intformat(DataStore._ID.Generator.next(), "hex"),
-    ...datum
+    ...datum,
   }));
 
   return (
@@ -162,22 +163,45 @@ DataStore.insertMany = async (plugin_name, store_name, data) => {
             plugin_name,
             store_name,
             data_with_ids
-          )) ?? null
+          )) ?? null,
       }))
     )
   )[0].result;
 };
 
-DataStore.update = async (plugin_name, store_name, selector, data) => {
-  DataStore._Analytics.update += 1;
+DataStore.updateOne = async (plugin_name, store_name, selector, data) => {
+  DataStore._Analytics.updateOne += 1;
 
   return (
     await Promise.all(
       DataStore._Adapters.map(async ({ AdapterName, Adapter }) => ({
         AdapterName,
         result:
-          (await Adapter.update?.(plugin_name, store_name, selector, data)) ??
-          null
+          (await Adapter.updateOne?.(
+            plugin_name,
+            store_name,
+            selector,
+            data
+          )) ?? null,
+      }))
+    )
+  )[0].result;
+};
+
+DataStore.updateMany = async (plugin_name, store_name, selector, data) => {
+  DataStore._Analytics.updateMany += 1;
+
+  return (
+    await Promise.all(
+      DataStore._Adapters.map(async ({ AdapterName, Adapter }) => ({
+        AdapterName,
+        result:
+          (await Adapter.updateMany?.(
+            plugin_name,
+            store_name,
+            selector,
+            data
+          )) ?? null,
       }))
     )
   )[0].result;
@@ -191,7 +215,7 @@ DataStore.delete = async (plugin_name, store_name, selector) => {
       DataStore._Adapters.map(async ({ AdapterName, Adapter }) => ({
         AdapterName,
         result:
-          (await Adapter.delete?.(plugin_name, store_name, selector)) ?? null
+          (await Adapter.delete?.(plugin_name, store_name, selector)) ?? null,
       }))
     )
   )[0].result;

@@ -126,7 +126,8 @@ export const updateNetworks = async (networks) => {
   }
 
   for (let { id, ...network } of _accepted) {
-    let res = await PenPal.DataStore.update(
+    // TODO: Optimize with updateMany
+    let res = await PenPal.DataStore.updateOne(
       "CoreAPI",
       "Networks",
       { id },

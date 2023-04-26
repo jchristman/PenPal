@@ -1,4 +1,4 @@
 {
   "watch": ["./src/server", "./src/common", "./plugins"],
-  "ext": "js"
+  "ext": "js,graphql"
 }

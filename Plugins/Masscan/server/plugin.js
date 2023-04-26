@@ -1,5 +1,7 @@
 import { loadGraphQLFiles, resolvers } from "./graphql/index.js";
-import dockerfile from "./Dockerfile.js";
+import fs from "fs";
+import * as url from "url";
+const __dirname = url.fileURLToPath(new URL(".", import.meta.url));
 
 import { workflow_nodes } from "./nodes/index.js";
 import new_network_host_discovery_workflow from "./workflows/New_Network_Host_Discovery.json" assert { type: "json" };
@@ -7,7 +9,10 @@ import new_network_host_discovery_workflow from "./workflows/New_Network_Host_Di
 const settings = {
   docker: {
     name: "masscan",
-    dockerfile,
+    dockerfile: fs.readFileSync(`${__dirname}/Dockerfile`, {
+      encoding: "utf8",
+      flag: "r",
+    }),
   },
   n8n: {
     workflow_nodes,

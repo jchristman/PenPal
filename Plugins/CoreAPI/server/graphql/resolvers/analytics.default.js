@@ -10,7 +10,6 @@ export default {
       pipeline.push({ $count: "totalProjects" });
 
       const results = await MongoAdapter.MongoCollections["CoreAPI.Projects"]
-        .rawCollection()
         .aggregate(pipeline)
         .toArray();
 
@@ -35,7 +34,6 @@ export default {
       pipeline.push({ $count: "totalCustomers" });
 
       const results = await MongoAdapter.MongoCollections["CoreAPI.Customers"]
-        .rawCollection()
         .aggregate(pipeline)
         .toArray();
 
@@ -60,7 +58,6 @@ export default {
       pipeline.push({ $count: "totalHosts" });
 
       const results = await MongoAdapter.MongoCollections["CoreAPI.Hosts"]
-        .rawCollection()
         .aggregate(pipeline)
         .toArray();
 
@@ -85,7 +82,6 @@ export default {
       pipeline.push({ $count: "totalServices" });
 
       const results = await MongoAdapter.MongoCollections["CoreAPI.Services"]
-        .rawCollection()
         .aggregate(pipeline)
         .toArray();
 
@@ -138,7 +134,7 @@ export default {
         }
       ]);
 
-      const results = await Clients.rawCollection()
+      const results = await Clients
         .aggregate(pipeline)
         .toArray();
 
@@ -177,7 +173,7 @@ export default {
         }
       ]);
 
-      const results = await Clients.rawCollection()
+      const results = await Clients
         .aggregate(pipeline)
         .toArray();
 

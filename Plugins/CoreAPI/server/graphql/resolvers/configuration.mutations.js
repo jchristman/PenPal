@@ -5,7 +5,7 @@ export default {
   async setCoreAPIConfiguration(root, { configuration }, context) {
     let currConfig = PenPal.DataStore.fetch("CoreAPI", "Configuration", {});
     if (currConfig.length > 0) {
-      PenPal.DataStore.update(
+      PenPal.DataStore.updateOne(
         "CoreAPI",
         "Configuration",
         { _id: `${currConfig[0]._id}` },

@@ -1,6 +1,6 @@
 import PenPal from "#penpal/core";
 import { check } from "#penpal/common";
-import { dockerExec, dockerBuild } from "./docker.js";
+import { dockerExec, dockerBuild, dockerCompose } from "./docker.js";
 
 const check_docker = (docker) => {
   let docker_accept = true;
@@ -46,15 +46,17 @@ const build_docker_images = async () => {
   };
 
   for (let key in PenPal.LoadedPlugins) {
-    const { settings: { docker } = {} } = PenPal.LoadedPlugins[key];
-    if (docker === undefined) continue;
-    await build_docker(docker);
+    const { settings: { docker, docker_compose } = {} } =
+      PenPal.LoadedPlugins[key];
+    if (docker !== undefined) await build_docker(docker);
+    if (docker_compose !== undefined) await dockerCompose(docker_compose);
   }
 };
 
 const Docker = {
   loadPlugin() {
     PenPal.Docker = {
+      Compose: dockerCompose,
       Exec: dockerExec,
       Build: dockerBuild,
     };

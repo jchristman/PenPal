@@ -3,8 +3,7 @@ import { ApolloServer } from "apollo-server-express";
 import { makeExecutableSchema } from "@graphql-tools/schema";
 import { mergeTypeDefs } from "@graphql-tools/merge";
 import { applyMiddleware } from "graphql-middleware";
-// TODO: Get PenPal again
-//import PenPal from "#penpal/core";
+import PenPal from "#penpal/core";
 import _ from "lodash";
 
 const app = express();
@@ -19,7 +18,6 @@ const startGraphQLServer = async (
   plugins_resolvers = {},
   plugins_buildLoaders = () => null
 ) => {
-  console.log("[.] Starting GraphQL Server");
   console.log("[.] Loading GraphQL Files...");
   const types = await loadGraphQLFiles();
   const _resolvers = _.merge(resolvers, plugins_resolvers);
@@ -58,13 +56,12 @@ const startGraphQLServer = async (
       //}
 
       // FIXME
-      //const PenPalCachingAPI = PenPal.API.CachingAPI();
+      const PenPalCachingAPI = PenPal.API.CachingAPI();
 
       return {
         //user: user,
         loaders,
-        // FIXME
-        //PenPalCachingAPI
+        PenPalCachingAPI,
       };
     },
   });
@@ -76,12 +73,6 @@ const startGraphQLServer = async (
     app,
     path: "/graphql",
   });
-
-  //WebApp.connectHandlers.use("/graphql", (req, res) => {
-  //  if (req.method === "GET") {
-  //    res.end();
-  //  }
-  //});
 
   console.log("[+] GraphQL Server is running!");
 };

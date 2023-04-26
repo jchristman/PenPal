@@ -20,6 +20,7 @@ export const getCustomers = async (customer_ids = []) => {
       id: { $in: customer_ids },
     });
   }
+
   return result;
 };
 
@@ -93,7 +94,8 @@ export const updateCustomers = async (customers) => {
   }
 
   for (let { id, ...customer } of _accepted) {
-    let res = await PenPal.DataStore.update(
+    // TODO: optimize with updateMany
+    let res = await PenPal.DataStore.updateOne(
       "CoreAPI",
       "Customers",
       { id },

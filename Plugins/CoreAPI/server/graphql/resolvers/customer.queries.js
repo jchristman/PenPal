@@ -4,5 +4,5 @@ export default {
   },
   async getCustomers(root, args, { PenPalCachingAPI }) {
     return await PenPalCachingAPI.Customers.GetMany();
-  }
+  },
 };

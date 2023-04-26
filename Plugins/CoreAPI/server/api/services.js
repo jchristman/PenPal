@@ -193,8 +193,8 @@ export const updateServices = async (services) => {
   }
 
   for (let { id, ...service } of _accepted) {
-    // TODO: Needs some work, but I'd prefer to update the datastore layer than here
-    let res = await PenPal.DataStore.update(
+    // TODO: Optimize with updateMany
+    let res = await PenPal.DataStore.updateOne(
       "CoreAPI",
       "Services",
       { id },

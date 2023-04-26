@@ -22,7 +22,7 @@ export default {
       {}
     );
     if (current_config.length > 0) {
-      PenPal.DataStore.update(
+      PenPal.DataStore.updateOne(
         PLUGIN_NAME,
         SETTINGS_STORE,
         { _id: current_config[0]._id },

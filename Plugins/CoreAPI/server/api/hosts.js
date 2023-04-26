@@ -100,10 +100,12 @@ export const insertHost = async (host) => {
 };
 
 export const insertHosts = async (hosts) => {
+  let _rejected = [];
   const rejected = [];
-  const _accepted = [];
+  let _accepted = [];
   const accepted = [];
 
+  // Check that each host has appropriate fields
   for (let host of hosts) {
     try {
       required_field(host, "project", "insertion");
@@ -117,6 +119,7 @@ export const insertHosts = async (hosts) => {
   }
 
   if (_accepted.length > 0) {
+    // Find all networks in the project
     const project_networks = (
       await getNetworksByProject(_accepted[0].project)
     ).reduce(
@@ -129,6 +132,7 @@ export const insertHosts = async (hosts) => {
       {}
     );
 
+    // Map each host to a network
     for (let host of _accepted) {
       for (let network_id in project_networks) {
         if (project_networks[network_id].contains(host.ip_address)) {
@@ -137,30 +141,55 @@ export const insertHosts = async (hosts) => {
       }
     }
 
-    let new_host_ids = await PenPal.DataStore.insertMany(
-      "CoreAPI",
-      "Hosts",
-      _accepted
+    // Reject any hosts that were discovered that were not in any existing scoped networks
+    // TODO: probably need to alert on this somehow
+    _rejected = _.remove(
+      _accepted,
+      (host) => host.network === null || host.network === undefined
     );
 
-    const new_hosts = _.zipWith(new_host_ids, _accepted, ({ id }, _host) => ({
-      id,
-      ..._host,
-    }));
-
-    const network_new_hosts = _.groupBy(new_hosts, "network");
-    for (let network_id in network_new_hosts) {
-      if (network_id !== undefined) {
-        await addHostsToNetwork(
-          network_id,
-          network_new_hosts[network_id].map(({ id }) => id)
-        );
-      }
+    // Add the rejected hosts to the rejected array
+    for (let host of _rejected) {
+      rejected.push({
+        host,
+        error:
+          "Host did not have a matching network. PenPal cannot automatically determine a subnet without further information",
+      });
     }
 
-    accepted.push(...new_hosts);
+    if (_accepted.length > 0) {
+      // Insert the new hosts
+      let new_host_ids = await PenPal.DataStore.insertMany(
+        "CoreAPI",
+        "Hosts",
+        _accepted
+      );
+
+      // Add the host IDs from the insertion to the data in memory
+      const new_hosts = _.zipWith(new_host_ids, _accepted, ({ id }, _host) => ({
+        id,
+        ..._host,
+      }));
+
+      // Update the networks with the new hosts
+      const network_new_hosts = _.groupBy(new_hosts, "network");
+      for (let network_id in network_new_hosts) {
+        if (network_id !== undefined) {
+          await addHostsToNetwork(
+            network_id,
+            network_new_hosts[network_id].map(({ id }) => id)
+          );
+        }
+      }
+
+      // Accept the successful insertions
+      accepted.push(...new_hosts);
+    } else {
+      console.log(rejected);
+    }
   }
 
+  // Fire off newHostHooks
   if (accepted.length > 0) {
     const new_host_ids = accepted.map(({ id }) => id);
     newHostHooks(hosts[0].project, new_host_ids);
@@ -205,8 +234,8 @@ export const updateHosts = async (hosts) => {
   }
 
   for (let { id, ...host } of _accepted) {
-    // TODO: Needs some work, but I'd prefer to update the datastore layer than here
-    let res = await PenPal.DataStore.update(
+    // TODO: Optimize with updateMany
+    let res = await PenPal.DataStore.updateOne(
       "CoreAPI",
       "Hosts",
       { id },
