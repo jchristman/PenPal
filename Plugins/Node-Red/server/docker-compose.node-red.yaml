@@ -1,0 +1,20 @@
+services:
+  penpal_node_red:
+    container_name: penpal-node-red
+    image: nodered/node-red
+    restart: always
+    ports:
+      - "1880:1880"
+    volumes:
+      - penpal_node_red:/data
+    networks:
+      - penpal_extern
+
+volumes:
+  penpal_node_red:
+    external: false
+
+networks:
+  penpal_extern:
+    external:
+      name: penpal_penpal
