@@ -1,7 +1,6 @@
 import React from "react";
-import { Components, registerComponent } from "@penpal/core";
+import { registerComponent } from "@penpal/core";
 import {
-  Avatar,
   Box,
   Card,
   CardContent,
@@ -11,7 +10,6 @@ import {
 } from "@mui/material";
 import { makeStyles } from "@mui/styles";
 import ArrowUpwardIcon from "@mui/icons-material/ArrowUpward";
-import CheckBoxOutlineBlankIcon from "@mui/icons-material/CheckBoxOutlineBlank";
 import cx from "classnames";
 
 const useStyles = makeStyles((theme) => ({
@@ -80,7 +78,7 @@ const TrendingStatistic = ({
             {/*<Avatar className={classes.avatar}>{icon}</Avatar>*/}
           </Grid>
         </Grid>
-        <Box mt={2} display="flex" alignItems="center">
+        <Box sx={{ mt: 2, display: "flex", alignItems: "center" }}>
           <ArrowUpwardIcon
             className={cx(
               classes.delta,

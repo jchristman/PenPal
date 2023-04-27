@@ -3,7 +3,11 @@ import { Components, registerComponent } from "@penpal/core";
 import { BrowserRouter } from "react-router-dom";
 import { SnackbarProvider } from "notistack";
 import { ApolloProvider } from "@apollo/client";
-import { ThemeProvider, createTheme } from "@mui/material/styles";
+import {
+  ThemeProvider,
+  createTheme,
+  StyledEngineProvider,
+} from "@mui/material/styles";
 //import { MuiPickersUtilsProvider } from "@mui/lab";
 import moment from "moment";
 moment.locale("en");
@@ -31,24 +35,24 @@ const Root = () => {
     })();
   }, []);
 
-  console.log(Components);
-
   return (
     <SnackbarProvider maxSnack={3}>
       <BrowserRouter>
         {loading ? null : (
           <ApolloProvider client={apolloClient}>
-            <ThemeProvider theme={theme}>
-              <Components.ErrorBoundary>
-                <Components.IntrospectionProvider>
-                  <Components.AccountProvider>
-                    <Components.ForceLogin>
-                      <Components.Layout />
-                    </Components.ForceLogin>
-                  </Components.AccountProvider>
-                </Components.IntrospectionProvider>
-              </Components.ErrorBoundary>
-            </ThemeProvider>
+            <StyledEngineProvider injectFirst>
+              <ThemeProvider theme={theme}>
+                <Components.ErrorBoundary>
+                  <Components.IntrospectionProvider>
+                    <Components.AccountProvider>
+                      <Components.ForceLogin>
+                        <Components.Layout />
+                      </Components.ForceLogin>
+                    </Components.AccountProvider>
+                  </Components.IntrospectionProvider>
+                </Components.ErrorBoundary>
+              </ThemeProvider>
+            </StyledEngineProvider>
           </ApolloProvider>
         )}
       </BrowserRouter>

@@ -153,7 +153,6 @@ const useStyles = makeStyles((theme) => ({
     padding: theme.spacing(2),
     overflow: "hidden",
     overflowY: "auto",
-    marginLeft: drawerWidth,
   },
   paper: {
     padding: theme.spacing(2),
