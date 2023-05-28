@@ -28,23 +28,16 @@ services:
       - ./docker-compose.common.yaml:/penpal/app/docker-compose.common.yaml
     ports:
       - "3001:3001"
+    environment:
+      - RUN_LOCATION=${RUN_LOCATION}
     command: npm run server
     networks:
       - penpal
-
-  node-red:
-    image: nodered/node-red
-    volumes:
-      - node-red-data:/data
-    ports:
-      - "1880:1880"
 
 volumes:
   penpal-frontend-npm-cache:
     external: false
   penpal-server-npm-cache:
-    external: false
-  node-red-data:
     external: false
 
 networks:

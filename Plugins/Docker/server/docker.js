@@ -1,5 +1,6 @@
 import PenPal from "#penpal/core";
 import { exec } from "child_process";
+import path from "path";
 import fs from "fs";
 import * as url from "url";
 const __dirname = url.fileURLToPath(new URL(".", import.meta.url));
@@ -24,6 +25,11 @@ const runCommand = (args) => {
 export const dockerCompose = async (args) => {
   await PenPal.Utils.AsyncNOOP();
 
+  process.env.PenPalDockerComposePath = path.relative(
+    process.cwd(),
+    path.dirname(args.docker_compose_path)
+  );
+
   try {
     console.log(`[.] Pulling images for compose file: ${args.name}`);
     let res = await runCommand(
@@ -32,7 +38,7 @@ export const dockerCompose = async (args) => {
 
     console.log(`[.] Running compose file: ${args.name}`);
     res = await runCommand(
-      `sudo docker compose -f ${args.docker_compose_path} up -d --force-recreate`
+      `sudo -E docker compose -f ${args.docker_compose_path} up -d --force-recreate`
     );
 
     console.log(`[+] Compose file now running: ${args.name}`);

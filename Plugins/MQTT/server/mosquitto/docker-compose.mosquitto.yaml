@@ -1,0 +1,22 @@
+services:
+  penpal-mqtt:
+    container_name: penpal-mqtt
+    image: eclipse-mosquitto
+    volumes:
+      - ${RUN_LOCATION}/${PenPalDockerComposePath}/mosquitto.conf:/mosquitto/config/mosquitto.conf
+      - penpal-mosquitto-data:/mosquitto/data
+      - penpal-mosquitto-logs:/mosquitto/log
+    restart: always
+    networks:
+      - penpal_extern
+
+volumes:
+  penpal-mosquitto-data:
+    external: false
+  penpal-mosquitto-logs:
+    external: false
+
+networks:
+  penpal_extern:
+    external:
+      name: penpal_penpal

@@ -2,15 +2,15 @@ import PenPal from "#penpal/core";
 import * as url from "url";
 const __dirname = url.fileURLToPath(new URL(".", import.meta.url));
 
-const NodeRedPlugin = {
+const MosquittoPlugin = {
   async loadPlugin() {
     await PenPal.Docker.Compose({
-      name: "node-red",
-      docker_compose_path: `${__dirname}/docker-compose.node-red.yaml`,
+      name: "penpal-mosquitto",
+      docker_compose_path: `${__dirname}/mosquitto/docker-compose.mosquitto.yaml`,
     });
 
     return {};
   },
 };
 
-export default NodeRedPlugin;
+export default MosquittoPlugin;
