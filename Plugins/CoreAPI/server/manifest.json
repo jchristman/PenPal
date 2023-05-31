@@ -1,5 +1,5 @@
 {
-    "name": "CoreAPI",
-    "version": "0.1.0",
-    "dependsOn": ["DataStore@0.1.0", "DataStoreMongoAdapter@0.1.0"]
+  "name": "CoreAPI",
+  "version": "0.1.0",
+  "dependsOn": ["DataStore@0.1.0", "DataStoreMongoAdapter@0.1.0", "MQTT@0.1.0"]
 }

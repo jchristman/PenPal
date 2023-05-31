@@ -1,4 +1,4 @@
-export { registerHook, deleteHook } from "./hooks.js";
+import "./topics.js";
 
 export {
   getCustomer,

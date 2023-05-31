@@ -7,7 +7,6 @@ import { required_field, isTestData } from "./common.js";
 import { getNetworksByProject, addHostsToNetwork } from "./networks.js";
 //import { hosts as mockHosts } from "../test/mock-hosts.json" assert { type: "json" };
 const mockHosts = [];
-import { newHostHooks, deletedHostHooks, updatedHostHooks } from "./hooks.js";
 
 // -----------------------------------------------------------
 
@@ -189,10 +188,13 @@ export const insertHosts = async (hosts) => {
     }
   }
 
-  // Fire off newHostHooks
+  // Publish new hosts
   if (accepted.length > 0) {
     const new_host_ids = accepted.map(({ id }) => id);
-    newHostHooks(hosts[0].project, new_host_ids);
+    PenPal.API.MQTT.Publish(PenPal.API.MQTT.Topics.New.Hosts, {
+      project: hosts[0].project,
+      host_ids: new_host_ids,
+    });
   }
 
   return { accepted, rejected };
@@ -246,7 +248,11 @@ export const updateHosts = async (hosts) => {
   }
 
   if (accepted.length > 0) {
-    updatedHostHooks(accepted);
+    const updated_host_ids = accepted.map(({ id }) => id);
+    PenPal.API.MQTT.Publish(PenPal.API.MQTT.Topics.Update.Hosts, {
+      project: hosts[0].project,
+      host_ids: updated_host_ids,
+    });
   }
 
   return { accepted, rejected };
@@ -356,7 +362,12 @@ export const removeHosts = async (host_ids) => {
   });
 
   if (res > 0) {
-    deletedHostHooks(hosts);
+    const deleted_host_ids = hosts.map(({ id }) => id);
+    PenPal.API.MQTT.Publish(PenPal.API.MQTT.Topics.Delete.Hosts, {
+      project: hosts[0].project,
+      host_ids: deleted_host_ids,
+    });
+
     return true;
   }
 

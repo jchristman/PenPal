@@ -250,8 +250,22 @@ const CoreAPIPlugin = {
       return caching_apis;
     };
 
-    PenPal.API.registerHook = API.registerHook;
-    PenPal.API.deleteHook = API.deleteHook;
+    const topic_root = "penpal/coreapi";
+    PenPal.API.MQTT = await PenPal.MQTT.NewClient();
+    PenPal.API.MQTT.Topics = {
+      New: {
+        Hosts: `${topic_root}/new/hosts`,
+        Networks: `${topic_root}/new/networks`,
+      },
+      Update: {
+        Hosts: `${topic_root}/update/hosts`,
+        Networks: `${topic_root}/update/networks`,
+      },
+      Delete: {
+        Hosts: `${topic_root}/delete/hosts`,
+        Networks: `${topic_root}/delete/networks`,
+      },
+    };
 
     PenPal.Test.CoreAPI = { ...mocks };
 
