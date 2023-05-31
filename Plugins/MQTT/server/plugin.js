@@ -34,7 +34,13 @@ class MQTTClient {
   }
 
   async HandleMessage(topic, message) {
-    await this.subscriptions[topic]?.(message.toString(), topic);
+    let data = message.toString();
+    try {
+      // This will error if the data is not json, else it will assign the parsed object to the data variable
+      let tmp = JSON.parse(data);
+      data = tmp;
+    } catch (e) {}
+    await this.subscriptions[topic]?.(data, topic);
   }
 }
 

@@ -1,9 +1,0 @@
-type Mutation {
-  createN8nWebhook(
-    name: String!
-    url: String!
-    type: String!
-    trigger: String!
-  ): N8nWebhook
-  deleteN8nWebhook(id: ID!): Boolean
-}

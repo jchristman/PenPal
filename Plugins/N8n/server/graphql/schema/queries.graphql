@@ -1,3 +1,0 @@
-type Query {
-  checkN8nWebhook(id: ID!): N8nWebhook
-}

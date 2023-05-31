@@ -1,32 +1,37 @@
 import PenPal from "#penpal/core";
-import { start } from "repl";
 import { loadGraphQLFiles, resolvers } from "./graphql/index.js";
-import fs from "fs";
 import * as url from "url";
 const __dirname = url.fileURLToPath(new URL(".", import.meta.url));
+
+import { performMasscan } from "./api.js";
 
 const settings = {
   docker: {
     name: "masscan",
-    dockerfile: fs.readFileSync(`${__dirname}/Dockerfile`, {
-      encoding: "utf8",
-      flag: "r",
-    }),
+    dockerfile: `${__dirname}/Dockerfile`,
   },
 };
 
 const default_scan = {
-  tcp_ports: [22, 445],
+  tcp_ports: [22, 445, 1883, 3000],
   udp_ports: [],
   scanRate: 1000,
   ping: false,
 };
 
-const start_scan = (host_info) => {
-  console.log("Starting scan", host_info);
-  resolvers[0].Mutation.performMasscan(null, {
-    data: { ips: host_info.host_ids, ...default_scan },
-  });
+const start_scan = async ({ project, host_ids }) => {
+  const ips =
+    (await PenPal.API.Hosts.GetMany(host_ids))?.map(
+      (host) => host.ip_address
+    ) ?? [];
+
+  if (ips.length > 0) {
+    await performMasscan({
+      project_id: project,
+      ips,
+      ...default_scan,
+    });
+  }
 };
 
 const MasscanPlugin = {

@@ -14,4 +14,5 @@ RUN make -j
 # Copy binary
 RUN cp /opt/masscan/bin/masscan /usr/local/bin
 
-ENTRYPOINT ["/bin/bash", "-c"]
+ENTRYPOINT ["/usr/local/bin/masscan"]
+CMD ["-h"]

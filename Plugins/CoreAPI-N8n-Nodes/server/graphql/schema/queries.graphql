@@ -1,4 +1,0 @@
-type Query {
-  coreAPIGetHostData(data: JSON!): [Host]
-  coreAPIGetNetworkData(data: JSON!): [Network]
-}

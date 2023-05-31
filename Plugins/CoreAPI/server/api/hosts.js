@@ -244,7 +244,7 @@ export const updateHosts = async (hosts) => {
       { $set: host }
     );
 
-    if (res > 0) accepted.push({ id, ...host });
+    accepted.push({ id, ...host });
   }
 
   if (accepted.length > 0) {
@@ -319,7 +319,7 @@ export const upsertHosts = async (project_id, hosts) => {
       console.error(existing_host);
     }
 
-    to_update.push(to_check_host[0]);
+    to_update.push({ id: existing_host.id, ...to_check_host[0] });
   }
 
   for (let host of to_check) {
@@ -333,6 +333,9 @@ export const upsertHosts = async (project_id, hosts) => {
   _.each(to_update, (host) => {
     host.project = project_id;
   });
+
+  console.log("To insert", to_insert);
+  console.log("To Update", to_update);
 
   // Do the inserts and updates
   const inserted = await insertHosts(to_insert);

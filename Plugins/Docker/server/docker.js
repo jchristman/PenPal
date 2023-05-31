@@ -61,7 +61,7 @@ export const dockerBuild = async (args) => {
 
   try {
     const res = await runCommand(
-      `sudo echo """${args.dockerfile}""" > Dockerfile-${args.name} && sudo docker build -t ${args.name} -f Dockerfile-${args.name} . && sudo rm -f Dockerfile-${args.name}`
+      `sudo docker build -t ${args.name} -f ${args.dockerfile} .`
     );
 
     if (res) {
