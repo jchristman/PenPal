@@ -1,32 +1,40 @@
-import PenPal from "meteor/penpal";
+import PenPal from "#penpal/core";
 import MongoAdapter from "./adapter.js";
-import { types, resolvers, loaders } from "./graphql";
+import { loadGraphQLFiles, resolvers } from "./graphql/index.js";
+import * as url from "url";
+const __dirname = url.fileURLToPath(new URL(".", import.meta.url));
 
 const settings = {
   configuration: {
     schema_root: "MongoDataStoreConfiguration",
     getter: "getMongoDataStoreConfiguration",
-    setter: "setMongoDataStoreConfiguration"
+    setter: "setMongoDataStoreConfiguration",
   },
   datastores: [
     {
-      name: "Configuration"
-    }
-  ]
+      name: "Configuration",
+    },
+  ],
 };
 
 const MongoDataStorePlugin = {
-  loadPlugin() {
+  async loadPlugin() {
+    await PenPal.Docker.Compose({
+      name: "datastore-mongo-adapter",
+      docker_compose_path: `${__dirname}/docker-compose.datastore-mongo-adapter.yaml`,
+    });
+    await MongoAdapter.connect();
     PenPal.DataStore.RegisterAdapter("MongoAdapter", MongoAdapter);
+    const types = await loadGraphQLFiles();
 
     return {
       graphql: {
         types,
-        resolvers
+        resolvers,
       },
-      settings
+      settings,
     };
-  }
+  },
 };
 
 export default MongoDataStorePlugin;

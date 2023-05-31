@@ -1,6 +1,6 @@
 import React, { useState } from "react";
 
-import { Components } from "meteor/penpal";
+import { Components } from "@penpal/core";
 import { SetupProviders } from "stories/common.js";
 
 export const TableView = () => (
@@ -10,5 +10,5 @@ export const TableView = () => (
 );
 
 export default {
-  title: "PenPal/CoreAPI/Projects List"
+  title: "PenPal/CoreAPI/Projects List",
 };

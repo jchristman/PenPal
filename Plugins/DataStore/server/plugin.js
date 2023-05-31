@@ -1,6 +1,6 @@
-import PenPal from "meteor/penpal";
+import PenPal from "#penpal/core";
 
-import { types, resolvers } from "./graphql";
+import { loadGraphQLFiles, resolvers } from "./graphql/index.js";
 import DataStore from "./datastore.js";
 
 const check_datastores = (datastores) => {
@@ -21,21 +21,22 @@ const create_datastores = (plugin_name) => {
 };
 
 const DataStorePlugin = {
-  loadPlugin() {
+  async loadPlugin() {
     PenPal.DataStore = DataStore;
+    const types = await loadGraphQLFiles();
 
     return {
       graphql: {
         types,
-        resolvers
+        resolvers,
       },
       settings: {},
       hooks: {
         settings: { datastores: check_datastores },
-        postload: create_datastores
-      }
+        postload: create_datastores,
+      },
     };
-  }
+  },
 };
 
 export default DataStorePlugin;

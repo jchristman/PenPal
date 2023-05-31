@@ -1,11 +1,11 @@
-import PenPal from "meteor/penpal";
+import PenPal from "#penpal/core";
 import _ from "lodash";
 import fetch from "node-fetch";
-import AbortController from "abort-controller";
+//import AbortController from "abort-controller";
 import {
   PLUGIN_NAME,
   SETTINGS_STORE,
-  DEFAULT_PENPAL_SETTINGS
+  DEFAULT_PENPAL_SETTINGS,
 } from "../../constants.js";
 
 export default {
@@ -17,7 +17,7 @@ export default {
     if (penpal_settings.rest_url === "") {
       // We can't query the REST API until this is set
       return {
-        penpal_settings
+        penpal_settings,
       };
     }
 
@@ -30,7 +30,7 @@ export default {
     try {
       const config_url = `${penpal_settings.rest_url}/burp/configuration`;
       const req = await fetch(config_url, {
-        signal: controller.signal
+        signal: controller.signal,
       });
       const json = await req.json();
       result = _.extend(result, json);
@@ -39,7 +39,7 @@ export default {
       if (error.name === "AbortError") {
         penpal_settings.rest_error = {
           code: 500,
-          message: "Request timed out"
+          message: "Request timed out",
         };
       } else {
         penpal_settings.rest_error = { code: 500, message: error.message };
@@ -49,5 +49,5 @@ export default {
     }
 
     return result;
-  }
+  },
 };

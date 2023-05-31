@@ -1,12 +1,11 @@
-import PenPal from "meteor/penpal";
-import { Mongo } from "meteor/mongo";
+import PenPal from "#penpal/core";
 import _ from "lodash";
 
 export default {
   async setCoreAPIConfiguration(root, { configuration }, context) {
     let currConfig = PenPal.DataStore.fetch("CoreAPI", "Configuration", {});
     if (currConfig.length > 0) {
-      PenPal.DataStore.update(
+      PenPal.DataStore.updateOne(
         "CoreAPI",
         "Configuration",
         { _id: `${currConfig[0]._id}` },
@@ -15,25 +14,25 @@ export default {
       return {
         status: "Updated Configuration",
         was_success: true,
-        affected_records: [currConfig[0]._id]
+        affected_records: [currConfig[0]._id],
       };
     } else {
       let addedConfig = PenPal.DataStore.insert("CoreAPI", "Configuration", {
-        hookURL: configuration.hookURL
+        hookURL: configuration.hookURL,
       });
       if (addedConfig) {
         return {
           status: "Inserted Configuration",
           was_success: true,
-          affected_records: [addedConfig]
+          affected_records: [addedConfig],
         };
       } else {
         return {
           status: "Configuration Update Failed",
           was_success: false,
-          affected_records: []
+          affected_records: [],
         };
       }
     }
-  }
+  },
 };

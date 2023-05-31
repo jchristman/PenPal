@@ -1,0 +1,5 @@
+{
+  "name": "MQTT",
+  "version": "0.1.0",
+  "dependsOn": ["Docker@0.1.0"]
+}

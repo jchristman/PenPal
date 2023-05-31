@@ -1,4 +1,4 @@
-import PenPal from "meteor/penpal";
+import PenPal from "#penpal/core";
 
 export default {
   Service: {
@@ -7,7 +7,7 @@ export default {
         case obj.ip_protocol !== undefined:
           return "NetworkService";
       }
-    }
+    },
   },
 
   ServicesConnection: {
@@ -42,7 +42,7 @@ export default {
         startCursorOffset,
         endCursor,
         endCursorOffset,
-        totalCount
+        totalCount,
       } = await PenPalCachingAPI.Services.GetPaginationInfo(service_ids, args);
 
       return {
@@ -51,7 +51,7 @@ export default {
         startCursor,
         startCursorOffset,
         endCursor,
-        endCursorOffset
+        endCursorOffset,
       };
     },
 
@@ -65,6 +65,6 @@ export default {
         args
       );
       return totalCount;
-    }
-  }
+    },
+  },
 };

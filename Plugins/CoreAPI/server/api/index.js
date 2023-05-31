@@ -1,4 +1,4 @@
-export { registerHook, deleteHook } from "./hooks.js";
+import "./topics.js";
 
 export {
   getCustomer,
@@ -9,7 +9,7 @@ export {
   updateCustomers,
   upsertCustomers,
   removeCustomer,
-  removeCustomers
+  removeCustomers,
 } from "./customers.js";
 
 export {
@@ -22,7 +22,7 @@ export {
   updateProjects,
   upsertProjects,
   removeProject,
-  removeProjects
+  removeProjects,
 } from "./projects.js";
 
 export {
@@ -38,7 +38,7 @@ export {
   updateHosts,
   upsertHosts,
   removeHost,
-  removeHosts
+  removeHosts,
 } from "./hosts.js";
 
 export {
@@ -51,7 +51,7 @@ export {
   updateNetwork,
   updateNetworks,
   removeNetwork,
-  removeNetworks
+  removeNetworks,
 } from "./networks.js";
 
 export {
@@ -66,7 +66,7 @@ export {
   insertServices,
   updateService,
   updateServices,
-  upsertServices,
+  //upsertServices,
   removeService,
-  removeServices
+  removeServices,
 } from "./services.js";

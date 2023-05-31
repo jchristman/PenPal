@@ -1,0 +1,4 @@
+type PenPalError {
+  code: Int!
+  message: String!
+}

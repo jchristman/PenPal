@@ -1,7 +1,7 @@
-import { hosts } from "./mock-hosts.json";
-import { networks } from "./mock-networks.json";
+import hosts from "./mock-hosts.json" assert { type: "json" };
+import networks from "./mock-networks.json" assert { type: "json" };
 
 export default {
-  mockHosts: () => hosts,
-  mockNetworks: () => networks
+  mockHosts: () => hosts.hosts,
+  mockNetworks: () => networks.networks,
 };

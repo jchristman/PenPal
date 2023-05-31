@@ -1,0 +1,18 @@
+services:
+  penpal_mongo:
+    container_name: penpal-mongo
+    image: mongo
+    restart: always
+    volumes:
+      - penpal_mongo_data:/data/db
+    networks:
+      - penpal_extern
+
+volumes:
+  penpal_mongo_data:
+    external: false
+
+networks:
+  penpal_extern:
+    external:
+      name: penpal_penpal

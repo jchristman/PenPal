@@ -1,17 +1,19 @@
-import { types, resolvers, loaders } from "./graphql";
-import PenPal from "meteor/penpal";
+import { loadGraphQLFiles, resolvers } from "./graphql/index.js";
+import PenPal from "#penpal/core";
 
 PenPal.Test = {};
 
 const BasePlugin = {
-  loadPlugin() {
+  async loadPlugin() {
+    const types = await loadGraphQLFiles();
+
     return {
       graphql: {
         types,
-        resolvers
-      }
+        resolvers,
+      },
     };
-  }
+  },
 };
 
 export default BasePlugin;

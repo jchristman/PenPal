@@ -1,13 +1,14 @@
-import PenPal from "meteor/penpal";
+import PenPal from "#penpal/core";
 import _ from "lodash";
+import { getCustomer, getCustomers } from "./customers.js";
 
 import { required_field } from "./common.js";
 
 // -----------------------------------------------------------
 
-export const getProject = async project_id => {
+export const getProject = async (project_id) => {
   return await PenPal.DataStore.fetchOne("CoreAPI", "Projects", {
-    id: project_id
+    id: project_id,
   });
 };
 
@@ -33,14 +34,14 @@ export const getProjectsPaginationInfo = async (project_ids = [], options) => {
 
 const default_project = {
   dates: {},
-  scope: { hosts: [], networks: [] }
+  scope: { hosts: [], networks: [] },
 };
 
-export const insertProject = async project => {
+export const insertProject = async (project) => {
   return await insertProjects([project]);
 };
 
-export const insertProjects = async projects => {
+export const insertProjects = async (projects) => {
   const rejected = [];
   const _accepted = [];
   const accepted = [];
@@ -50,12 +51,10 @@ export const insertProjects = async projects => {
       required_field(project, "customer", "insertion");
       required_field(project, "name", "insertion");
 
-      let customer = await PenPal.DataStore.fetchOne("CoreAPI", "Customers", {
-        id: project.customer
-      });
+      let customer = await getCustomer(project.customer);
 
       if (customer?.id === undefined) {
-        throw new Meteor.Error(404, `Customer ${project.customer} not found`);
+        throw new Error(`[404] Customer ${project.customer} not found`);
       }
 
       const _project = _.merge(default_project, project);
@@ -81,12 +80,12 @@ export const insertProjects = async projects => {
     // TODO: maybe make this a call to the customer API to update the customer instead of doing the raw database queries here?
     // Add the id to the customer
     let customer = await PenPal.DataStore.fetchOne("CoreAPI", "Customers", {
-      id: accepted[0].customer
+      id: accepted[0].customer,
     });
 
-    customer.projects.push(...accepted.map(p => p.id));
+    customer.projects.push(...accepted.map((p) => p.id));
 
-    await PenPal.DataStore.update(
+    await PenPal.DataStore.updateOne(
       "CoreAPI",
       "Customers",
       { id: customer.id },
@@ -99,11 +98,11 @@ export const insertProjects = async projects => {
 
 // -----------------------------------------------------------
 
-export const updateProject = async project => {
+export const updateProject = async (project) => {
   return await updateProjects([project]);
 };
 
-export const updateProjects = async projects => {
+export const updateProjects = async (projects) => {
   const rejected = [];
   const _accepted = [];
   const accepted = [];
@@ -120,8 +119,8 @@ export const updateProjects = async projects => {
   if (_accepted.length > 0) {
     let matched_projects = await PenPal.DataStore.fetch("CoreAPI", "Projects", {
       id: {
-        $in: _accepted.map(project => project.id)
-      }
+        $in: _accepted.map((project) => project.id),
+      },
     });
 
     if (matched_projects.length !== _accepted.length) {
@@ -129,7 +128,8 @@ export const updateProjects = async projects => {
     }
 
     for (let { id, ...project } of _accepted) {
-      let res = await PenPal.DataStore.update(
+      // TODO: Optimize with updateMany
+      let res = await PenPal.DataStore.updateOne(
         "CoreAPI",
         "Projects",
         { id },
@@ -145,7 +145,7 @@ export const updateProjects = async projects => {
 
 // -----------------------------------------------------------
 
-export const upsertProjects = async projects => {
+export const upsertProjects = async (projects) => {
   let to_update = [];
   let to_insert = [];
 
@@ -165,13 +165,13 @@ export const upsertProjects = async projects => {
 
 // -----------------------------------------------------------
 
-export const removeProject = async project_id => {
+export const removeProject = async (project_id) => {
   return await removeProjects([project_id]);
 };
 
-export const removeProjects = async project_ids => {
+export const removeProjects = async (project_ids) => {
   let res = await PenPal.DataStore.delete("CoreAPI", "Projects", {
-    id: { $in: project_ids }
+    id: { $in: project_ids },
   });
 
   if (res > 0) {

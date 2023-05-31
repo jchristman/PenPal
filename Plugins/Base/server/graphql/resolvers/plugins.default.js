@@ -1,4 +1,4 @@
-import PenPal from "meteor/penpal";
+import PenPal from "#penpal/core";
 
 export default {
   Plugin: {
@@ -16,6 +16,6 @@ export default {
 
     async settings({ id }, args, context) {
       return PenPal.LoadedPlugins[id].settings;
-    }
-  }
+    },
+  },
 };

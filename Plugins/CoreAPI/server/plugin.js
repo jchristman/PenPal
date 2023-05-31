@@ -1,46 +1,46 @@
 import _ from "lodash";
-import PenPal from "meteor/penpal";
+import PenPal from "#penpal/core";
 import DataLoader from "dataloader";
 import stable_stringify from "fast-json-stable-stringify";
 
-import { types, resolvers, loaders } from "./graphql";
-import * as API from "./api/";
-import { mocks } from "./test/";
+import { loadGraphQLFiles, resolvers } from "./graphql/index.js";
+import * as API from "./api/index.js";
+import { mocks } from "./test/index.js";
 
 const settings = {
   configuration: {
     schema_root: "CoreAPIConfiguration",
     getter: "getCoreAPIConfiguration",
-    setter: "setCoreAPIConfiguration"
+    setter: "setCoreAPIConfiguration",
   },
   dashboard: {
     schema_root: "CoreAPIAnalytics",
-    getter: "getCoreAPIAnalytics"
+    getter: "getCoreAPIAnalytics",
   },
   datastores: [
     {
-      name: "Customers"
+      name: "Customers",
     },
     {
-      name: "Projects"
+      name: "Projects",
     },
     {
-      name: "Hosts"
+      name: "Hosts",
     },
     {
-      name: "Networks"
+      name: "Networks",
     },
     {
-      name: "Services"
+      name: "Services",
     },
     {
-      name: "Configuration"
-    }
-  ]
+      name: "Configuration",
+    },
+  ],
 };
 
 const CoreAPIPlugin = {
-  loadPlugin() {
+  async loadPlugin() {
     // Register API Hooks
     PenPal.API.Customers = {
       Get: API.getCustomer,
@@ -51,7 +51,7 @@ const CoreAPIPlugin = {
       RemoveMany: API.removeCustomers,
       Update: API.updateCustomer,
       UpdateMany: API.updateCustomers,
-      UpsertMany: API.upsertCustomers
+      UpsertMany: API.upsertCustomers,
     };
 
     PenPal.API.Projects = {
@@ -64,7 +64,7 @@ const CoreAPIPlugin = {
       RemoveMany: API.removeProjects,
       Update: API.updateProject,
       UpdateMany: API.updateProjects,
-      UpsertMany: API.upsertProjects
+      UpsertMany: API.upsertProjects,
     };
 
     PenPal.API.Hosts = {
@@ -80,7 +80,7 @@ const CoreAPIPlugin = {
       RemoveMany: API.removeHosts,
       Update: API.updateHost,
       UpdateMany: API.updateHosts,
-      UpsertMany: API.upsertHosts
+      UpsertMany: API.upsertHosts,
     };
 
     PenPal.API.Networks = {
@@ -93,7 +93,7 @@ const CoreAPIPlugin = {
       Remove: API.removeNetwork,
       RemoveMany: API.removeNetworks,
       Update: API.updateNetwork,
-      UpdateMany: API.updateNetworks
+      UpdateMany: API.updateNetworks,
     };
 
     PenPal.API.Services = {
@@ -109,7 +109,7 @@ const CoreAPIPlugin = {
       Remove: API.removeService,
       RemoveMany: API.removeServices,
       Update: API.updateService,
-      UpdateMany: API.updateServices
+      UpdateMany: API.updateServices,
     };
 
     // This builds a unique set of wrapped functions that can utilize the dataloader utility in
@@ -139,17 +139,14 @@ const CoreAPIPlugin = {
         const get_many_pagination_options_id_cache = {};
         const pagination_info_cache = {};
 
-        const {
-          Get,
-          GetMany,
-          GetPaginationInfo,
-          ...OtherFunctions
-        } = PenPal.API[api_key];
+        const { Get, GetMany, GetPaginationInfo, ...OtherFunctions } =
+          PenPal.API[api_key];
 
         // Build the object that's going to hold all the caching functions
         caching_apis[api_key] = {
           async Get(key) {
-            return await api_dataloader.load(key);
+            const result = await api_dataloader.load(key);
+            return result;
           },
 
           async GetMany(keys, options) {
@@ -241,31 +238,47 @@ const CoreAPIPlugin = {
 
                 return cached_pagination_info;
               }
-            }
+            },
           }),
 
           // TODO: At some point consider using the "prime" functions of the data loader to cache the results
           // of and insert, update, etc
-          ...OtherFunctions
+          ...OtherFunctions,
         };
       }
 
       return caching_apis;
     };
 
-    PenPal.API.registerHook = API.registerHook;
-    PenPal.API.deleteHook = API.deleteHook;
+    const topic_root = "penpal/coreapi";
+    PenPal.API.MQTT = await PenPal.MQTT.NewClient();
+    PenPal.API.MQTT.Topics = {
+      New: {
+        Hosts: `${topic_root}/new/hosts`,
+        Networks: `${topic_root}/new/networks`,
+      },
+      Update: {
+        Hosts: `${topic_root}/update/hosts`,
+        Networks: `${topic_root}/update/networks`,
+      },
+      Delete: {
+        Hosts: `${topic_root}/delete/hosts`,
+        Networks: `${topic_root}/delete/networks`,
+      },
+    };
 
     PenPal.Test.CoreAPI = { ...mocks };
+
+    const types = await loadGraphQLFiles();
 
     return {
       graphql: {
         types,
-        resolvers
+        resolvers,
       },
-      settings
+      settings,
     };
-  }
+  },
 };
 
 export default CoreAPIPlugin;

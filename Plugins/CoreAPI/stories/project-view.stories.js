@@ -1,6 +1,6 @@
 import React, { useState } from "react";
 
-import { Components } from "meteor/penpal";
+import { Components } from "@penpal/core";
 import { SetupProviders } from "stories/common.js";
 import { project } from "./mocks/get-project-details.js";
 
@@ -23,7 +23,7 @@ export const DataContainer = () => (
         display: "flex",
         flexDirection: "column",
         width: "100%",
-        height: "100%"
+        height: "100%",
       }}
     >
       <Components.ProjectViewDataContainer project={project} />
@@ -38,7 +38,7 @@ export const Dashboard = () => (
         display: "flex",
         flexDirection: "column",
         width: "100%",
-        height: "100%"
+        height: "100%",
       }}
     >
       <Components.ProjectViewDashboard project={project} />
@@ -59,5 +59,5 @@ export const Networks = () => (
 );
 
 export default {
-  title: "PenPal/CoreAPI/Project View"
+  title: "PenPal/CoreAPI/Project View",
 };

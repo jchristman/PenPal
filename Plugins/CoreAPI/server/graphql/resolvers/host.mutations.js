@@ -1,4 +1,4 @@
-import PenPal from "meteor/penpal";
+import PenPal from "#penpal/core";
 
 export default {
   async createHost(root, { projectID, host }, { PenPalCachingAPI }) {
@@ -39,5 +39,5 @@ export default {
 
   async removeHost(root, { id }, { PenPalCachingAPI }) {
     return await PenPalCachingAPI.Customers.Remove(id);
-  }
+  },
 };

@@ -1,4 +1,4 @@
-import PenPal from "meteor/penpal";
+import PenPal from "#penpal/core";
 import _ from "lodash";
 
 export default {
@@ -10,7 +10,6 @@ export default {
       pipeline.push({ $count: "totalProjects" });
 
       const results = await MongoAdapter.MongoCollections["CoreAPI.Projects"]
-        .rawCollection()
         .aggregate(pipeline)
         .toArray();
 
@@ -18,7 +17,7 @@ export default {
         title: "Total Projects",
         value: 0,
         delta: 0,
-        since: new Date()
+        since: new Date(),
       };
 
       if (results.length > 0) {
@@ -35,7 +34,6 @@ export default {
       pipeline.push({ $count: "totalCustomers" });
 
       const results = await MongoAdapter.MongoCollections["CoreAPI.Customers"]
-        .rawCollection()
         .aggregate(pipeline)
         .toArray();
 
@@ -43,7 +41,7 @@ export default {
         title: "Total Customers",
         value: 0,
         delta: 0,
-        since: new Date()
+        since: new Date(),
       };
 
       if (results.length > 0) {
@@ -60,7 +58,6 @@ export default {
       pipeline.push({ $count: "totalHosts" });
 
       const results = await MongoAdapter.MongoCollections["CoreAPI.Hosts"]
-        .rawCollection()
         .aggregate(pipeline)
         .toArray();
 
@@ -68,7 +65,7 @@ export default {
         title: "Total Hosts",
         value: 0,
         delta: 0,
-        since: new Date()
+        since: new Date(),
       };
 
       if (results.length > 0) {
@@ -85,7 +82,6 @@ export default {
       pipeline.push({ $count: "totalServices" });
 
       const results = await MongoAdapter.MongoCollections["CoreAPI.Services"]
-        .rawCollection()
         .aggregate(pipeline)
         .toArray();
 
@@ -93,7 +89,7 @@ export default {
         title: "Total Services",
         value: 0,
         delta: 0,
-        since: new Date()
+        since: new Date(),
       };
 
       if (results.length > 0) {
@@ -101,7 +97,7 @@ export default {
       }
 
       return result;
-    }
+    },
 
     /*
     customerBreakdown: async ({ id }) => {
@@ -138,7 +134,7 @@ export default {
         }
       ]);
 
-      const results = await Clients.rawCollection()
+      const results = await Clients
         .aggregate(pipeline)
         .toArray();
 
@@ -177,11 +173,11 @@ export default {
         }
       ]);
 
-      const results = await Clients.rawCollection()
+      const results = await Clients
         .aggregate(pipeline)
         .toArray();
 
       return results;
     }*/
-  }
+  },
 };

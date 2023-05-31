@@ -1,12 +1,12 @@
-import PenPal from "meteor/penpal";
+import PenPal from "#penpal/core";
 import _ from "lodash";
 import ip from "ip";
 
 import { required_field, isTestData } from "./common.js";
 
 import { getNetworksByProject, addHostsToNetwork } from "./networks.js";
-import { hosts as mockHosts } from "../test/mock-hosts.json";
-import { newHostHooks, deletedHostHooks, updatedHostHooks } from "./hooks.js";
+//import { hosts as mockHosts } from "../test/mock-hosts.json" assert { type: "json" };
+const mockHosts = [];
 
 // -----------------------------------------------------------
 
@@ -18,7 +18,7 @@ export const getHost = async (host_id, options) => {
         "CoreAPI",
         "Hosts",
         {
-          id: host_id
+          id: host_id,
         },
         options
       );
@@ -33,7 +33,7 @@ export const getHosts = async (host_ids, options) => {
         "CoreAPI",
         "Hosts",
         {
-          id: { $in: host_ids }
+          id: { $in: host_ids },
         },
         options
       );
@@ -53,7 +53,7 @@ export const getHostsByProject = async (project_id, options) => {
     "CoreAPI",
     "Hosts",
     {
-      project: project_id
+      project: project_id,
     },
     options
   );
@@ -66,7 +66,7 @@ export const getHostsByNetwork = async (network_id, options) => {
     "CoreAPI",
     "Hosts",
     {
-      network: network_id
+      network: network_id,
     },
     options
   );
@@ -79,7 +79,7 @@ export const getHostsByNetworks = async (network_ids, options) => {
     "CoreAPI",
     "Hosts",
     {
-      network: { $in: network_ids }
+      network: { $in: network_ids },
     },
     options
   );
@@ -91,7 +91,7 @@ export const getHostsByNetworks = async (network_ids, options) => {
 
 const default_host = {
   hostnames: [],
-  services: []
+  services: [],
 };
 
 export const insertHost = async (host) => {
@@ -99,10 +99,12 @@ export const insertHost = async (host) => {
 };
 
 export const insertHosts = async (hosts) => {
+  let _rejected = [];
   const rejected = [];
-  const _accepted = [];
+  let _accepted = [];
   const accepted = [];
 
+  // Check that each host has appropriate fields
   for (let host of hosts) {
     try {
       required_field(host, "project", "insertion");
@@ -116,6 +118,7 @@ export const insertHosts = async (hosts) => {
   }
 
   if (_accepted.length > 0) {
+    // Find all networks in the project
     const project_networks = (
       await getNetworksByProject(_accepted[0].project)
     ).reduce(
@@ -123,11 +126,12 @@ export const insertHosts = async (hosts) => {
         ...sum,
         [network.id]: ip.cidrSubnet(
           `${network.subnet.network_address}/${network.subnet.subnet_mask}`
-        )
+        ),
       }),
       {}
     );
 
+    // Map each host to a network
     for (let host of _accepted) {
       for (let network_id in project_networks) {
         if (project_networks[network_id].contains(host.ip_address)) {
@@ -136,33 +140,61 @@ export const insertHosts = async (hosts) => {
       }
     }
 
-    let new_host_ids = await PenPal.DataStore.insertMany(
-      "CoreAPI",
-      "Hosts",
-      _accepted
+    // Reject any hosts that were discovered that were not in any existing scoped networks
+    // TODO: probably need to alert on this somehow
+    _rejected = _.remove(
+      _accepted,
+      (host) => host.network === null || host.network === undefined
     );
 
-    const new_hosts = _.zipWith(new_host_ids, _accepted, ({ id }, _host) => ({
-      id,
-      ..._host
-    }));
-
-    const network_new_hosts = _.groupBy(new_hosts, "network");
-    for (let network_id in network_new_hosts) {
-      if (network_id !== undefined) {
-        await addHostsToNetwork(
-          network_id,
-          network_new_hosts[network_id].map(({ id }) => id)
-        );
-      }
+    // Add the rejected hosts to the rejected array
+    for (let host of _rejected) {
+      rejected.push({
+        host,
+        error:
+          "Host did not have a matching network. PenPal cannot automatically determine a subnet without further information",
+      });
     }
 
-    accepted.push(...new_hosts);
+    if (_accepted.length > 0) {
+      // Insert the new hosts
+      let new_host_ids = await PenPal.DataStore.insertMany(
+        "CoreAPI",
+        "Hosts",
+        _accepted
+      );
+
+      // Add the host IDs from the insertion to the data in memory
+      const new_hosts = _.zipWith(new_host_ids, _accepted, ({ id }, _host) => ({
+        id,
+        ..._host,
+      }));
+
+      // Update the networks with the new hosts
+      const network_new_hosts = _.groupBy(new_hosts, "network");
+      for (let network_id in network_new_hosts) {
+        if (network_id !== undefined) {
+          await addHostsToNetwork(
+            network_id,
+            network_new_hosts[network_id].map(({ id }) => id)
+          );
+        }
+      }
+
+      // Accept the successful insertions
+      accepted.push(...new_hosts);
+    } else {
+      console.log(rejected);
+    }
   }
 
+  // Publish new hosts
   if (accepted.length > 0) {
     const new_host_ids = accepted.map(({ id }) => id);
-    newHostHooks(hosts[0].project, new_host_ids);
+    PenPal.API.MQTT.Publish(PenPal.API.MQTT.Topics.New.Hosts, {
+      project: hosts[0].project,
+      host_ids: new_host_ids,
+    });
   }
 
   return { accepted, rejected };
@@ -195,7 +227,7 @@ export const updateHosts = async (hosts) => {
   }
 
   let matched_hosts = await PenPal.DataStore.fetch("CoreAPI", "Hosts", {
-    id: { $in: _accepted.map((host) => host.id) }
+    id: { $in: _accepted.map((host) => host.id) },
   });
 
   if (matched_hosts.length !== _accepted.length) {
@@ -204,19 +236,23 @@ export const updateHosts = async (hosts) => {
   }
 
   for (let { id, ...host } of _accepted) {
-    // TODO: Needs some work, but I'd prefer to update the datastore layer than here
-    let res = await PenPal.DataStore.update(
+    // TODO: Optimize with updateMany
+    let res = await PenPal.DataStore.updateOne(
       "CoreAPI",
       "Hosts",
       { id },
       { $set: host }
     );
 
-    if (res > 0) accepted.push({ id, ...host });
+    accepted.push({ id, ...host });
   }
 
   if (accepted.length > 0) {
-    updatedHostHooks(accepted);
+    const updated_host_ids = accepted.map(({ id }) => id);
+    PenPal.API.MQTT.Publish(PenPal.API.MQTT.Topics.Update.Hosts, {
+      project: hosts[0].project,
+      host_ids: updated_host_ids,
+    });
   }
 
   return { accepted, rejected };
@@ -257,10 +293,10 @@ export const upsertHosts = async (project_id, hosts) => {
       {
         $or: [
           { ip_address: { $in: search_ips } },
-          { mac_address: { $in: search_macs } }
-        ]
-      }
-    ]
+          { mac_address: { $in: search_macs } },
+        ],
+      },
+    ],
   };
 
   let exists = await PenPal.DataStore.fetch("CoreAPI", "Hosts", selector);
@@ -283,7 +319,7 @@ export const upsertHosts = async (project_id, hosts) => {
       console.error(existing_host);
     }
 
-    to_update.push(to_check_host[0]);
+    to_update.push({ id: existing_host.id, ...to_check_host[0] });
   }
 
   for (let host of to_check) {
@@ -298,6 +334,9 @@ export const upsertHosts = async (project_id, hosts) => {
     host.project = project_id;
   });
 
+  console.log("To insert", to_insert);
+  console.log("To Update", to_update);
+
   // Do the inserts and updates
   const inserted = await insertHosts(to_insert);
   const updated = await updateHosts(to_update);
@@ -305,7 +344,7 @@ export const upsertHosts = async (project_id, hosts) => {
   return {
     inserted,
     updated,
-    rejected
+    rejected,
   };
 };
 
@@ -318,15 +357,20 @@ export const removeHost = async (host_id) => {
 export const removeHosts = async (host_ids) => {
   // Get all the host data for hooks so the deleted host hook has some info for notifications and such
   let hosts = await PenPal.DataStore.fetch("CoreAPI", "Hosts", {
-    id: { $in: host_ids }
+    id: { $in: host_ids },
   });
 
   let res = await PenPal.DataStore.delete("CoreAPI", "Hosts", {
-    id: { $in: host_ids }
+    id: { $in: host_ids },
   });
 
   if (res > 0) {
-    deletedHostHooks(hosts);
+    const deleted_host_ids = hosts.map(({ id }) => id);
+    PenPal.API.MQTT.Publish(PenPal.API.MQTT.Topics.Delete.Hosts, {
+      project: hosts[0].project,
+      host_ids: deleted_host_ids,
+    });
+
     return true;
   }
 

@@ -1,16 +1,16 @@
-import resolvers from "./resolvers/";
+import resolvers from "./resolvers/index.js";
 
 export default [
   {
     Query: {
-      ...resolvers.queries
-    }
+      ...resolvers.queries,
+    },
   },
   {
     Mutation: {
-      ...resolvers.mutations
-    }
+      ...resolvers.mutations,
+    },
   },
   ...resolvers.default_resolvers,
-  ...resolvers.scalars
+  ...resolvers.scalars,
 ];
