@@ -303,23 +303,17 @@ export const upsertHosts = async (project_id, hosts) => {
 
   // After this loop, all existing hosts will be set up for an update and `to_check` will only have "new" hosts left
   for (let existing_host of exists) {
-    let to_check_host = _.remove(
-      to_check,
-      (host) =>
-        host.ip_address === existing_host.ip_address ||
-        host.mac_address === existing_host.mac_address
-    );
-
-    if (to_check_host.length === 0) {
-      // This really shouldn't happen because it matched the query for the DB
-      console.error(
-        `Somehow found a host on upsert but it wasn't in the set of hosts passed in?`
-      );
-      console.error(to_check);
-      console.error(existing_host);
+    for (let i = 0; i < to_check.length; i++) {
+      if (
+        existing_host.ip_address === to_check[i].ip_address ||
+        existing_host.mac_address === to_check[i].ip_address
+      ) {
+        let found_host = to_check.splice(i, 1)[0];
+        to_update.push({ id: existing_host.id, ...found_host });
+        // Break after match
+        break;
+      }
     }
-
-    to_update.push({ id: existing_host.id, ...to_check_host[0] });
   }
 
   for (let host of to_check) {
@@ -333,9 +327,6 @@ export const upsertHosts = async (project_id, hosts) => {
   _.each(to_update, (host) => {
     host.project = project_id;
   });
-
-  console.log("To insert", to_insert);
-  console.log("To Update", to_update);
 
   // Do the inserts and updates
   const inserted = await insertHosts(to_insert);

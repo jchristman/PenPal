@@ -4,11 +4,6 @@ import _ from "lodash";
 import { required_field, isTestData } from "./common.js";
 //import { networks as mockNetworks } from "../test/mock-networks.json" assert { type: "json" };
 const mockNetworks = [];
-// import {
-//   newNetworkHooks,
-//   deletedNetworkHooks,
-//   updatedNetworkHooks,
-// } from "./hooks.js";
 
 // -----------------------------------------------------------
 
@@ -87,7 +82,7 @@ export const insertNetworks = async (networks) => {
   }
 
   if (accepted.length > 0) {
-    const new_network_ids = networks.map(({ id }) => id);
+    const new_network_ids = accepted.map(({ id }) => id);
     PenPal.API.MQTT.Publish(PenPal.API.MQTT.Topics.New.Networks, {
       project: networks[0].project,
       network_ids: new_network_ids,
@@ -139,7 +134,7 @@ export const updateNetworks = async (networks) => {
   }
 
   if (accepted.length > 0) {
-    const updated_network_ids = networks.map(({ id }) => id);
+    const updated_network_ids = accepted.map(({ id }) => id);
     PenPal.API.MQTT.Publish(PenPal.API.MQTT.Topics.Update.Networks, {
       project: networks[0].project,
       network_ids: updated_network_ids,

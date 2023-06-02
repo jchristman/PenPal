@@ -26,6 +26,7 @@ services:
     volumes:
       - penpal-server-npm-cache:/home/node/.npm
       - ./docker-compose.common.yaml:/penpal/app/docker-compose.common.yaml
+      - /tmp:/tmp
     ports:
       - "3001:3001"
     environment:

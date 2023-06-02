@@ -201,7 +201,8 @@ export const updateServices = async (services) => {
       { $set: service }
     );
 
-    if (res > 0) accepted.push({ id, ...service });
+    // TODO: See if this is actually right
+    accepted.push({ id, ...service });
   }
 
   if (accepted.length > 0) {
@@ -209,6 +210,53 @@ export const updateServices = async (services) => {
   }
 
   return { accepted, rejected };
+};
+
+// -----------------------------------------------------------
+
+export const upsertServices = async (services) => {
+  const result = [];
+  const to_update = [];
+  const to_insert = [];
+  const rejected = [];
+
+  // Not all services should already have a matched host id. Find services that already exist
+
+  const to_check = [];
+
+  for (let i = 0; i < services.length; i++) {
+    let service = services[i];
+    let selector = {
+      $and: [
+        { host: service.host },
+        { ip_protocol: service.ip_protocol },
+        { port: service.port },
+      ],
+    };
+
+    let exists = await PenPal.DataStore.fetch("CoreAPI", "Services", selector);
+    if (exists.length > 0) {
+      to_update.push({ id: exists[0].id, ...service });
+
+      // Splice and decrement the counter to account for the changed length of the array
+      services.splice(i, 1);
+      i--;
+    }
+  }
+
+  for (let service of services) {
+    to_insert.push(service);
+  }
+
+  // Do the inserts and updates
+  const inserted = await insertServices(to_insert);
+  const updated = await updateServices(to_update);
+
+  return {
+    inserted,
+    updated,
+    rejected,
+  };
 };
 
 // -----------------------------------------------------------

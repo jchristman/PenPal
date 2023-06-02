@@ -1,7 +1,8 @@
 import PenPal from "#penpal/core";
 import hjson from "hjson";
 import _ from "lodash";
-import { json } from "stream/consumers";
+import fs from "fs";
+import { v4 as uuidv4 } from "uuid";
 
 function customizer(objValue, srcValue) {
   if (_.isArray(objValue)) {
@@ -50,7 +51,7 @@ export const parseMasscan = async (project_id, jsonData) => {
   const valid_hosts = inserted.accepted.concat(updated.accepted);
 
   // 2. Add services per host...
-  let services_count = 0;
+  let services_result = [];
   for (let host of valid_hosts) {
     const services =
       ips[host.ip_address]?.ports?.map((port_info) => ({
@@ -65,13 +66,23 @@ export const parseMasscan = async (project_id, jsonData) => {
       })) ?? [];
 
     if (services.length > 0) {
-      services_count += services.length;
-      await PenPal.API.Services.InsertMany(services);
+      services_result.push(await PenPal.API.Services.UpsertMany(services));
     }
   }
 
+  // Process services stats for console log
+  let inserted_services = [],
+    updated_services = [];
+  for (let {
+    inserted: tmp_inserted,
+    updated: tmp_updated,
+  } of services_result) {
+    inserted_services = inserted_services.concat(tmp_inserted.accepted);
+    updated_services = updated_services.concat(tmp_updated.accepted);
+  }
+
   console.log(
-    `[+] Masscan inserted ${valid_hosts.length} hosts, ${services_count} services`
+    `[+] Masscan inserted ${inserted.accepted.length} hosts, updated ${updated.accepted.length} hosts, inserted ${inserted_services.length} services, updated ${updated_services.length} services`
   );
 
   // TODO: Check out updated and rejected
@@ -103,40 +114,79 @@ export const parseMasscan = async (project_id, jsonData) => {
   return { inserted, updated, rejected };
 };
 
-export const performMasscan = async ({
+export const performDiscoveryScan = async (args) => {
+  const targets = (args.ips?.length ?? 0) > 0 ? args.ips : args.networks;
+
+  console.log(
+    `[.] Starting Discovery masscan for ${targets.length} ${
+      (args.ips?.length ?? 0) > 0 ? "IPs" : "Networks"
+    } in ${args.project_id}`
+  );
+
+  return await performScan(args);
+};
+
+export const performDetailedScan = async (args) => {
+  const targets = (args.ips?.length ?? 0) > 0 ? args.ips : args.networks;
+
+  console.log(
+    `[.] Starting Detailed masscan for ${targets.length} ${
+      (args.ips?.length ?? 0) > 0 ? "IPs" : "Networks"
+    } in ${args.project_id}`
+  );
+
+  return await performScan(args);
+};
+
+export const performScan = async ({
   project_id,
-  ips,
+  ips = [],
+  networks = [],
+  top_ports = null,
   tcp_ports = [],
   udp_ports = [],
   ping = false,
   scan_rate = 1000,
 }) => {
-  console.log(`[.] Starting masscan for ${ips.length} IPs in ${project_id}`);
+  const targets = ips.length > 0 ? ips : networks;
 
-  let ports = "";
-  if (tcp_ports?.length > 0) {
-    ports += tcp_ports;
-  }
-  if (udp_ports?.length > 0) {
-    const udp_ports = udp_ports
-      .split(",")
-      .map((port) => `U:${port}`)
-      .join(",");
-    ports += `${ports.length > 0 && ","}${udp_ports}`;
+  let ports = "-p";
+  if (top_ports !== null) {
+    ports = `--top-ports ${top_ports}`;
+  } else {
+    if (tcp_ports?.length > 0) {
+      ports += tcp_ports.join(",");
+    }
+    if (udp_ports?.length > 0) {
+      udp_ports = udp_ports.map((port) => `U:${port}`).join(",");
+      ports += `${ports.length > 0 && ","}${udp_ports}`;
+    }
   }
 
-  const command = `masscan "masscan -oJ res.json --rate=${scan_rate} -p${ports}${
-    ping ? " --ping" : ""
-  } ${ips} 1>&2 2>/dev/null && cat res.json"`;
+  try {
+    fs.unlinkSync("/tmp/masscan-results.json");
+  } catch (e) {}
+
+  const file_name = `/tmp/masscan-${uuidv4()}.json`;
+  const command = `-v /tmp:/tmp masscan "masscan -oJ ${file_name} --rate=${scan_rate} ${ports} ${
+    ping ? "--ping" : ""
+  } ${targets}"`;
 
   await PenPal.Utils.AsyncNOOP();
 
-  PenPal.Docker.Exec(command).then((res, err) => {
+  PenPal.Docker.Exec(command).then(async (res, err) => {
     if (err) {
       console.log(err);
       return response;
     }
-    const buff = Buffer.from(res, "utf-8");
-    parseMasscan(project_id, buff.toString());
+
+    await PenPal.Utils.Sleep(500);
+
+    const results = fs.readFileSync(file_name, {
+      encoding: "utf-8",
+    });
+    fs.unlinkSync(file_name);
+
+    parseMasscan(project_id, results);
   });
 };

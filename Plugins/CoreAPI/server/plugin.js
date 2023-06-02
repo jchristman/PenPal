@@ -110,6 +110,7 @@ const CoreAPIPlugin = {
       RemoveMany: API.removeServices,
       Update: API.updateService,
       UpdateMany: API.updateServices,
+      UpsertMany: API.upsertServices,
     };
 
     // This builds a unique set of wrapped functions that can utilize the dataloader utility in
