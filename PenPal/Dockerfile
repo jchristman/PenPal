@@ -1,6 +1,6 @@
 FROM debian:bullseye-slim
 
-ARG UID=1000
+ARG LOCAL_USER_ID=1000
 ARG PLATFORM=x86_64
 ARG IS_SERVER=0
 
@@ -41,9 +41,8 @@ RUN curl -o /usr/local/bin/gosu -SL "https://github.com/tianon/gosu/releases/dow
 
 # Create an unpriv user for node to run as
 RUN groupadd -r node
-RUN useradd --no-log-init -r -u $UID -g node node
+RUN useradd --no-log-init -r -u $LOCAL_USER_ID -g node node
 RUN cp -rT /etc/skel /home/node
-RUN chown -R node:node /home/node
 RUN echo 'node ALL=(ALL) NOPASSWD: ALL' >> /etc/sudoers
 
 # Make our source directory and chown it to the new user
@@ -54,6 +53,9 @@ RUN chown -R node:node /penpal
 # Install npm-recursive-install for merging of package.json dependencies
 RUN npm install -g recursive-install
 RUN npm install -g npm@9.6.4
+
+RUN chown -R node:node /home/node
+RUN chown -R node:node /home/node/.*
 
 # For `docker run CONTAINER_ID`
 COPY ./docker-entrypoint.sh /usr/bin/docker-entrypoint.sh

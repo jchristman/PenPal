@@ -285,6 +285,7 @@ const Layout = () => {
                 component={Link}
                 to={route.path}
                 key={route.name}
+                data-cy={`sidebar-nav-${route.name}-button`}
               >
                 <ListItemIcon>
                   <Icon />

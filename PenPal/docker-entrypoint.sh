@@ -23,8 +23,8 @@ if [[ ! $CURRENT_NODE_UID -eq $USER_ID ]]; then
 	echo Restarting sudo
 	service sudo restart
 
-	echo Changing file permissions of /penpal, /n8n, and /usr/lib/node_modules
-	chown -R node:node /penpal /n8n /usr/lib/node_modules /home/node/custom-n8n-nodes
+	echo Changing file permissions of /penpal and /usr/lib/node_modules
+	chown -R node:node /penpal /usr/lib/node_modules
 else
 	echo UID matches inside container. Moving on
 fi
@@ -33,4 +33,5 @@ cp -p package-tmp.json package.json
 chown -R node:node package*.json
 /usr/local/bin/gosu node install-dependencies.sh
 
+chown -R node:node /home/node/.npm
 exec /usr/local/bin/gosu node "$@"
