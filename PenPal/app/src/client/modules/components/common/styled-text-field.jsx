@@ -97,7 +97,7 @@ const StyledTextField = ({
           focused: classes.round_input_focused,
           formControl: classes.text_field_form_control,
         },
-        disableUnderline: true,
+        //disableUnderline: true,
       })}
       FormHelperTextProps={_.merge(FormHelperTextProps, {
         classes: { root: classes.text_field_helper_text },

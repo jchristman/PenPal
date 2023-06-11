@@ -1,7 +1,15 @@
 type MongoDataStoreConfiguration {
+  General: MongoDataStoreConfigurationGeneral
+}
+
+type MongoDataStoreConfigurationGeneral {
   connectionString: String!
 }
 
 input MongoDataStoreConfigurationInput {
+  General: MongoDataStoreConfigurationInputGeneral
+}
+
+input MongoDataStoreConfigurationInputGeneral {
   connectionString: String!
 }

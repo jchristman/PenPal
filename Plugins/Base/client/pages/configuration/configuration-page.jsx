@@ -14,7 +14,7 @@ import { makeStyles } from "@mui/styles";
 
 const useStyles = makeStyles((theme) => ({
   main: {
-    padding: theme.spacing(1),
+    padding: theme.spacing(2),
   },
   label: {
     textTransform: "capitalize",
@@ -132,12 +132,11 @@ const ConfigurationPage = ({ localConfig, handleConfigChange }) => {
 
   return (
     <>
-      <AppBar position="static" color="primary">
+      <AppBar position="static" color="transparent">
         <Tabs
           value={selectedTab}
           onChange={handleChange}
           indicatorColor="primary"
-          textColor="primary"
           variant="scrollable"
           scrollButtons="auto"
         >

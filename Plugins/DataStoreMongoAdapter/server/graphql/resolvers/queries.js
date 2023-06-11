@@ -1,10 +1,7 @@
-import PenPal from "#penpal/core";
+import { CONFIGURATION } from "../../plugin.js";
 
 export default {
   async getMongoDataStoreConfiguration(root, args, context) {
-    let connectionString =
-      PenPal.DataStore.fetch("MongoDataStore", "Configuration", {})[0]
-        ?.connectionString ?? "";
-    return { connectionString };
+    return CONFIGURATION;
   },
 };

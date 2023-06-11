@@ -277,6 +277,7 @@ export const removeServices = async (service_ids) => {
 
   if (res > 0) {
     //deletedServiceHooks(services);
+
     return true;
   }
 

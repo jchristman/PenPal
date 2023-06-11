@@ -144,12 +144,12 @@ const Selector = () => {
     (async () => {
       if (!loading && configuration.getter !== false) {
         try {
-          const config =
+          const { __typename, ...config } =
             (await getConfig())?.data?.[configuration.getter] ?? {};
-          delete config.__typename;
           setLocalConfig(config);
           setConfigSinceLastSave(config);
         } catch (e) {
+          console.error(e);
           enqueueSnackbar(`Error: ${e.message}`, { variant: "error" });
         }
       }
@@ -158,7 +158,10 @@ const Selector = () => {
 
   // ---------------------- Hooks ---------------------- //
 
-  const handleChange = (event) => setSelected(event.target.value);
+  const handleChange = (event) => {
+    setLocalConfig({});
+    setSelected(event.target.value);
+  };
   const handleConfigChange = (path, newValue) => {
     // Need to clone the object so that the reference changes on setLocalConfig
     const newLocalConfig = _.cloneDeep(localConfig);
@@ -171,13 +174,12 @@ const Selector = () => {
   const handleSave = async () => {
     setConfigSinceLastSave(localConfig);
     try {
-      const newLocalConfig =
+      const { __typename, ...newLocalConfig } =
         (
           await setConfig({
-            variables: { configuration: JSON.stringify(localConfig) },
+            variables: { configuration: localConfig },
           })
         )?.data?.[configuration.setter] ?? {};
-      delete newLocalConfig.__typename;
       setLocalConfig(newLocalConfig);
       setConfigSinceLastSave(newLocalConfig);
     } catch (e) {
@@ -202,7 +204,7 @@ const Selector = () => {
       vertical: "top",
       horizontal: "left",
     },
-    getContentAnchorEl: null,
+    //getContentAnchorEl: null,
   };
 
   return (
@@ -214,7 +216,7 @@ const Selector = () => {
           <div className={classes.selectBox}>
             <FormControl>
               <Select
-                disableUnderline
+                //disableUnderline
                 classes={{ root: classes.select }}
                 MenuProps={menuProps}
                 IconComponent={iconComponent}
@@ -242,11 +244,12 @@ const Selector = () => {
           </div>
           <Paper square className={classes.flex}>
             {selected === "" ? (
-              "Select Plugin to configure...."
+              <div style={{ padding: 8 }}>Select Plugin to configure....</div>
             ) : Object.keys(localConfig).length === 0 ? (
-              "Loading configuration..."
+              <div style={{ padding: 8 }}>Loading configuration...</div>
             ) : (
               <Components.ConfigurationPage
+                key={selected} // Janky way to re-mount when the config changes, for the active tab
                 localConfig={localConfig}
                 handleConfigChange={handleConfigChange}
               />

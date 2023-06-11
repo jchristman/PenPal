@@ -8,13 +8,13 @@ export default {
       "network",
       "ip_address",
       "mac_address",
-      "hostnames"
+      "hostnames",
     ]),
 
     async servicesConnection({ id }, args, { PenPalCachingAPI }) {
       const host = await PenPalCachingAPI.Hosts.Get(id);
       return { services: host.services, args };
-    }
+    },
   },
 
   HostsConnection: {
@@ -43,7 +43,7 @@ export default {
         startCursorOffset,
         endCursor,
         endCursorOffset,
-        totalCount
+        totalCount,
       } = await PenPalCachingAPI.Hosts.GetPaginationInfo(host_ids, args);
 
       return {
@@ -52,7 +52,7 @@ export default {
         startCursor,
         startCursorOffset,
         endCursor,
-        endCursorOffset
+        endCursorOffset,
       };
     },
 
@@ -62,6 +62,6 @@ export default {
         args
       );
       return totalCount;
-    }
-  }
+    },
+  },
 };
