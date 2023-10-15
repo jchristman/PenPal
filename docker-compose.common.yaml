@@ -34,6 +34,15 @@ services:
     command: npm run server
     networks:
       - penpal
+      - internal
+
+  penpal-docker-api:
+    image: alpine
+    volumes:
+      - /var/run/docker.sock:/var/run/docker.sock
+    command: sh -c 'apk add --no-cache socat && socat TCP-LISTEN:2376,reuseaddr,fork UNIX-CONNECT:/var/run/docker.sock'
+    networks:
+      - internal
 
 volumes:
   penpal-frontend-npm-cache:
@@ -44,3 +53,4 @@ volumes:
 networks:
   penpal:
     driver: bridge
+  internal:

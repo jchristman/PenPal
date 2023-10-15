@@ -1,6 +1,5 @@
 {
-  "name": "Masscan",
+  "name": "Rustscan",
   "version": "0.1.0",
-  "load": false,
   "dependsOn": ["CoreAPI@0.1.0", "Docker@0.1.0"]
 }

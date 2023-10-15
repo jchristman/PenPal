@@ -1,26 +1,12 @@
 import PenPal from "#penpal/core";
-import { exec } from "child_process";
 import path from "path";
-import fs from "fs";
-import * as url from "url";
-const __dirname = url.fileURLToPath(new URL(".", import.meta.url));
+import Docker from "dockerode";
+import util from "util";
+import { exec as _exec } from "child_process";
+const exec = util.promisify(_exec);
 
-const runCommand = (args) => {
-  return new Promise((resolve, reject) => {
-    exec(`${args}`, (error, stdout, stderr) => {
-      if (error) {
-        reject(error);
-      }
-
-      if (stdout === null || stdout === "") {
-        resolve(`${stderr}`);
-      } else {
-        console.log(`[.] Resolving with stdout: ${stdout}`);
-        resolve(`${stdout}`);
-      }
-    });
-  });
-};
+// Doesn't support "compose"
+const docker = new Docker({ host: "http://penpal-docker-api", port: 2376 });
 
 export const dockerCompose = async (args) => {
   await PenPal.Utils.AsyncNOOP();
@@ -32,15 +18,14 @@ export const dockerCompose = async (args) => {
 
   try {
     console.log(`[.] Pulling images for compose file: ${args.name}`);
-    let res = await runCommand(
-      `sudo docker compose -f ${args.docker_compose_path} pull`
+    let res = await exec(
+      `docker -H penpal-docker-api:2376 compose -f ${args.docker_compose_path} pull`
     );
 
     console.log(`[.] Running compose file: ${args.name}`);
-    res = await runCommand(
-      `sudo -E docker compose -f ${args.docker_compose_path} up -d --force-recreate`
+    res = await exec(
+      `docker -H penpal-docker-api:2376 compose -f ${args.docker_compose_path} up -d --force-recreate`
     );
-
     console.log(`[+] Compose file now running: ${args.name}`);
   } catch (e) {
     console.error(`[!] Failed to run compose file: ${args.name}`);
@@ -50,8 +35,14 @@ export const dockerCompose = async (args) => {
 
 export const dockerExec = async (args) => {
   await PenPal.Utils.AsyncNOOP();
-  let res = await runCommand(`sudo docker run --rm ${args}`);
-  return res;
+  let res = await exec(`docker -H penpal-docker-api:2376 run --rm ${args}`);
+  return res.stdout;
+};
+
+export const dockerRawExec = async (args) => {
+  await PenPal.Utils.AsyncNOOP();
+  let res = await exec(`docker -H penpal-docker-api:2376 ${args}`);
+  return res.stdout;
 };
 
 export const dockerBuild = async (args) => {
@@ -60,9 +51,16 @@ export const dockerBuild = async (args) => {
   console.log(`[.] Building docker image: ${args.name}`);
 
   try {
-    const res = await runCommand(
-      `sudo docker build -t ${args.name} -f ${args.dockerfile} .`
-    );
+    let res = "";
+    if (args.dockercontext !== undefined) {
+      res = await exec(
+        `docker -H penpal-docker-api:2376 build -t ${args.name} ${args.dockercontext}`
+      );
+    } else {
+      res = await exec(
+        `docker -H penpal-docker-api:2376 build -t ${args.name} -f ${args.dockerfile} .`
+      );
+    }
 
     if (res) {
       console.log(`[+] Built image: ${args.name}`);

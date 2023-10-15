@@ -16,6 +16,5 @@ services:
       - ./PenPal/app/nodemon.config.json:/penpal/app/nodemon.config.json
       - ./PenPal/app/package-server.json:/penpal/app/package-tmp.json
       - ./plugins/:/penpal/app/plugins:consistent
-      - /var/run/docker.sock:/var/run/docker.sock
     environment:
       - LOCAL_USER_ID=${LOCAL_USER_ID}

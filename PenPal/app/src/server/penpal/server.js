@@ -48,6 +48,7 @@ PenPal.registerPlugin = (manifest, plugin) => {
 
   const {
     name,
+    load,
     version,
     dependsOn,
     requiresImplementation = false,
@@ -55,6 +56,12 @@ PenPal.registerPlugin = (manifest, plugin) => {
   } = manifest;
 
   const name_version = `${name}@${version}`;
+  if (load === false) {
+    console.log(
+      `[!] Manifest for ${name_version} has "load" set to false. Skipping.`
+    );
+    return;
+  }
   console.log(`[+] Registered plugin: ${name_version}`);
 
   PenPal.RegisteredPlugins[name_version] = {

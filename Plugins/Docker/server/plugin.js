@@ -1,6 +1,11 @@
 import PenPal from "#penpal/core";
 import { check } from "#penpal/common";
-import { dockerExec, dockerBuild, dockerCompose } from "./docker.js";
+import {
+  dockerExec,
+  dockerRawExec,
+  dockerBuild,
+  dockerCompose,
+} from "./docker.js";
 
 const check_docker = (docker) => {
   let docker_accept = true;
@@ -18,19 +23,24 @@ const check_docker = (docker) => {
 
   try_check(docker.name, String, "name", "String");
 
-  if (docker.dockerfile !== undefined) {
+  if (docker.dockerfile !== undefined || docker.dockercontext !== undefined) {
     if (docker.image !== undefined) {
       console.error(
-        `[!] settings.docker is ambiguous - only one of image or dockerfile may be present`
+        `[!] settings.docker is ambiguous - only one of image or dockerfile/dockercontext may be present`
       );
       docker_accept = false;
     }
-    try_check(docker.dockerfile, String, "dockerfile", "String");
+    if (docker.dockercontext) {
+      try_check(docker.dockercontext, String, "dockerfile", "String");
+    }
+    if (docker.dockerfile) {
+      try_check(docker.dockerfile, String, "dockerfile", "String");
+    }
   } else if (docker.image !== undefined) {
     try_check(docker.image, String, "image", "String");
   } else {
     console.error(
-      `[!] settings.docker must include an image or a dockerfile property`
+      `[!] settings.docker must include an image or a dockerfile/dockercontext property`
     );
     docker_accept = false;
   }
@@ -58,6 +68,7 @@ const Docker = {
     PenPal.Docker = {
       Compose: dockerCompose,
       Exec: dockerExec,
+      RawExec: dockerRawExec,
       Build: dockerBuild,
     };
 

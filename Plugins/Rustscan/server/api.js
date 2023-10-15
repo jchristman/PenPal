@@ -1,9 +1,6 @@
 import PenPal from "#penpal/core";
-import hjson from "hjson";
 import _ from "lodash";
 import fs from "fs";
-import { v4 as uuidv4 } from "uuid";
-import { json } from "stream/consumers";
 
 function customizer(objValue, srcValue) {
   if (_.isArray(objValue)) {
@@ -153,14 +150,12 @@ export const performScan = async ({
   top_ports = null,
   tcp_ports = [],
   udp_ports = [],
-  ping = false,
-  scan_rate = 1000,
 }) => {
   const targets = ips.length > 0 ? ips : networks;
 
   let ports = "-p";
   if (top_ports !== null) {
-    ports = `--top-ports ${top_ports}`;
+    ports = `--top`;
   } else {
     if (tcp_ports?.length > 0) {
       ports += tcp_ports.join(",");
@@ -171,30 +166,24 @@ export const performScan = async ({
     }
   }
 
-  try {
-    fs.unlinkSync("/tmp/masscan-results.json");
-  } catch (e) {}
-
-  const file_name = `/tmp/masscan-${uuidv4()}.json`;
-  const command = `-v /tmp:/tmp masscan "masscan -oJ ${file_name} --rate=${scan_rate} ${ports} ${
-    ping ? "--ping" : ""
-  } ${targets}"`;
-
   await PenPal.Utils.AsyncNOOP();
 
-  PenPal.Docker.Exec(command).then(async (res, err) => {
-    if (err) {
-      console.log(err);
-      return response;
-    }
-
-    await PenPal.Utils.Sleep(1000);
-
-    const results = fs.readFileSync(file_name, {
-      encoding: "utf-8",
-    });
-    fs.unlinkSync(file_name);
-
-    parseMasscan(project_id, results);
-  });
+  const rustscan_command = `rustscan -a ${targets} ${ports} --scripts custom`;
+  console.log("Starting Scan");
+  let container_id = await PenPal.Docker.RawExec(
+    `run --network penpal_penpal -d rustscan-python "${rustscan_command}"`
+  );
+  container_id = container_id.trim();
+  console.log("Waiting on Scan");
+  await PenPal.Docker.RawExec(`wait "${container_id}"`);
+  console.log("Getting Files List from Container");
+  await PenPal.Docker.RawExec(`start "${container_id}"`);
+  const files = await PenPal.Docker.RawExec(
+    `exec "${container_id}" /bin/sh -c 'ls'`
+  );
+  console.log(files);
+  console.log("Stopping Container");
+  await PenPal.Docker.RawExec(`stop "${container_id}"`);
+  console.log("Removing container");
+  await PenPal.Docker.RawExec(`container rm "${container_id}"`);
 };
