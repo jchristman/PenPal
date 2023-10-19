@@ -1,4 +1,6 @@
 import _ from "lodash";
+import path from "path";
+import fs from "fs";
 import { mergeTypeDefs, mergeResolvers } from "@graphql-tools/merge";
 import { loadFiles } from "@graphql-tools/load-files";
 import {
@@ -34,9 +36,23 @@ PenPal.Utils.LoadGraphQLDirectories = async (root_dir) => {
   return mergeTypeDefs(typesArray);
 };
 
-// ----------------------------------------------------------------------------
+PenPal.Utils.MkdirP = (directory) => {
+  const absolute = directory[0] === path.sep;
+  const directories = directory.split(path.sep);
+  let currentDirectory = absolute ? path.sep : "";
+
+  for (const dir of directories) {
+    currentDirectory = path.join(currentDirectory, dir);
+
+    if (!fs.existsSync(currentDirectory)) {
+      fs.mkdirSync(currentDirectory);
+    }
+  }
+};
 
 PenPal.Utils.isFunction = isFunction;
+
+// ----------------------------------------------------------------------------
 
 PenPal.registerPlugin = (manifest, plugin) => {
   if (!check_manifest(manifest) || !check_plugin(plugin)) {

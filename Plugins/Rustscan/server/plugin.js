@@ -2,7 +2,7 @@ import PenPal from "#penpal/core";
 import * as url from "url";
 const __dirname = url.fileURLToPath(new URL(".", import.meta.url));
 
-import { performDetailedScan, performDiscoveryScan } from "./api.js";
+import { performDetailedScan, performDiscoveryScan } from "./rustscan.js";
 
 const settings = {
   docker: {

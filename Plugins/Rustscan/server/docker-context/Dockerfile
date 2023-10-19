@@ -17,5 +17,4 @@ RUN chmod +x /root/.rustscan_scripts/process_rustscan.py
 # Set the working directory to /working
 WORKDIR /working
 
-# Specify the entry point for the container
-ENTRYPOINT ["sh", "-c"]
+CMD ["rustscan", "-h"]

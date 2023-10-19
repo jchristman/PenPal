@@ -123,7 +123,7 @@ export const performDiscoveryScan = async (args) => {
   const targets = (args.ips?.length ?? 0) > 0 ? args.ips : args.networks;
 
   console.log(
-    `[.] Starting Discovery masscan for ${targets.length} ${
+    `[.] Starting Discovery rustscan for ${targets.length} ${
       (args.ips?.length ?? 0) > 0 ? "IPs" : "Networks"
     } in ${args.project_id}`
   );
@@ -135,7 +135,7 @@ export const performDetailedScan = async (args) => {
   const targets = (args.ips?.length ?? 0) > 0 ? args.ips : args.networks;
 
   console.log(
-    `[.] Starting Detailed masscan for ${targets.length} ${
+    `[.] Starting Detailed rustscan for ${targets.length} ${
       (args.ips?.length ?? 0) > 0 ? "IPs" : "Networks"
     } in ${args.project_id}`
   );
@@ -168,22 +168,50 @@ export const performScan = async ({
 
   await PenPal.Utils.AsyncNOOP();
 
-  const rustscan_command = `rustscan -a ${targets} ${ports} --scripts custom`;
-  console.log("Starting Scan");
-  let container_id = await PenPal.Docker.RawExec(
-    `run --network penpal_penpal -d rustscan-python "${rustscan_command}"`
-  );
-  container_id = container_id.trim();
-  console.log("Waiting on Scan");
-  await PenPal.Docker.RawExec(`wait "${container_id}"`);
-  console.log("Getting Files List from Container");
-  await PenPal.Docker.RawExec(`start "${container_id}"`);
-  const files = await PenPal.Docker.RawExec(
-    `exec "${container_id}" /bin/sh -c 'ls'`
-  );
-  console.log(files);
-  console.log("Stopping Container");
-  await PenPal.Docker.RawExec(`stop "${container_id}"`);
-  console.log("Removing container");
-  await PenPal.Docker.RawExec(`container rm "${container_id}"`);
+  const rustscan_command = `-a ${targets} ${ports} --scripts custom`;
+  let result = await PenPal.Docker.Run({
+    image: "penpal:rustscan",
+    cmd: rustscan_command,
+    daemonize: true,
+    network: "penpal_penpal",
+  });
+  let container_id = result.stdout.trim();
+  console.log(`[+] Starting Rustscan: ${container_id}`);
+  await PenPal.Docker.Wait(container_id);
+  console.log(`[+] Rustscan finished: ${container_id}`);
+  await PenPal.Docker.Start(container_id);
+  result = await PenPal.Docker.Exec({
+    container: container_id,
+    cmd: `/bin/sh -c 'ls'`,
+  });
+  if (result.stdout.length !== 0) {
+    console.log(
+      `[.] Copying JSON files from Rustscan container: ${container_id}`
+    );
+    const files = result.stdout.split("\n");
+    const outdir = `/tmp/penpal/${container_id}`;
+    PenPal.Utils.MkdirP(outdir);
+    for (let file of files) {
+      if (file.length === 0) {
+        continue;
+      }
+      const outfile = `${outdir}/${file}`;
+      await PenPal.Docker.Copy({
+        container: container_id,
+        container_file: `/working/${file}`,
+        output_file: outfile,
+      });
+
+      try {
+        const data = fs.readFileSync(outfile, "utf8");
+        console.log(data);
+      } catch (e) {
+        console.log(`failed to read data from ${outfile}`);
+      }
+    }
+  } else {
+    console.log(`[.] No results for Rustscan: ${container_id}`);
+  }
+  await PenPal.Docker.Stop(container_id);
+  await PenPal.Docker.RemoveContainer(container_id);
 };

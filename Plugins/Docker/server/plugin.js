@@ -1,11 +1,6 @@
 import PenPal from "#penpal/core";
 import { check } from "#penpal/common";
-import {
-  dockerExec,
-  dockerRawExec,
-  dockerBuild,
-  dockerCompose,
-} from "./docker.js";
+import * as DockerImports from "./docker.js";
 
 const check_docker = (docker) => {
   let docker_accept = true;
@@ -66,10 +61,7 @@ const build_docker_images = async () => {
 const Docker = {
   loadPlugin() {
     PenPal.Docker = {
-      Compose: dockerCompose,
-      Exec: dockerExec,
-      RawExec: dockerRawExec,
-      Build: dockerBuild,
+      ...DockerImports,
     };
 
     return {
