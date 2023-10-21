@@ -21,10 +21,18 @@ export const Compose = async (args) => {
   }
 
   try {
-    console.log(`[.] Pulling images for compose file: ${args.name}`);
-    let res = await exec(
-      `docker ${docker_host} compose -f ${args.docker_compose_path} pull`
-    );
+    let res;
+
+    if (process.env.OFFLINE === "true") {
+      console.log(
+        `[!!!] Skipping image pull with OFFLINE=true for ${args.name}`
+      );
+    } else {
+      console.log(`[.] Pulling images for compose file: ${args.name}`);
+      res = await exec(
+        `docker ${docker_host} compose -f ${args.docker_compose_path} pull`
+      );
+    }
 
     console.log(`[.] Running compose file: ${args.name}`);
     res = await exec(
@@ -94,6 +102,11 @@ export const Raw = async (cmd) => {
 
 export const Build = async (args) => {
   await PenPal.Utils.AsyncNOOP();
+
+  if (process.env.OFFLINE === "true") {
+    console.log(`[!!!] Skipping build with OFFLINE=true: ${args.name}`);
+    return;
+  }
 
   console.log(`[.] Building docker image: ${args.name}`);
 

@@ -12,7 +12,8 @@ const settings = {
 };
 
 const default_discovery_scan = {
-  tcp_ports: [22, 25, 53, 80, 443, 445, 3389, 8080],
+  //tcp_ports: [22, 25, 53, 80, 443, 445, 3000, 3389, 8080],
+  top_ports: 1000,
 };
 
 const default_detailed_scan = {

@@ -21,6 +21,10 @@ PenPal.Utils = {};
 
 // ----------------------------------------------------------------------------
 
+PenPal.Constants.TMP_DIR = "/tmp/penpal";
+
+// ----------------------------------------------------------------------------
+
 PenPal.Utils.Sleep = async (ms) =>
   new Promise((resolve) => setTimeout(resolve, ms));
 
@@ -51,6 +55,12 @@ PenPal.Utils.MkdirP = (directory) => {
 };
 
 PenPal.Utils.isFunction = isFunction;
+
+// ----------------------------------------------------------------------------
+
+PenPal.init = async () => {
+  PenPal.Utils.MkdirP(PenPal.Constants.TMP_DIR);
+};
 
 // ----------------------------------------------------------------------------
 

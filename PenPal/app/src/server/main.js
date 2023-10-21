@@ -6,6 +6,9 @@ import startGraphQLServer from "./graphql-server.js";
 Error.stackTraceLimit = Infinity;
 
 const run = async () => {
+  console.log("[.] Running PenPal Init");
+  await PenPal.init();
+
   console.log("[.] Registering Plugins...");
   const Plugins = await import("#penpal/plugins");
   await Plugins.registerPlugins();

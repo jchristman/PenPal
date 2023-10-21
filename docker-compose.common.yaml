@@ -31,16 +31,19 @@ services:
       - "3001:3001"
     environment:
       - RUN_LOCATION=${RUN_LOCATION}
+      - OFFLINE=true
     command: npm run server
     networks:
       - penpal
       - internal
 
   penpal-docker-api:
-    image: alpine
+    build:
+      context: ./PenPal
+      dockerfile: ./Dockerfile-socat
     volumes:
       - /var/run/docker.sock:/var/run/docker.sock
-    command: sh -c 'apk add --no-cache socat && socat TCP-LISTEN:2376,reuseaddr,fork UNIX-CONNECT:/var/run/docker.sock'
+    command: sh -c 'socat TCP-LISTEN:2376,reuseaddr,fork UNIX-CONNECT:/var/run/docker.sock'
     networks:
       - internal
 
