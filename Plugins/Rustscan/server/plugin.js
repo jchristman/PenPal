@@ -17,7 +17,7 @@ const default_discovery_scan = {
 };
 
 const default_detailed_scan = {
-  top_ports: 1000,
+  top_ports: 65535,
 };
 
 const start_hosts_scan = async ({ project, host_ids }) => {

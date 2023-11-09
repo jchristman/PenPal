@@ -1,4 +1,5 @@
 import React, { useState } from "react";
+import { useNavigate } from "react-router-dom";
 import { Components, registerComponent } from "@penpal/core";
 import Table from "@mui/material/Table";
 import TableBody from "@mui/material/TableBody";
@@ -70,6 +71,9 @@ const useStyles2 = makeStyles((theme) => ({
   table: {
     minWidth: 500,
   },
+  clickable: {
+    cursor: "pointer",
+  },
   statContainer: {
     display: "flex",
     flexDirection: "row",
@@ -115,6 +119,7 @@ const ProjectsViewTableView = ({
   projectSummaries: { projects, totalCount },
 }) => {
   const classes = useStyles2();
+  const navigate = useNavigate();
 
   const emptyRows = pageSize - Math.min(pageSize, projects.length);
 
@@ -127,13 +132,21 @@ const ProjectsViewTableView = ({
     setPage(0);
   };
 
+  const handleNavigate = (project_id) => {
+    navigate(`/projects/${project_id}`);
+  };
+
   return (
     <TableContainer component={Paper}>
       <Table className={classes.table}>
         <TableBody>
           {projects.map((project) => (
-            <TableRow key={project.id}>
-              {console.log(project.id)}
+            <TableRow
+              hover
+              className={classes.clickable}
+              key={project.id}
+              onClick={() => handleNavigate(project.id)}
+            >
               <TableCell
                 component="th"
                 scope="row"

@@ -12,15 +12,10 @@ export const parseResults = async (project_id, data) => {
     affected_records: [],
   };
 
-  console.log(data);
-
   const ips = Object.keys(data);
-  console.log(ips);
-
-  let hosts = _.map(ips, ({ ip }) => {
+  let hosts = _.map(ips, (ip) => {
     return { ip_address: ip };
   });
-  console.log(hosts);
 
   if (hosts.length === 0) {
     return { inserted: [], updated: [], rejected: [] };
@@ -32,15 +27,11 @@ export const parseResults = async (project_id, data) => {
     hosts
   );
 
-  console.log("Upsert results", inserted, updated, rejected);
-
   const valid_hosts = inserted.accepted.concat(updated.accepted);
 
-  console.log("Valid hosts", valid_hosts);
   // 2. Add services per host...
   let services_result = [];
   for (let host of valid_hosts) {
-    console.log("Rustscan ports", data[host.ip_address]);
     const services =
       data[host.ip_address]?.map((port_info) => ({
         host: host.id,
@@ -73,30 +64,6 @@ export const parseResults = async (project_id, data) => {
   );
 
   // TODO: Check out updated and rejected
-
-  //let servicesArray = [];
-  //_.each(hostRecords, (host) => {
-  //  _.each(ips[host.ipv4].ports, (foundPort) => {
-  //    servicesArray.push({
-  //      hostID: host._id._str,
-  //      port: foundPort.port,
-  //      protocol: foundPort.proto
-  //    });
-  //  });
-  //});
-
-  //let servicesResp = await PenPal.API.Services.Upsert({
-  //  project_id: project_id,
-  //  services: servicesArray
-  //});
-
-  //if (servicesResp.affected_records.length > 0) {
-  //  res = {
-  //    status: "Services Created",
-  //    was_success: true,
-  //    affected_records: servicesResp.affected_records
-  //  };
-  //}
 
   return { inserted, updated, rejected };
 };
