@@ -157,7 +157,10 @@ export const insertServices = async (services) => {
 
   if (accepted.length > 0) {
     const new_service_ids = accepted.map(({ id }) => id);
-    //newServiceHooks(services[0].project, new_service_ids);
+    PenPal.API.MQTT.Publish(PenPal.API.MQTT.Topics.New.Services, {
+      project: services[0].project,
+      service_ids: new_service_ids,
+    });
   }
 
   return { accepted, rejected };
@@ -190,6 +193,7 @@ export const updateServices = async (services) => {
   if (matched_services.length !== _accepted.length) {
     // Find the unknown IDs
     console.error('Implement updateServices "service not found" functionality');
+    console.log(_accepted, matched_services);
   }
 
   for (let { id, ...service } of _accepted) {
@@ -206,7 +210,11 @@ export const updateServices = async (services) => {
   }
 
   if (accepted.length > 0) {
-    //updatedServiceHooks(accepted);
+    const update_service_ids = accepted.map(({ id }) => id);
+    PenPal.API.MQTT.Publish(PenPal.API.MQTT.Topics.Update.Services, {
+      project: services[0].project,
+      service_ids: new_service_ids,
+    });
   }
 
   return { accepted, rejected };
@@ -276,7 +284,11 @@ export const removeServices = async (service_ids) => {
   });
 
   if (res > 0) {
-    //deletedServiceHooks(services);
+    const deleted_service_ids = services.map(({ id }) => id);
+    PenPal.API.MQTT.Publish(PenPal.API.MQTT.Topics.Delete.Services, {
+      project: services[0].project,
+      host_ids: deleted_service_ids,
+    });
 
     return true;
   }
