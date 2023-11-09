@@ -10,11 +10,14 @@ const settings = {
     getter: "getMongoDataStoreConfiguration",
     setter: "setMongoDataStoreConfiguration",
   },
-  datastores: [
-    {
-      name: "Configuration",
-    },
-  ],
+};
+
+// We have to hold the configuration for database connection string in memory or on-disk,
+// on disk not yet implemented so it needs to be tracked live
+export const CONFIGURATION = {
+  General: {
+    connectionString: "NotYetImplemented",
+  },
 };
 
 const MongoDataStorePlugin = {

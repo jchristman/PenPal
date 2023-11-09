@@ -1,28 +1,23 @@
 import PenPal from "#penpal/core";
-import { loadGraphQLFiles, resolvers } from "./graphql/index.js";
 import * as url from "url";
 const __dirname = url.fileURLToPath(new URL(".", import.meta.url));
 
-import { performDetailedScan, performDiscoveryScan } from "./api.js";
+import { performDetailedScan, performDiscoveryScan } from "./rustscan.js";
 
 const settings = {
   docker: {
-    name: "masscan",
-    dockerfile: `${__dirname}/Dockerfile`,
+    name: "penpal:rustscan",
+    dockercontext: `${__dirname}/docker-context`,
   },
 };
 
 const default_discovery_scan = {
-  tcp_ports: [22, 25, 53, 80, 443, 445, 3389, 8080],
-  udp_ports: [53, 135, 139, 161],
-  scanRate: 10000,
-  ping: true,
+  //tcp_ports: [22, 25, 53, 80, 443, 445, 3000, 3389, 8080],
+  top_ports: 1000,
 };
 
 const default_detailed_scan = {
-  top_ports: 1000,
-  scanRate: 10000,
-  ping: false,
+  top_ports: 65535,
 };
 
 const start_hosts_scan = async ({ project, host_ids }) => {
@@ -58,10 +53,8 @@ const start_networks_scan = async ({ project, network_ids }) => {
   }
 };
 
-const MasscanPlugin = {
+const RustscanPlugin = {
   async loadPlugin() {
-    const types = await loadGraphQLFiles();
-
     const MQTT = await PenPal.MQTT.NewClient();
     await MQTT.Subscribe(PenPal.API.MQTT.Topics.New.Hosts, start_hosts_scan);
     await MQTT.Subscribe(
@@ -70,13 +63,9 @@ const MasscanPlugin = {
     );
 
     return {
-      graphql: {
-        types,
-        resolvers,
-      },
       settings,
     };
   },
 };
 
-export default MasscanPlugin;
+export default RustscanPlugin;

@@ -1,7 +1,7 @@
 import _ from "lodash";
 import {
   query as queryBuilder,
-  mutation as mutationBuilder
+  mutation as mutationBuilder,
 } from "gql-query-builder";
 import gql from "graphql-tag";
 
@@ -97,7 +97,7 @@ export const generateMutationFromSchema = (types, mutations, mutation_name) => {
     .keyBy("name")
     .mapValues((variable) => ({
       value: "",
-      type: variable.type.name
+      type: variable.type.name,
     }))
     .value();
 
@@ -106,7 +106,7 @@ export const generateMutationFromSchema = (types, mutations, mutation_name) => {
   const mutation_config = {
     operation: mutation_name,
     variables,
-    fields
+    fields,
   };
 
   const { query: mutation } = mutationBuilder(mutation_config);

@@ -1,5 +1,5 @@
 import PenPal from "#penpal/core";
-import { parseMasscan, performMasscan } from "../../api.js";
+import { parseMasscan, performScan } from "../../api.js";
 
 export default {
   async parseMasscanFile(root, args, context) {
@@ -18,7 +18,7 @@ export default {
   },
 
   async performMasscan(root, { data: args }, context) {
-    await performMasscan(args);
+    await performScan(args);
     response.status = "Masscan Started";
     response.was_success = true;
     return response;

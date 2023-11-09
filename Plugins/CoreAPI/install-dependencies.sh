@@ -1,4 +1,11 @@
 #!/bin/bash
 
+PACKAGES="fast-json-stable-stringify ip"
+
 echo "Installing CoreAPI dependencies"
-npm install fast-json-stable-stringify ip
+if [ "$OFFLINE" = "true" ]; then
+    echo "Offline set to true, installing from cache (if possible)"
+    npm install --prefer-offline --no-audit $PACKAGES
+else
+    npm install $PACKAGES
+fi

@@ -1,0 +1,2 @@
+# Tags to filter on scripts. Only scripts containing all these tags will run.
+tags = ["json"]

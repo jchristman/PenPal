@@ -59,7 +59,7 @@ const MosquittoPlugin = {
 
     await PenPal.Docker.Compose({
       name: "penpal-mosquitto",
-      docker_compose_path: `${__dirname}/mosquitto/docker-compose.mosquitto.yaml`,
+      docker_compose_path: `${__dirname}mosquitto/docker-compose.mosquitto.yaml`,
     });
 
     const MetricsClient = await PenPal.MQTT.NewClient();

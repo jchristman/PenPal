@@ -113,7 +113,7 @@ const StyledSelect = ({
       vertical: "top",
       horizontal: "left",
     },
-    getContentAnchorEl: null,
+    //getContentAnchorEl: null,
   };
 
   return (
@@ -134,7 +134,7 @@ const StyledSelect = ({
       )}
       <Select
         labelId={labelId}
-        disableUnderline
+        //disableUnderline
         classes={{ root: cx(classes.select, isOpen && classes.select_open) }}
         MenuProps={menuProps}
         IconComponent={iconComponent}

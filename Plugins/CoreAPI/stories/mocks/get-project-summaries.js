@@ -1,6 +1,6 @@
 import faker from "faker";
 import _ from "lodash";
-import GetProjectSummariesQuery from "../../client/pages/projects-list/queries/get-project-summaries.js";
+import GetProjectSummariesQuery from "../../client/pages/projects/queries/get-project-summaries.js";
 
 const PROJECT_COUNT = 73;
 
@@ -10,34 +10,34 @@ const projects = _.range(PROJECT_COUNT).map((i) => ({
   description: "A pentest for the product",
   customer: {
     id: "test-customer-id",
-    name: `${faker.company.companyName()}`
+    name: `${faker.company.companyName()}`,
   },
   dates: {
     created_at: faker.date.recent(),
     start: null,
-    end: null
+    end: null,
   },
   scope: {
     hostsConnection: {
       servicesConnection: {
-        totalCount: Math.ceil(Math.random() * 100)
+        totalCount: Math.ceil(Math.random() * 100),
       },
-      totalCount: Math.ceil(Math.random() * 10)
+      totalCount: Math.ceil(Math.random() * 10),
     },
     networksConnection: {
       hostsConnection: {
         servicesConnection: {
-          totalCount: Math.ceil(Math.random() * 300)
+          totalCount: Math.ceil(Math.random() * 300),
         },
-        totalCount: Math.ceil(Math.random() * 30)
+        totalCount: Math.ceil(Math.random() * 30),
       },
-      totalCount: Math.ceil(Math.random() * 10)
-    }
-  }
+      totalCount: Math.ceil(Math.random() * 10),
+    },
+  },
 }));
 
 const get_projects_generator = ({
-  variables: { first, after, pageSize, pageNumber } = {}
+  variables: { first, after, pageSize, pageNumber } = {},
 }) => {
   let _projects = [];
   if (first !== undefined) {
@@ -66,7 +66,7 @@ const pageSize_combos = _.chain(pageSizes)
   .map((pageSize) =>
     _.range(0, Math.ceil(PROJECT_COUNT / pageSize)).map((pageNumber) => ({
       pageSize,
-      pageNumber
+      pageNumber,
     }))
   )
   .flattenDeep()
@@ -78,11 +78,11 @@ const variable_combos = _.concat(pageSize_combos);
 export default variable_combos.map((variables) => ({
   request: {
     query: GetProjectSummariesQuery,
-    variables
+    variables,
   },
   result: {
     data: {
-      getProjects: get_projects_generator({ variables })
-    }
-  }
+      getProjects: get_projects_generator({ variables }),
+    },
+  },
 }));

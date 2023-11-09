@@ -26,13 +26,26 @@ services:
     volumes:
       - penpal-server-npm-cache:/home/node/.npm
       - ./docker-compose.common.yaml:/penpal/app/docker-compose.common.yaml
+      - /tmp:/tmp
     ports:
       - "3001:3001"
     environment:
       - RUN_LOCATION=${RUN_LOCATION}
+      - OFFLINE=false
     command: npm run server
     networks:
       - penpal
+      - internal
+
+  penpal-docker-api:
+    build:
+      context: ./PenPal
+      dockerfile: ./Dockerfile-socat
+    volumes:
+      - /var/run/docker.sock:/var/run/docker.sock
+    command: sh -c 'socat TCP-LISTEN:2376,reuseaddr,fork UNIX-CONNECT:/var/run/docker.sock'
+    networks:
+      - internal
 
 volumes:
   penpal-frontend-npm-cache:
@@ -43,3 +56,4 @@ volumes:
 networks:
   penpal:
     driver: bridge
+  internal:

@@ -2,6 +2,7 @@ import _ from "lodash";
 
 // This function will search for the word "test" in the id field of any passed in object and return true or false
 export const isTestData = (arg) => {
+  return false;
   if (Array.isArray(arg)) {
     return _.some(arg, isTestData);
   } else {

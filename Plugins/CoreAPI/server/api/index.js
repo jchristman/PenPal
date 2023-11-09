@@ -66,7 +66,7 @@ export {
   insertServices,
   updateService,
   updateServices,
-  //upsertServices,
+  upsertServices,
   removeService,
   removeServices,
 } from "./services.js";

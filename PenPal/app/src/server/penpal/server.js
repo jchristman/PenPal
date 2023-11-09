@@ -1,4 +1,6 @@
 import _ from "lodash";
+import path from "path";
+import fs from "fs";
 import { mergeTypeDefs, mergeResolvers } from "@graphql-tools/merge";
 import { loadFiles } from "@graphql-tools/load-files";
 import {
@@ -19,6 +21,10 @@ PenPal.Utils = {};
 
 // ----------------------------------------------------------------------------
 
+PenPal.Constants.TMP_DIR = "/tmp/penpal";
+
+// ----------------------------------------------------------------------------
+
 PenPal.Utils.Sleep = async (ms) =>
   new Promise((resolve) => setTimeout(resolve, ms));
 
@@ -34,9 +40,29 @@ PenPal.Utils.LoadGraphQLDirectories = async (root_dir) => {
   return mergeTypeDefs(typesArray);
 };
 
-// ----------------------------------------------------------------------------
+PenPal.Utils.MkdirP = (directory) => {
+  const absolute = directory[0] === path.sep;
+  const directories = directory.split(path.sep);
+  let currentDirectory = absolute ? path.sep : "";
+
+  for (const dir of directories) {
+    currentDirectory = path.join(currentDirectory, dir);
+
+    if (!fs.existsSync(currentDirectory)) {
+      fs.mkdirSync(currentDirectory);
+    }
+  }
+};
 
 PenPal.Utils.isFunction = isFunction;
+
+// ----------------------------------------------------------------------------
+
+PenPal.init = async () => {
+  PenPal.Utils.MkdirP(PenPal.Constants.TMP_DIR);
+};
+
+// ----------------------------------------------------------------------------
 
 PenPal.registerPlugin = (manifest, plugin) => {
   if (!check_manifest(manifest) || !check_plugin(plugin)) {
@@ -48,6 +74,7 @@ PenPal.registerPlugin = (manifest, plugin) => {
 
   const {
     name,
+    load,
     version,
     dependsOn,
     requiresImplementation = false,
@@ -55,6 +82,12 @@ PenPal.registerPlugin = (manifest, plugin) => {
   } = manifest;
 
   const name_version = `${name}@${version}`;
+  if (load === false) {
+    console.log(
+      `[!] Manifest for ${name_version} has "load" set to false. Skipping.`
+    );
+    return;
+  }
   console.log(`[+] Registered plugin: ${name_version}`);
 
   PenPal.RegisteredPlugins[name_version] = {

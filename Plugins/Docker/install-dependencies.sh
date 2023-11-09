@@ -1,8 +1,8 @@
 #!/bin/bash
 
-PACKAGES="biguint-format flake-idgen"
+PACKAGES="dockerode shell-quote stream-to-string"
 
-echo "Installing DataStore dependencies"
+echo "Adding Docker dependencies"
 if [ "$OFFLINE" = "true" ]; then
     echo "Offline set to true, installing from cache (if possible)"
     npm install --prefer-offline --no-audit $PACKAGES
