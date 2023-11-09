@@ -213,7 +213,7 @@ export const updateServices = async (services) => {
     const update_service_ids = accepted.map(({ id }) => id);
     PenPal.API.MQTT.Publish(PenPal.API.MQTT.Topics.Update.Services, {
       project: services[0].project,
-      service_ids: new_service_ids,
+      service_ids: update_service_ids,
     });
   }
 

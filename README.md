@@ -30,11 +30,8 @@ PenPal is an automation and reporting all-in-one tool that is meant to enable Cy
     - [ ] [MinIO](https://min.io) (Plugin)
     - [ ] Amazon S3 (Plugin)
 - [x] Docker support for plugins
-- [x] [N8n](https://n8n.io) for custom workflow automation (Plugin)
-  - [x] N8n Node Builder wrapper (similar to knex) to simplify node creation
-  - [x] Save n8n workflows into a plugin and automatically load and activate them
 - [ ] Report generation
-  - [ ] [Writehat](https://github.com/blacklanternsecurity/writehat) (Plugin)
+  - [ ] [Ghostwriter](https://github.com/GhostManager/Ghostwriter) (Plugin)
 - [ ] Plugin agents system for distributing the various plugins for internal/external combo scans
   - [ ] Tunneling
   - [ ] Cross platform agent
@@ -44,9 +41,10 @@ PenPal is an automation and reporting all-in-one tool that is meant to enable Cy
 ## Plugin Ideas
 
 - [ ] Really anything from the core
-- [x] Ping sweep for IP range (host discovery -> add hosts via API) <-- Implemented in the Masscan plugin as a scanning option
+- [ ] Ping sweep for IP range (host discovery -> add hosts via API)
 - [ ] Nmap for service discovery for hosts or networks (host/service discovery -> add hosts/services via API)
-- [x] Masscan for service discovery for hosts or networks (host/service discovery -> add hosts/services via API)
+- [x] Rustscan for service discovery for hosts or networks (host/service discovery -> add hosts/services via API)
+- [ ] [httpx](https://github.com/projectdiscovery/httpx) for scanning ports to see if they are a web service
 - [ ] Burpsuite for vulnerability scanning
 - [ ] Dirb/dirbuster/insert URL discovery here
 - [ ] [Gowitness](https://hub.docker.com/r/leonjza/gowitness) for screenshots of websites
@@ -55,21 +53,22 @@ PenPal is an automation and reporting all-in-one tool that is meant to enable Cy
 
 ## Dependencies
 
-PenPal is purely dependent on `docker` and `docker-compose`
+PenPal is purely dependent on `docker` and `docker-compose`. It will definitely work on MacOS and maybe on Linux (does not currently support Windows)
 
 ## Running PenPal
 
 Currently there are a number of services and endpoints that are interesting/useful. The current way to run it is by executing `dev.sh` -- if you add more plugins to the Plugins folder they will automatically mount with the `docker-compose` scripts and mount into the container. Here's a list of interesting URLs:
 
 - Web UI - http://localhost:3000
-- GraphQL Playground - http://localhost:3000/graphql
-- GraphQL Voyager - http://localhost:3000/voyager
-- N8n - http://localhost:5678
-- Storybook - http://localhost:6006
+- GraphQL Studio - http://localhost:3001/graphql
 
 ## Plugin Development
 
-Below is documentation describing how plugins should be structured and what is required. Plugins are loaded live by the [Meteor](https://meteor.com) build system and therefore you should be careful of side effects within your code -- every file is executed. Because there is no guaranteed load order, the PenPal Meteor Plugin provides some functions that will allow a plugin to register itself (including specifying dependencies) and then PenPal will load dependencies in order. This is described in more detail in the next section.
+Below is documentation describing how plugins should be structured and what is required. Plugins are loaded live by the Vite (client) and Node (server) dynamically, so simply placing the plugin in the `plugins/` folder will let you get started. Use the `penpal-plugin-develop.py` python script to get a Template with a name put into the right place.
+
+```
+python3 penpal-plugin-develop.py --new-plugin --name MySuperCoolAwesomePlugin
+```
 
 ### Plugin structure (server)
 
@@ -82,7 +81,7 @@ plugins/
 |-> Base/
 |-> CoreAPI/
 |-> YourPlugin/
-|   |-> package.json (optional, if you have npm dependencies)
+|   |-> install-dependencies.sh (optional shell script that will be automatically called if you need things like npm packages)
 |   |-> server/
 |   |   |-> index.js
 |   |   |-> manifest.json
@@ -161,6 +160,7 @@ export default MyCoolPlugin;
 
 - `name` (required) - a `String` that is a unique name for the plugin
 - `version` (required) - a `String` in semantic versioning form
+- `load` (optional) - a `Boolean` that can be set to `false` to disable and not load a plugin. Defaults to true
 - `dependsOn` (required) - a `[String]` where each `String` is of the form `name@version` for plugins. Your plugin will not load if any of the dependencies are missing
 - `requiresImplementation` (optional) - a `Boolean` specifying whether another plugin must implement this one in order to load. This is currently used by the `DataStore` plugin, which defines a general API for interacting with data store plugins but does not actually implement one.
 - `implements` (optional) - a `String` of the form `name@version` that specifies if the plugin implements another plugins specification. For example, `DataStoreMongoAdapter` implements the `DataStore` specification.
@@ -175,7 +175,7 @@ The hooks property that is returned from the `loadPlugin` function allows you to
 
 #### Startup
 
-`startup` - This function takes no arguments but is guaranteed to execute _after_ all other plugins have been loaded and after all core services are running (databases, the GraphQL server, etc). This is useful for loading persisted data, as shown in [Plugins/N8n/server/plugin.js](https://github.com/PLEXSolutions/PenPal/blob/master/Plugins/N8n/server/plugin.js#L28) -- this startup hook is used to load all saved webhooks from a database so that N8n workflows can be persisted across runs of PenPal.
+`startup` - This function takes no arguments but is guaranteed to execute _after_ all other plugins have been loaded and after all core services are running (databases, the GraphQL server, etc).
 
 ```js
 hooks: {
@@ -185,7 +185,7 @@ hooks: {
 
 #### Settings
 
-`settings` - This hook takes an object where each key describes a section of the `settings` object (described later) and the value is a function that is used to validate the settings in question. For example, the `Docker` plugin uses this hook in [Plugins/Docker/server/plugin.js](https://github.com/PLEXSolutions/PenPal/blob/master/Plugins/Docker/server/plugin.js#L64) to check other plugins' usage of the `docker` field of the settings object.
+`settings` - This hook takes an object where each key describes a section of the `settings` object (described later) and the value is a function that is used to validate the settings in question. For example, the `Docker` plugin uses this hook in [Plugins/Docker/server/plugin.js](https://github.com/jchristman/PenPal/blob/master/Plugins/Docker/server/plugin.js#L64) to check other plugins' usage of the `docker` field of the settings object.
 
 ```js
 hooks: {
@@ -197,7 +197,7 @@ hooks: {
 
 #### Postload
 
-`postload` - This hook will fire after a plugin loads with a single argument of the `plugin_name`. This can be used to take settings information and do _something_ with it. For example, the `DataStore` plugin uses this hook in [Plugins/DataStore/server/plugin.js](https://github.com/PLEXSolutions/PenPal/blob/master/Plugins/DataStore/server/plugin.js#L33) to fire a function that creates datastores for each plugin immediately after they are loaded. We do this after the plugin is loaded because we know all of its dependencies exist and before the startup hook in order to make sure that everything is ready for those hooks to fire.
+`postload` - This hook will fire after a plugin loads with a single argument of the `plugin_name`. This can be used to take settings information and do _something_ with it. For example, the `DataStore` plugin uses this hook in [Plugins/DataStore/server/plugin.js](https://github.com/jchristman/PenPal/blob/master/Plugins/DataStore/server/plugin.js#L33) to fire a function that creates datastores for each plugin immediately after they are loaded. We do this after the plugin is loaded because we know all of its dependencies exist and before the startup hook in order to make sure that everything is ready for those hooks to fire.
 
 ```js
 hooks: {
@@ -225,7 +225,7 @@ To utilize the automatic configuration page generator, utilize the following fie
 
 #### Datastore
 
-This section of the settings object is used to automatically generate data stores (using the DataStore API). It can be used for actual PenPal data or just configuration information for you plugin. For example, in [Plugins/N8n/server/plugin.js](https://github.com/PLEXSolutions/PenPal/blob/master/Plugins/N8n/server/plugin.js#L28) it defines a collection for storing webhook URLs for N8n. The `datastores` field of the `settings` object is an `[Object]` where each `Object` has a `name` field. The `name` is automatically prepended with your plugin name, so it is automatically namespaced. There is planned functionality for things like unique data stores for data types (S3 stores for `files`, relational DB for data, etc), but that is not yet implemented.
+This section of the settings object is used to automatically generate data stores (using the DataStore API). It can be used for actual PenPal data or just configuration information for your plugin. The `datastores` field of the `settings` object is an `[Object]` where each `Object` has a `name` field. The `name` is automatically prepended with your plugin name, so it is automatically namespaced. There is planned functionality for things like unique data stores for data types (S3 stores for `files`, relational DB for data, etc), but that is not yet implemented.
 
 ```json
 {
@@ -239,17 +239,7 @@ This section of the settings object is used to automatically generate data store
 
 #### Docker
 
-This section of the settings object is used to automatically pull docker images (not yet implemented) or build provided docker files (implemented) at runtime. This is an easy way to make sure that your particular plugin is cross platform and can be executed regardless of where PenPal is running. See the [Masscan Plugin](https://github.com/PLEXSolutions/PenPal/blob/master/Plugins/Masscan/server/plugin.js#L4) for an example.
-
-#### N8n
-
-You can define n8n nodes and then PenPal will automatically generate them at runtime, including connecting the plumbing between the N8n server and your functions you define. To simplify this, a knex-like wrapper has been built to generate the objects necessary for PenPal to generate Nodes. You can also save workflows from n8n (utilizing the web interface "Download" functionality, and include the workflow in your plugin to automatically load it as necessary.
-
-Examples:
-
-- Workflow Node: [Plugins/CoreAPI-N8n-Nodes/server/nodes/workflow/core-api-get-host.js](https://github.com/PLEXSolutions/PenPal/blob/master/Plugins/CoreAPI-N8n-Nodes/server/nodes/workflow/core-api-get-host.js)
-- Trigger Node: [Plugins/CoreAPI-N8n-Nodes/server/nodes/trigger/core-api-new-host.js](https://github.com/PLEXSolutions/PenPal/blob/master/Plugins/CoreAPI-N8n-Nodes/server/nodes/trigger/core-api-new-host.js)
-- Saved/Auto-reloaded Workflow: [Plugins/Masscan/server/workflows/New_Network_Host_Discovery.json](https://github.com/PLEXSolutions/PenPal/blob/master/Plugins/Masscan/server/workflows/New_Network_Host_Discovery.json), [Plugins/Masscan/server/plugin.js](https://github.com/PLEXSolutions/PenPal/blob/master/Plugins/Masscan/server/plugin.js#L14)
+This section of the settings object is used to automatically pull docker images (not yet implemented) or build provided docker files (implemented) at runtime. This is an easy way to make sure that your particular plugin is cross platform and can be executed regardless of where PenPal is running. See the [Rustscan Plugin](https://github.com/jchristman/PenPal/blob/master/Plugins/Rustscan/server/plugin.js#L7) for an example.
 
 ### GraphQL
 
