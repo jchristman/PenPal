@@ -149,7 +149,7 @@ const Selector = () => {
           setLocalConfig(config);
           setConfigSinceLastSave(config);
         } catch (e) {
-          console.error(e);
+          console.error("Selector", e);
           enqueueSnackbar(`Error: ${e.message}`, { variant: "error" });
         }
       }

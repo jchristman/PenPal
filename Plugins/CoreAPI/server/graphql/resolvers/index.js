@@ -15,6 +15,7 @@ import project_default_resolvers from "./project.default.js";
 import project_mutation_resolvers from "./project.mutations.js";
 import project_query_resolvers from "./project.queries.js";
 import service_default_resolvers from "./service.default.js";
+import service_query_resolvers from "./service.queries.js";
 import network_service_default_resolvers from "./service-network.default.js";
 import scalar_resolvers from "./scalars.js";
 
@@ -24,6 +25,7 @@ export default {
     ...configuration_query_resolvers,
     ...customer_query_resolvers,
     ...project_query_resolvers,
+    ...service_query_resolvers,
   },
   mutations: {
     ...customer_mutation_resolvers,

@@ -53,7 +53,7 @@ type NetworkService implements Service & Annotatable & Auditable {
   "Which IP Protocol on which the service operates"
   ip_protocol: IPProtocol!
   "The port number on which the service operates"
-  port: Int!
+  port: Int
   "Status of the port"
   status: String
   "The TTL of the network service, which can help in OS identification"

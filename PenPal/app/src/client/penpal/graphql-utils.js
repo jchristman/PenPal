@@ -73,7 +73,7 @@ export const generateQueryFromSchemas = (types, schemas = []) => {
       const inner_query = query.match(/query\s+{\s+(.*)\s+}/)[1];
       return inner_query;
     } catch (e) {
-      console.error(e);
+      console.error("GenerateQueryFromSchemas Error:", e);
       return "";
     }
   });

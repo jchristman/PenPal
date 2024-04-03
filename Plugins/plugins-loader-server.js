@@ -15,7 +15,7 @@ export const registerPlugins = async () => {
     try {
       await import(file);
     } catch (e) {
-      console.error(e);
+      console.error("Register Plugin", e);
     }
   }
 };

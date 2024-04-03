@@ -100,6 +100,12 @@ export const Raw = async (cmd) => {
   return res.stdout;
 };
 
+export const Pull = async ({ image }) => {
+  await PenPal.Utils.AsyncNOOP();
+  let output = await exec(`docker ${docker_host} pull ${image}`);
+  return output;
+};
+
 export const Build = async (args) => {
   await PenPal.Utils.AsyncNOOP();
 

@@ -124,7 +124,7 @@ const ProjectReviewForm = ({
 
       handleClose();
     } catch (e) {
-      console.error(e);
+      console.error("Create project", e);
       enqueueSnackbar(e.message, { variant: "error", autoHideDuration: 10000 });
     }
 

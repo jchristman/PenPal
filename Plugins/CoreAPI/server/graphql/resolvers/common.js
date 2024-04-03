@@ -6,7 +6,8 @@ export const CachingDefaultResolvers = (API, Fields) => {
   for (let field of Fields) {
     resolvers[field] = async (root, __, { PenPalCachingAPI }) => {
       const id = typeof root === "string" ? root : root.id;
-      return (await PenPalCachingAPI[API]?.Get(id))?.[field] ?? null;
+      const record = await PenPalCachingAPI[API]?.Get(id);
+      return record?.[field] ?? null;
     };
   }
 

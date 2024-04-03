@@ -29,7 +29,7 @@ class MQTTClient {
     try {
       await this.client.publish(topic_name, serialized_data);
     } catch (e) {
-      console.error(e.stack);
+      console.error("Publish", e.stack);
     }
   }
 

@@ -18,3 +18,4 @@ services:
       - ./plugins/:/penpal/app/plugins:consistent
     environment:
       - LOCAL_USER_ID=${LOCAL_USER_ID}
+      - FORCE_COLOR=1

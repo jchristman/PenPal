@@ -184,7 +184,7 @@ export const insertHosts = async (hosts) => {
       // Accept the successful insertions
       accepted.push(...new_hosts);
     } else {
-      console.log(rejected);
+      console.log("Rejected", rejected);
     }
   }
 

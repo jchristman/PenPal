@@ -9,7 +9,7 @@ const useStyles = makeStyles((theme) => ({}));
 const ProjectViewDashboard = ({ project }) => {
   const classes = useStyles();
 
-  console.log(project);
+  console.log("Project", project);
 
   return (
     <Grid container spacing={3}>
