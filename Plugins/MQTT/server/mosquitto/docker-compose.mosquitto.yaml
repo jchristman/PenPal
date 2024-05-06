@@ -18,5 +18,5 @@ volumes:
 
 networks:
   penpal_extern:
-    external:
-      name: penpal_penpal
+    name: penpal_penpal
+    external: true

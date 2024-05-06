@@ -32,6 +32,17 @@ PenPal.Utils.AsyncNOOP = async () => {
   await PenPal.Utils.Sleep(0);
 };
 
+PenPal.Utils.AwaitTimeout = async (awaitFunction, timeout) => {
+  const result = await Promise.race([
+    awaitFunction(),
+    new Promise((resolve, reject) => {
+      setTimeout(() => reject(new Error("Timeout occurred")), timeout); // Timeout after 5 seconds
+    }),
+  ]);
+
+  return result;
+};
+
 PenPal.Utils.LoadGraphQLDirectories = async (root_dir) => {
   const typesArray = await loadFiles(root_dir, {
     recursive: true,
@@ -83,7 +94,7 @@ PenPal.registerPlugin = (manifest, plugin) => {
 
   const name_version = `${name}@${version}`;
   if (load === false) {
-    console.log(
+    console.warn(
       `[!] Manifest for ${name_version} has "load" set to false. Skipping.`
     );
     return;

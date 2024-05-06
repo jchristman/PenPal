@@ -2,6 +2,7 @@ import PenPal from "#penpal/core";
 import path from "path";
 import util from "util";
 import fs from "fs";
+import pty from "node-pty";
 import { exec as _exec } from "child_process";
 const exec = util.promisify(_exec);
 
@@ -50,7 +51,7 @@ export const Run = async ({ image, cmd, daemonize = false, network = "" }) => {
 
   const command = `docker ${docker_host} run ${daemonize ? "-d " : ""}${
     network != "" ? `--network ${network} ` : ""
-  }${image} ${cmd}`;
+  }-it ${image} ${cmd}`;
   const output = await exec(command);
 
   return output;
@@ -138,4 +139,35 @@ export const Build = async (args) => {
   }
 
   return null;
+};
+
+export const AttachAndReturnDockerChildProcess = async (args) => {
+  await PenPal.Utils.AsyncNOOP();
+
+  // Create a PTY
+  const term = pty.spawn("bash", [], {
+    name: "xterm-256color",
+    cols: 80,
+    rows: 30,
+    cwd: process.cwd(),
+    env: process.env,
+  });
+
+  // Optionally, you can handle other events like 'exit'
+  const exit_listener = term.onExit(({ exitCode, signal }) => {
+    //console.log(`PTY exited with code ${exitCode} and signal ${signal}`);
+    exit_listener.dispose();
+  });
+
+  const command = `docker ${docker_host} attach ${args.container}`;
+  term.write(command + "\n");
+
+  return term;
+};
+
+export const DetachFromDockerChildProcess = async (term) => {
+  // Send Ctrl-p (ASCII code 16) followed by Ctrl-q (ASCII code 17)
+  term.write(String.fromCharCode(16)); // Ctrl-p
+  term.write(String.fromCharCode(17)); // Ctrl-q
+  term.kill();
 };
