@@ -5,6 +5,15 @@ services:
     image: penpal/base
     pull_policy: never
 
+  penpal-init:
+    image: debian:latest
+    user: root
+    group_add:
+      - "${LOCAL_USER_ID}"
+    volumes:
+      - penpal-plugin-share:/penpal-plugin-share
+    command: chown -R ${LOCAL_USER_ID} /penpal-plugin-share
+
   penpal-frontend:
     build:
       context: ./PenPal
@@ -27,6 +36,7 @@ services:
       - penpal-server-npm-cache:/home/node/.npm
       - ./docker-compose.common.yaml:/penpal/app/docker-compose.common.yaml
       - /tmp:/tmp
+      - penpal-plugin-share:/penpal-plugin-share
     ports:
       - "3001:3001"
     environment:
@@ -37,6 +47,9 @@ services:
     networks:
       - penpal
       - internal
+    depends_on:
+      penpal-init:
+        condition: service_completed_successfully
 
   penpal-docker-api:
     build:
@@ -52,6 +65,8 @@ volumes:
   penpal-frontend-npm-cache:
     external: false
   penpal-server-npm-cache:
+    external: false
+  penpal-plugin-share:
     external: false
 
 networks:

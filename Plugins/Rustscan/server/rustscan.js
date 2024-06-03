@@ -6,12 +6,6 @@ import _ from "lodash";
 export const parseResults = async (project_id, data) => {
   console.log("[.] Parsing rustscan results");
 
-  let res = {
-    status: "Error Uploading Data",
-    was_success: false,
-    affected_records: [],
-  };
-
   const ips = Object.keys(data);
   let hosts = _.map(ips, (ip) => {
     return { ip_address: ip };

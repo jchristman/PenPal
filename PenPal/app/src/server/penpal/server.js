@@ -25,6 +25,8 @@ PenPal.Constants.TMP_DIR = "/tmp/penpal";
 
 // ----------------------------------------------------------------------------
 
+PenPal.Utils.Epoch = () => Math.floor(new Date().getTime() / 1000);
+
 PenPal.Utils.Sleep = async (ms) =>
   new Promise((resolve) => setTimeout(resolve, ms));
 
@@ -177,7 +179,7 @@ PenPal.loadPlugins = async () => {
     }
 
     // Now merge the types from this plugin into the schema
-    const { graphql, settings, hooks } = await plugin.loadPlugin();
+    const { graphql, settings, hooks, jobs } = await plugin.loadPlugin();
 
     if (hooks !== undefined) {
       const { postload, settings: settings_hooks, startup } = hooks;
@@ -237,6 +239,7 @@ PenPal.loadPlugins = async () => {
 
     PenPal.LoadedPlugins[plugin_name].loaded = true;
     PenPal.LoadedPlugins[plugin_name].settings = settings;
+    PenPal.LoadedPlugins[plugin_name].jobs = jobs;
 
     for (let postload_hook of postload_hooks) {
       await postload_hook(plugin_name);

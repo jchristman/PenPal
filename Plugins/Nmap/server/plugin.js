@@ -9,7 +9,14 @@ export const settings = {
     name: "penpal:nmap",
     dockercontext: `${__dirname}/docker-context`,
   },
+  STATUS_SLEEP: 500,
 };
+
+// push and pop out of this work queue for if a job is running. To be implemented
+export const work_queue = [];
+
+// this variable is passed by reference to PenPal for reference
+export const jobs = [];
 
 const start_services_scan = async ({ project, service_ids }) => {
   const services =
@@ -21,6 +28,20 @@ const start_services_scan = async ({ project, service_ids }) => {
 };
 
 const start_initial_networks_scan = async ({ project, network_ids }) => {
+  const job = {
+    id: jobs.length,
+    name: `Initial Network Scan for ${project}: ${network_ids}`,
+    plugin: "Nmap",
+    progress: 0.0,
+    statusText: "Beginning network scan...",
+  };
+  // insert the job at index initial_job.id
+  jobs.splice(job.id, 0, job);
+  const update_job = async (progress, statusText) => {
+    job.progress = progress;
+    job.statusText = statusText;
+  };
+
   console.log("Nmap: New Networks:", network_ids);
   const networks =
     (await PenPal.API.Networks.GetMany(network_ids))?.map(
@@ -35,6 +56,7 @@ const start_initial_networks_scan = async ({ project, network_ids }) => {
         networks: [network],
         top_ports: 1000,
         fast_scan: true,
+        update_job,
       });
     }
   }
@@ -54,6 +76,7 @@ const NmapPlugin = {
 
     return {
       settings,
+      jobs,
     };
   },
 };
