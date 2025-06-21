@@ -2,7 +2,7 @@ import PenPal from "#penpal/core";
 import _ from "lodash";
 
 import { required_field, isTestData } from "./common.js";
-//import { networks as mockNetworks } from "../test/mock-networks.json" assert { type: "json" };
+//import { networks as mockNetworks } from "../test/mock-networks.json" with { type: "json" };
 const mockNetworks = [];
 
 // -----------------------------------------------------------

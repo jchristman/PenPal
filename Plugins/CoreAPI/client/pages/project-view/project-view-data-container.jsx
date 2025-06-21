@@ -48,7 +48,7 @@ export const TabPanel = (props) => {
   );
 };
 
-const ProjectViewDataContainer = ({ project }) => {
+const ProjectViewDataContainer = ({ project, disable_polling }) => {
   const classes = useStyles();
   const [value, setValue] = useState(0);
 
@@ -90,7 +90,7 @@ const ProjectViewDataContainer = ({ project }) => {
       <div className={classes.tab_container}>
         {tabs.map(({ content: Content }, i) => (
           <TabPanel value={value} index={i} key={i}>
-            <Content project={project} />
+            <Content project={project} disable_polling={disable_polling} />
           </TabPanel>
         ))}
       </div>
@@ -99,3 +99,6 @@ const ProjectViewDataContainer = ({ project }) => {
 };
 
 registerComponent("ProjectViewDataContainer", ProjectViewDataContainer);
+
+// This is only needed for the fast refresh plugin, the registerComponent above is needed for the plugin system
+export default ProjectViewDataContainer;

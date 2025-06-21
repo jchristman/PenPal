@@ -210,4 +210,7 @@ const AccountProvider = ({ children }) => {
 const useAccount = () => useContext(AccountContext);
 
 registerComponent("AccountProvider", AccountProvider);
+
+// This is only needed for the fast refresh plugin, the registerComponent above is needed for the plugin system
+export default AccountProvider;
 registerHook("useAccount", useAccount);

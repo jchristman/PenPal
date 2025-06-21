@@ -1,0 +1,24 @@
+# File: nmap-plugin-enrichment.schema.graphql
+"""
+Extra fields for Nmap services
+
+service: service.service,
+fingerprint: service.fingerprint,
+product: service.product,
+version: service.version,
+extra_info: service.extra_info,
+"""
+type NmapPluginEnrichment implements PluginEnrichment {
+  "This allows the type resolver to determine if the PluginEnrichment"
+  plugin_name: String!
+  "The service associated with the Nmap Plugin Enrichment"
+  service: String
+  "The fingerprint associated with the Nmap Plugin Enrichment"
+  fingerprint: String
+  "The product associated with the Nmap Plugin Enrichment"
+  product: String
+  "The version associated with the Nmap Plugin Enrichment"
+  version: String
+  "The extra info associated with the Nmap Plugin Enrichment"
+  extra_info: String
+}

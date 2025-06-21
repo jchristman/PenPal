@@ -35,3 +35,6 @@ const AutoOSIcon = ({ os_name, width = 40, height = 40 }) => {
 };
 
 registerComponent("AutoOSIcon", AutoOSIcon);
+
+// This is only needed for the fast refresh plugin, the registerComponent above is needed for the plugin system
+export default AutoOSIcon;

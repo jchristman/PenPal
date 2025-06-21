@@ -1,0 +1,45 @@
+---
+description: PenPal uses a sophisticated plugin architecture that allows dynamic loading of cybersecurity tools and integrations.
+globs: 
+alwaysApply: false
+---
+# PenPal Plugin System Guide
+
+PenPal uses a sophisticated plugin architecture that allows dynamic loading of cybersecurity tools and integrations.
+
+## Plugin Loading System
+- **Server Plugin Loader**: [Plugins/plugins-loader-server.js](mdc:Plugins/plugins-loader-server.js)
+- **Client Plugin Loader**: [Plugins/plugins-loader-client.js](mdc:Plugins/plugins-loader-client.js)
+- **Plugin Development Script**: [penpal-plugin-develop.py](mdc:penpal-plugin-develop.py)
+
+## Core Plugins
+- **Base Plugin**: [Plugins/Base/server/manifest.json](mdc:Plugins/Base/server/manifest.json) - Foundation plugin
+- **CoreAPI Plugin**: [Plugins/CoreAPI/server/manifest.json](mdc:Plugins/CoreAPI/server/manifest.json) - Data standardization
+- **DataStore Plugin**: [Plugins/DataStore/server/plugin.js](mdc:Plugins/DataStore/server/plugin.js) - Data abstraction layer
+- **MongoDB Adapter**: [Plugins/DataStoreMongoAdapter/server/plugin.js](mdc:Plugins/DataStoreMongoAdapter/server/plugin.js)
+
+## Plugin Structure Requirements
+Each plugin must have:
+1. **manifest.json** - Plugin metadata, dependencies, and versioning
+2. **index.js** - Plugin registration with PenPal core
+3. **plugin.js** - Plugin implementation and GraphQL integration
+4. **install-dependencies.sh** (optional) - Custom dependency installation
+
+## Security Tool Plugins
+- **Nmap**: [Plugins/Nmap/server/plugin.js](mdc:Plugins/Nmap/server/plugin.js) - Network scanning
+- **Rustscan**: [Plugins/Rustscan/server/plugin.js](mdc:Plugins/Rustscan/server/plugin.js) - Fast port scanning
+- **Docker**: [Plugins/Docker/server/plugin.js](mdc:Plugins/Docker/server/plugin.js) - Container management
+
+## Plugin Development Template
+Use [PluginTemplate/](mdc:PluginTemplate) as a starting point for new plugins.
+
+## Plugin Communication
+- **MQTT Plugin**: [Plugins/MQTT/server/plugin.js](mdc:Plugins/MQTT/server/plugin.js) - Inter-plugin messaging
+- Plugins can subscribe to events like new hosts/networks discovery
+- Job queue system for long-running tasks
+
+## GraphQL Integration
+Plugins extend the GraphQL schema with:
+- Custom types and mutations
+- Resolvers and data loaders  
+- Schema stitching via plugin loading system

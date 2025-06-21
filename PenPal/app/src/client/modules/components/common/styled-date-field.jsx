@@ -1,6 +1,6 @@
 import React, { useState } from "react";
 import { Components, registerComponent } from "@penpal/core";
-import { DesktopDatePicker } from "@mui/lab";
+import { DesktopDatePicker } from "@mui/x-date-pickers";
 
 const StyledDateField = ({
   margin = "normal",
@@ -25,3 +25,6 @@ const StyledDateField = ({
 };
 
 registerComponent("StyledDateField", StyledDateField);
+
+// This is only needed for the fast refresh plugin, the registerComponent above is needed for the plugin system
+export default StyledDateField;

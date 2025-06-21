@@ -26,3 +26,6 @@ const _Icon = ({ width = 40, height = 40 }) => (
 );
 
 registerComponent(ICON_NAME, _Icon);
+
+// This is only needed for the fast refresh plugin, the registerComponent above is needed for the plugin system
+export default _Icon;

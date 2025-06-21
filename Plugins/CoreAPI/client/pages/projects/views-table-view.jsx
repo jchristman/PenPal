@@ -243,3 +243,6 @@ export const Icon = <ViewListIcon />;
 export const Name = "Table View";
 
 registerComponent("ProjectsViewTableView", ProjectsViewTableView);
+
+// This is only needed for the fast refresh plugin, the registerComponent above is needed for the plugin system
+export default ProjectsViewTableView;

@@ -1,5 +1,5 @@
 "The generic interface for services. This allows for enforcement of certain fields while allowing for customized service types to be created."
-interface Service implements Annotatable & Auditable {
+interface Service implements Annotatable & Auditable & Enrichable {
   id: ID!
   "The host to which the service belongs"
   host: Host!
@@ -11,6 +11,8 @@ interface Service implements Annotatable & Auditable {
   name: String!
   "Annotations about the service"
   annotations: Annotations
+  "Enrichments for the service from Plugins"
+  enrichments: [PluginEnrichment]
   "Audits for the service"
   changes: [Audit]
 }
@@ -38,7 +40,7 @@ type ServicesConnection {
   totalCount: Int!
 }
 
-type NetworkService implements Service & Annotatable & Auditable {
+type NetworkService implements Service & Annotatable & Auditable & Enrichable {
   id: ID!
   "The host to which the service belongs"
   host: Host!
@@ -50,6 +52,8 @@ type NetworkService implements Service & Annotatable & Auditable {
   name: String!
   "Annotations about the service"
   annotations: Annotations
+  "Enrichments for the service from Plugins"
+  enrichments: [PluginEnrichment]
   "Which IP Protocol on which the service operates"
   ip_protocol: IPProtocol!
   "The port number on which the service operates"

@@ -28,4 +28,5 @@ type Job {
   plugin: Plugin!
   progress: Float!
   statusText: String!
+  stages: [Job]
 }

@@ -14,33 +14,13 @@ export const ProjectDetails = `
       end
     }
     scope {
-      hostsConnection(first:5) {
-        hosts {
-          id
-          ip_address
-          mac_address
-        }
+      hostsConnection {
         servicesConnection {
           totalCount
         }
         totalCount
       }
-      networksConnection(first:5) {
-        networks {
-          id
-          subnet
-          hostsConnection(first:5) {
-          	hosts {
-              id
-              ip_address
-              mac_address
-            }
-            servicesConnection {
-              totalCount
-            }
-            totalCount
-          }
-        }
+      networksConnection {
         hostsConnection {
           servicesConnection {
             totalCount

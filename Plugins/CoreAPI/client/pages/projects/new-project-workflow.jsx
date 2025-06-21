@@ -190,3 +190,6 @@ const NewProjectWorkflow = ({ open, handleClose: handleCloseProp }) => {
 };
 
 registerComponent("NewProjectWorkflow", NewProjectWorkflow);
+
+// This is only needed for the fast refresh plugin, the registerComponent above is needed for the plugin system
+export default NewProjectWorkflow;

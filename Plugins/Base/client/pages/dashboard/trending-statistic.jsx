@@ -108,3 +108,6 @@ const TrendingStatistic = ({
 };
 
 registerComponent("DashboardTrendingStatistic", TrendingStatistic);
+
+// This is only needed for the fast refresh plugin, the registerComponent above is needed for the plugin system
+export default TrendingStatistic;

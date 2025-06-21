@@ -31,10 +31,9 @@ const startGraphQLServer = async (
     playground: true,
     formatError: (err) => {
       console.error(
-        `${err.extensions?.code ?? "Unknown Error"} ::: ${
-          err.message
-        }\n${err.extensions?.exception?.stacktrace.join("\n")}`
+        `${err.extensions?.code ?? "Unknown Error"} ::: ${err.message}`
       );
+      console.error(err.extensions?.stacktrace.join("\n"));
       return err;
     },
   });

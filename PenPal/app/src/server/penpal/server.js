@@ -67,6 +67,10 @@ PenPal.Utils.MkdirP = (directory) => {
   }
 };
 
+PenPal.Utils.RunAfterImport = (fn) => {
+  setTimeout(fn, 0);
+};
+
 PenPal.Utils.isFunction = isFunction;
 
 // ----------------------------------------------------------------------------

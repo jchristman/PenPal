@@ -17,3 +17,6 @@ const Project = (props) => {
 };
 
 registerComponent("Project", Project);
+
+// This is only needed for the fast refresh plugin, the registerComponent above is needed for the plugin system
+export default Project;

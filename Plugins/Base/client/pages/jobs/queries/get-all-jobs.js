@@ -10,6 +10,12 @@ export default gql`
         name
         progress
         statusText
+        stages {
+          id
+          name
+          progress
+          statusText
+        }
       }
     }
   }

@@ -39,7 +39,6 @@ const getNmapProgress = async (container_id) => {
     container: container_id,
   });
   terminal.onData((data) => {
-    console.log(data);
     const extractedStats = extractNmapStats(data);
     if (extractedStats) {
       stats = extractedStats;
@@ -72,7 +71,10 @@ export const parseAndUpsertResults = async (project_id, xml_data) => {
   console.log(`[+] Found ${hosts.length} hosts`);
   for (let host of hosts) {
     console.log(`[+] Processing host: ${host.address[0].$.addr}`);
+    console.log(JSON.stringify(host, null, 2));
     const ip = host.address[0].$.addr;
+    const hostname = host.hostnames?.[0]?.hostname?.[0]?.$?.name ?? null;
+    console.log("Hostname:", hostname);
     const closed =
       host.ports?.[0].extraports.find(
         (extra_port) => extra_port.$.state === "closed"
@@ -88,6 +90,7 @@ export const parseAndUpsertResults = async (project_id, xml_data) => {
           port: port.$.portid,
           protocol: port.$.protocol,
           service: port.service?.[0].$.name ?? null,
+          fingerprint: port.service?.[0].$.servicefp ?? null,
           product: port.service?.[0].$.product ?? null,
           version: port.service?.[0].$.version ?? null,
           extra_info: port.service?.[0].$.extrainfo ?? null,
@@ -97,6 +100,7 @@ export const parseAndUpsertResults = async (project_id, xml_data) => {
     if (services.length > 0) {
       live_hosts[ip] = {
         ip_address: ip,
+        hostname: hostname,
         closed,
         filtered,
         services: services,
@@ -104,6 +108,7 @@ export const parseAndUpsertResults = async (project_id, xml_data) => {
     } else {
       no_ports_hosts[ip] = {
         ip_address: ip,
+        hostname: hostname,
         closed,
         filtered,
         services: services,
@@ -116,6 +121,7 @@ export const parseAndUpsertResults = async (project_id, xml_data) => {
     project_id,
     Object.keys(live_hosts).map((ip) => ({
       ip_address: ip,
+      hostnames: [live_hosts[ip].hostname],
     }))
   );
 
@@ -134,6 +140,16 @@ export const parseAndUpsertResults = async (project_id, xml_data) => {
           ip_protocol: service.protocol,
           port: service.port,
           status: "open",
+          enrichments: [
+            {
+              plugin_name: "Nmap",
+              service: service.service,
+              fingerprint: service.fingerprint,
+              product: service.product,
+              version: service.version,
+              extra_info: service.extra_info,
+            },
+          ],
         };
       }) ?? [];
 
@@ -169,21 +185,22 @@ export const performScan = async ({
   outdir_base = "/penpal-plugin-share",
   outfile_prefix = "output",
   update_job = async () => {},
+  job_stages = null,
 }) => {
   const outdir = [outdir_base, "nmap", project_id].join(path.sep);
   PenPal.Utils.MkdirP(outdir);
 
-  const targets = ips.length > 0 ? ips : networks;
+  const targets = (ips.length > 0 ? ips : networks).join(" ");
 
   let ports = "-p";
   if (top_ports !== null) {
     ports = `--top-ports ${top_ports}`;
   } else {
     if (tcp_ports?.length > 0) {
-      ports += tcp_ports.join(",");
+      ports += `T:${tcp_ports.join(",")}`;
     }
     if (udp_ports?.length > 0) {
-      udp_ports = udp_ports.map((port) => `U:${port}`).join(",");
+      udp_ports = `U:${udp_ports.join(",")}`;
       ports += `${ports.length > 0 && ","}${udp_ports}`;
     }
   }
@@ -197,7 +214,7 @@ export const performScan = async ({
 
   const nmap_command = fast_scan
     ? `-T4 --stats-every 1 -v --max-retries=1 --min-rate 150 --max-scan-delay 5 -n -sS -Pn ${ports} ${output} ${targets}`
-    : `${ports} ${output} ${targets}`;
+    : `--stats-every 1 -v --min-rate=150 --max-retries=2 --initial-rtt-timeout=50ms --max-rtt-timeout=200ms --max-scan-delay=5s -Pn -sS -sV -sU ${ports} ${output} ${targets}`;
 
   console.log(`[+] Running nmap ${nmap_command}`);
 
@@ -224,21 +241,56 @@ export const performScan = async ({
         async () => await PenPal.Docker.Wait(container_id),
         settings.STATUS_SLEEP
       );
-      console.log(`[+] nmap finished: ${container_id}`);
       break;
     } catch (e) {
-      console.log(`[+] nmap still running: ${container_id}`);
       let stats = await getNmapProgress(container_id);
       if (stats !== null) {
+        // Determine current stage based on scan type
+        let currentStage = null;
+        if (job_stages) {
+          if (stats.scanType.includes("SYN Stealth Scan")) {
+            currentStage = 0; // SYN Scan stage
+          } else if (stats.scanType.includes("Service Scan")) {
+            currentStage = 1; // Service Scan stage
+            // Mark SYN scan as complete if we're in service scan
+            if (job_stages[0] && job_stages[0].progress < 100) {
+              job_stages[0].progress = 100;
+              job_stages[0].statusText = "SYN scan completed";
+            }
+          } else if (stats.scanType.includes("Script Scan")) {
+            currentStage = 2; // UDP Scan stage
+            // Mark previous stages as complete
+            if (job_stages[0] && job_stages[0].progress < 100) {
+              job_stages[0].progress = 100;
+              job_stages[0].statusText = "SYN scan completed";
+            }
+            if (job_stages[1] && job_stages[1].progress < 100) {
+              job_stages[1].progress = 100;
+              job_stages[1].statusText = "Service scan completed";
+            }
+          }
+        }
+
         await update_job(
           stats.scanProgress,
-          `Elapsed: ${stats.elapsed}, ${stats.scanType} in progress, ${stats.hostsCompleted} completed / ${stats.hostsUp} up, Remaining: ${stats.remainingTime}`
+          `Elapsed: ${stats.elapsed}, ${stats.scanType} in progress, ${stats.hostsCompleted} completed / ${stats.hostsUp} up, Remaining: ${stats.remainingTime}`,
+          currentStage
         );
       }
     }
   }
 
-  await update_job(1.0, "Scan complete");
+  // Mark all stages as complete
+  if (job_stages) {
+    job_stages.forEach((stage, index) => {
+      if (stage.progress < 100) {
+        stage.progress = 100;
+        stage.statusText = `${stage.name} completed`;
+      }
+    });
+  }
+
+  await update_job(100.0, "Scan complete", null);
   console.log(`[+] nmap finished: ${container_id}`);
 
   // Read the file at ${output}.xml

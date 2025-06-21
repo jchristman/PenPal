@@ -1,0 +1,11 @@
+# A graphql file that defines a PluginEnrichment schema that can be extended by plugins. This allows for the addition of new fields to the CoreAPI types
+interface Enrichable {
+  "An individual host, usually associated with a single IP Address"
+  enrichments: [PluginEnrichment]
+}
+
+"This is a container for different plugin enrhcihments, which are a way of adding information to any type that is Enrichable"
+interface PluginEnrichment {
+  "This allows the type resolver to determine if the PluginEnrichment is a certain implementation of the interface"
+  plugin_name: String!
+}

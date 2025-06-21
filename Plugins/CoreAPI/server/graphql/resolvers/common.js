@@ -1,4 +1,4 @@
-import _ from "lodash";
+import PenPal from "#penpal/core";
 
 export const CachingDefaultResolvers = (API, Fields) => {
   const resolvers = {};
@@ -13,3 +13,8 @@ export const CachingDefaultResolvers = (API, Fields) => {
 
   return resolvers;
 };
+
+PenPal.Utils.RunAfterImport(() => {
+  PenPal.API.Utils = {};
+  PenPal.API.Utils.CachingDefaultResolvers = CachingDefaultResolvers;
+});

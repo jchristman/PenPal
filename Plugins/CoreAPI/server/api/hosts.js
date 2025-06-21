@@ -5,7 +5,7 @@ import ip from "ip";
 import { required_field, isTestData } from "./common.js";
 
 import { getNetworksByProject, addHostsToNetwork } from "./networks.js";
-//import { hosts as mockHosts } from "../test/mock-hosts.json" assert { type: "json" };
+//import { hosts as mockHosts } from "../test/mock-hosts.json" with { type: "json" };
 const mockHosts = [];
 
 // -----------------------------------------------------------

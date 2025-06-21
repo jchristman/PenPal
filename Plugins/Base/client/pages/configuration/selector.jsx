@@ -262,3 +262,6 @@ const Selector = () => {
 };
 
 registerComponent("ConfigurationSelector", Selector);
+
+// This is only needed for the fast refresh plugin, the registerComponent above is needed for the plugin system
+export default Selector;
