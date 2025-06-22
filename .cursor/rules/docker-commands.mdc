@@ -1,0 +1,95 @@
+---
+description: This PenPal project runs entirely in Docker containers. **NEVER run npm, node, or other development commands directly on the local system.** Always execute them in the appropriate Docker container.
+globs: 
+alwaysApply: false
+---
+# Docker Container Command Execution
+
+This PenPal project runs entirely in Docker containers. **NEVER run npm, node, or other development commands directly on the local system.** Always execute them in the appropriate Docker container.
+
+## **Container Architecture**
+
+- **penpal-frontend**: Frontend React application (port 3000)
+- **penpal-server**: Backend GraphQL server (port 3001)  
+- **penpal-docker-api**: Docker API proxy via socat
+
+## **Command Execution Pattern**
+
+Use this format to run commands in containers:
+```bash
+docker compose -f docker-compose.common.yaml -f docker-compose.dev.yaml exec <container-name> <command>
+```
+
+## **Common Container Commands**
+
+### **Frontend Operations**
+```bash
+# Install npm packages
+docker compose -f docker-compose.common.yaml -f docker-compose.dev.yaml exec penpal-frontend npm install <package-name>
+
+# Run frontend-specific commands
+docker compose -f docker-compose.common.yaml -f docker-compose.dev.yaml exec penpal-frontend npm run <script>
+
+# Shell access to frontend container
+docker compose -f docker-compose.common.yaml -f docker-compose.dev.yaml exec penpal-frontend bash
+```
+
+### **Backend Operations**
+```bash
+# Install server dependencies
+docker compose -f docker-compose.common.yaml -f docker-compose.dev.yaml exec penpal-server npm install <package-name>
+
+# Run server-specific commands
+docker compose -f docker-compose.common.yaml -f docker-compose.dev.yaml exec penpal-server npm run <script>
+
+# Shell access to server container
+docker compose -f docker-compose.common.yaml -f docker-compose.dev.yaml exec penpal-server bash
+```
+
+## **Development Workflow**
+
+- **Starting Development**: Use `./dev.sh` to start all containers
+- **Stopping Development**: Use `./stop-dev.sh` to stop containers
+- **Viewing Logs**: `docker compose -f docker-compose.common.yaml logs -f penpal-server penpal-frontend`
+
+## **Package Management Rules**
+
+- ✅ **DO**: Run `npm install` in the appropriate container
+- ✅ **DO**: Use `penpal-frontend` container for frontend dependencies
+- ✅ **DO**: Use `penpal-server` container for backend dependencies
+- ❌ **DON'T**: Run `npm install` on the local file system
+- ❌ **DON'T**: Run node commands directly on the host
+
+## **Examples**
+
+### **Adding MUI Date Picker (Frontend)**
+```bash
+docker compose -f docker-compose.common.yaml -f docker-compose.dev.yaml exec penpal-frontend npm install @mui/x-date-pickers
+```
+
+### **Adding GraphQL Dependency (Server)**
+```bash
+docker compose -f docker-compose.common.yaml -f docker-compose.dev.yaml exec penpal-server npm install graphql-scalars
+```
+
+### **Debugging Container Issues**
+```bash
+# Check running containers
+docker compose -f docker-compose.common.yaml -f docker-compose.dev.yaml ps
+
+# Access container shell for troubleshooting
+docker compose -f docker-compose.common.yaml -f docker-compose.dev.yaml exec penpal-frontend bash
+```
+
+## **Important Notes**
+
+- The development environment uses volume mounts to sync local code changes
+- Package.json files are mounted as `package-tmp.json` inside containers
+- NPM cache is persisted via Docker volumes (`penpal-frontend-npm-cache`, `penpal-server-npm-cache`)
+- Always verify the container is running before executing commands
+
+## **Container File Structure**
+
+- Frontend working directory: `/penpal/app`
+- Server working directory: `/penpal/app`
+- Plugins mounted at: `/penpal/app/plugins`

@@ -116,3 +116,6 @@ const SelectCustomer = ({
 };
 
 registerComponent("NewProjectWorkflowSelectCustomer", SelectCustomer);
+
+// This is only needed for the fast refresh plugin, the registerComponent above is needed for the plugin system
+export default SelectCustomer;

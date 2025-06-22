@@ -5,7 +5,7 @@ import ip from "ip";
 import { required_field, isTestData } from "./common.js";
 
 import { getNetworksByProject, addHostsToNetwork } from "./networks.js";
-//import { hosts as mockHosts } from "../test/mock-hosts.json" assert { type: "json" };
+//import { hosts as mockHosts } from "../test/mock-hosts.json" with { type: "json" };
 const mockHosts = [];
 
 // -----------------------------------------------------------
@@ -184,7 +184,7 @@ export const insertHosts = async (hosts) => {
       // Accept the successful insertions
       accepted.push(...new_hosts);
     } else {
-      console.log(rejected);
+      console.log("Rejected", rejected);
     }
   }
 

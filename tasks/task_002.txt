@@ -1,0 +1,11 @@
+# Task ID: 2
+# Title: Implement Core Data Models
+# Status: done
+# Dependencies: 1
+# Priority: high
+# Description: Define and implement the standardized data models for Customers, Projects, Networks, Hosts, and Services as specified in the PRD.
+# Details:
+Create the data models following the entity specifications in the PRD. Implement the hierarchical relationship between Customer → Projects → Networks → Hosts → Services. Include all required fields and relationships. Ensure models are extensible for future additions like Vulnerabilities, Credentials, Files, and Notes.
+
+# Test Strategy:
+Create unit tests for each model. Verify proper relationship constraints. Test serialization/deserialization of models.

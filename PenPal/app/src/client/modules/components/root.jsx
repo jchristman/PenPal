@@ -8,7 +8,8 @@ import {
   createTheme,
   StyledEngineProvider,
 } from "@mui/material/styles";
-//import { MuiPickersUtilsProvider } from "@mui/lab";
+import { LocalizationProvider } from "@mui/x-date-pickers";
+import { AdapterMoment } from "@mui/x-date-pickers/AdapterMoment";
 import moment from "moment";
 moment.locale("en");
 
@@ -42,15 +43,17 @@ const Root = () => {
           <ApolloProvider client={apolloClient}>
             <StyledEngineProvider injectFirst>
               <ThemeProvider theme={theme}>
-                <Components.ErrorBoundary>
-                  <Components.IntrospectionProvider>
-                    <Components.AccountProvider>
-                      <Components.ForceLogin>
-                        <Components.Layout />
-                      </Components.ForceLogin>
-                    </Components.AccountProvider>
-                  </Components.IntrospectionProvider>
-                </Components.ErrorBoundary>
+                <LocalizationProvider dateAdapter={AdapterMoment}>
+                  <Components.ErrorBoundary>
+                    <Components.IntrospectionProvider>
+                      <Components.AccountProvider>
+                        <Components.ForceLogin>
+                          <Components.Layout />
+                        </Components.ForceLogin>
+                      </Components.AccountProvider>
+                    </Components.IntrospectionProvider>
+                  </Components.ErrorBoundary>
+                </LocalizationProvider>
               </ThemeProvider>
             </StyledEngineProvider>
           </ApolloProvider>
@@ -61,3 +64,6 @@ const Root = () => {
 };
 
 registerComponent("Root", Root);
+
+// This is only needed for the fast refresh plugin, the registerComponent above is needed for the plugin system
+export default Root;

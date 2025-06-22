@@ -15,9 +15,16 @@ PenPal is an automation and reporting all-in-one tool that is meant to enable Cy
   - [ ] Files
   - [ ] Notes
   - [ ] Audit trails
+- [x] Centralized Job Management System
+  - [x] Real-time job tracking and monitoring
+  - [x] Multi-stage job support with progress tracking
+  - [x] Automatic job cleanup and status management
+  - [x] Web UI for job visualization and filtering
+  - [x] Plugin integration via Jobs API
 - [ ] User Interface
   - [ ] Pluggable Dashboard
   - [x] Projects Summary Page
+  - [x] Jobs Monitoring Page
   - [ ] Project Details Page
   - [ ] Notetaking
   - [ ] .... other things and stuff
@@ -60,7 +67,154 @@ PenPal is purely dependent on `docker` and `docker-compose`. It will definitely 
 Currently there are a number of services and endpoints that are interesting/useful. The current way to run it is by executing `dev.sh` -- if you add more plugins to the Plugins folder they will automatically mount with the `docker-compose` scripts and mount into the container. Here's a list of interesting URLs:
 
 - Web UI - http://localhost:3000
+- Jobs Monitor - http://localhost:3000/jobs
 - GraphQL Studio - http://localhost:3001/graphql
+
+## Jobs API - Centralized Job Management
+
+PenPal includes a comprehensive **Jobs API** for managing long-running tasks across all plugins. This system provides real-time monitoring, progress tracking, and automatic cleanup of background jobs.
+
+### Key Features
+
+- **Centralized Management**: All plugin jobs are tracked in one place
+- **Real-time Monitoring**: Live updates with 500ms polling
+- **Multi-stage Support**: Complex jobs can be broken into trackable stages
+- **Progress Tracking**: Visual progress bars and percentage completion
+- **Standardized Status**: Validated status constants prevent inconsistencies
+- **Automatic Cleanup**: Stale jobs are automatically marked as cancelled
+
+### Status Constants
+
+Always use the standardized status constants to ensure consistency across plugins:
+
+```javascript
+// ✅ CORRECT - Use status constants
+PenPal.Jobs.Status.PENDING; // "pending" - Job is queued/waiting
+PenPal.Jobs.Status.RUNNING; // "running" - Job is actively executing
+PenPal.Jobs.Status.DONE; // "done" - Job completed successfully
+PenPal.Jobs.Status.FAILED; // "failed" - Job failed with error
+PenPal.Jobs.Status.CANCELLED; // "cancelled" - Job was cancelled
+
+// Check if job is completed
+const isFinished = PenPal.Jobs.CompletedStatuses.includes(job.status);
+
+// ❌ WRONG - Don't use hardcoded strings
+status: "completed"; // Invalid - use PenPal.Jobs.Status.DONE
+status: "finished"; // Invalid - use PenPal.Jobs.Status.DONE
+```
+
+- **Filtering & History**: Filter by active/recent/all jobs with pagination
+- **Runtime Tracking**: See how long jobs have been running
+- **Completion Times**: Track when jobs finished or were cancelled
+
+### Jobs API Usage
+
+The Jobs API is available to all plugins through the `PenPal.Jobs` object:
+
+```javascript
+// Create a simple job
+const job = await PenPal.Jobs.Create({
+  name: "Network Scan",
+  statusText: "Starting network scan",
+  progress: 0,
+});
+
+// Update job progress
+await PenPal.Jobs.UpdateProgress(job.id, 50);
+
+// Complete the job
+await PenPal.Jobs.Update(job.id, {
+  progress: 100,
+  status: PenPal.Jobs.Status.DONE,
+  statusText: "Scan complete",
+});
+```
+
+### Multi-Stage Jobs
+
+For complex operations, jobs can include multiple stages:
+
+```javascript
+const job = await PenPal.Jobs.Create({
+  name: "Comprehensive Security Scan",
+  stages: [
+    {
+      name: "Port Scan",
+      statusText: "Scanning ports",
+      progress: 0,
+      status: PenPal.Jobs.Status.PENDING,
+    },
+    {
+      name: "Service Detection",
+      statusText: "Detecting services",
+      progress: 0,
+      status: PenPal.Jobs.Status.PENDING,
+    },
+    {
+      name: "Vulnerability Assessment",
+      statusText: "Checking vulnerabilities",
+      progress: 0,
+      status: PenPal.Jobs.Status.PENDING,
+    },
+  ],
+});
+
+// Update individual stages
+await PenPal.Jobs.UpdateStage(job.id, 0, {
+  progress: 100,
+  status: PenPal.Jobs.Status.DONE,
+  statusText: "Port scan complete",
+});
+```
+
+### Job Monitoring UI
+
+Access the Jobs Monitor at **http://localhost:3000/jobs** to:
+
+- View all running and completed jobs in real-time
+- Filter jobs by status (Active, Recent, All)
+- See detailed progress for multi-stage jobs
+- Track job runtime and completion times
+- Hide cancelled jobs with toggle option
+- Browse job history with pagination
+
+### Integration Examples
+
+Security tools like **Nmap** and **Rustscan** use the Jobs API to provide visibility into scan progress:
+
+```javascript
+// Example from Nmap plugin
+export const start_detailed_hosts_scan = async (hosts) => {
+  const job = await PenPal.Jobs.Create({
+    name: `Detailed Host Scan for ${hosts.length} hosts`,
+    statusText: "Preparing detailed scan",
+    progress: 0,
+    stages: [
+      {
+        name: "Port Scan",
+        statusText: "Scanning ports",
+        progress: 0,
+        status: PenPal.Jobs.Status.PENDING,
+      },
+      {
+        name: "Service Detection",
+        statusText: "Detecting services",
+        progress: 0,
+        status: PenPal.Jobs.Status.PENDING,
+      },
+      {
+        name: "OS Detection",
+        statusText: "Identifying operating systems",
+        progress: 0,
+        status: PenPal.Jobs.Status.PENDING,
+      },
+    ],
+  });
+
+  performScan(hosts, job.id);
+  return job.id;
+};
+```
 
 ## Plugin Development
 

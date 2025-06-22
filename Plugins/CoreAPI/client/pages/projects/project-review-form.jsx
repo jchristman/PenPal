@@ -124,7 +124,7 @@ const ProjectReviewForm = ({
 
       handleClose();
     } catch (e) {
-      console.error(e);
+      console.error("Create project", e);
       enqueueSnackbar(e.message, { variant: "error", autoHideDuration: 10000 });
     }
 
@@ -185,3 +185,6 @@ const ProjectReviewForm = ({
 };
 
 registerComponent("NewProjectWorkflowReview", ProjectReviewForm);
+
+// This is only needed for the fast refresh plugin, the registerComponent above is needed for the plugin system
+export default ProjectReviewForm;

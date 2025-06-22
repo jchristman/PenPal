@@ -2,10 +2,42 @@ import PenPal from "#penpal/core";
 import path from "path";
 import util from "util";
 import fs from "fs";
+import pty from "node-pty";
+import { v4 as uuid } from "uuid";
 import { exec as _exec } from "child_process";
 const exec = util.promisify(_exec);
 
 const docker_host = "-H penpal-docker-api:2376";
+
+const check_volume = async (volume) => {
+  // check if volume is an object
+  if (typeof volume !== "object") {
+    console.error(`[!] Volume is not an object: ${volume}`);
+    return false;
+  }
+
+  // check if volume has a name
+  if (!volume.hasOwnProperty("name")) {
+    console.error(`[!] Volume name is not set for ${volume}`);
+    return false;
+  }
+
+  // check if volume has a path
+  if (!volume.hasOwnProperty("path")) {
+    console.error(`[!] Volume mount path is not set for ${volume.name}`);
+    return false;
+  }
+
+  // check to see if the volume exists
+  const output = await exec(
+    `docker ${docker_host} volume inspect ${volume.name}`
+  );
+  if (output.stderr) {
+    console.error(`[!] Volume ${volume.name} does not exist`);
+    return false;
+  }
+  return output;
+};
 
 export const Compose = async (args) => {
   await PenPal.Utils.AsyncNOOP();
@@ -45,12 +77,28 @@ export const Compose = async (args) => {
   }
 };
 
-export const Run = async ({ image, cmd, daemonize = false, network = "" }) => {
+export const Run = async ({
+  image,
+  cmd,
+  daemonize = false,
+  network = "",
+  volume = null,
+}) => {
   await PenPal.Utils.AsyncNOOP();
+  if (!check_volume(volume)) {
+    console.error(`[!] Improper volume object: ${volume}`);
+    return;
+  }
 
-  const command = `docker ${docker_host} run ${daemonize ? "-d " : ""}${
-    network != "" ? `--network ${network} ` : ""
-  }${image} ${cmd}`;
+  const command_args = [
+    daemonize ? "-d" : "",
+    network != "" ? `--network ${network}` : "",
+    volume ? `-v ${volume.name}:${volume.path}` : "",
+    "-it",
+  ];
+  const command = `docker ${docker_host} run ${command_args.join(
+    " "
+  )} ${image} ${cmd}`;
   const output = await exec(command);
 
   return output;
@@ -100,6 +148,12 @@ export const Raw = async (cmd) => {
   return res.stdout;
 };
 
+export const Pull = async ({ image }) => {
+  await PenPal.Utils.AsyncNOOP();
+  let output = await exec(`docker ${docker_host} pull ${image}`);
+  return output;
+};
+
 export const Build = async (args) => {
   await PenPal.Utils.AsyncNOOP();
 
@@ -132,4 +186,48 @@ export const Build = async (args) => {
   }
 
   return null;
+};
+
+export const AttachAndReturnDockerChildProcess = async (args) => {
+  await PenPal.Utils.AsyncNOOP();
+
+  // Create a PTY
+  const term = pty.spawn("bash", [], {
+    name: "xterm-256color",
+    cols: 80,
+    rows: 30,
+    cwd: process.cwd(),
+    env: process.env,
+  });
+
+  // Optionally, you can handle other events like 'exit'
+  const exit_listener = term.onExit(({ exitCode, signal }) => {
+    //console.log(`PTY exited with code ${exitCode} and signal ${signal}`);
+    exit_listener.dispose();
+  });
+
+  const command = `docker ${docker_host} attach ${args.container}`;
+  term.write(command + "\n");
+
+  return term;
+};
+
+export const DetachFromDockerChildProcess = async (term) => {
+  // Send Ctrl-p (ASCII code 16) followed by Ctrl-q (ASCII code 17)
+  term.write(String.fromCharCode(16)); // Ctrl-p
+  term.write(String.fromCharCode(17)); // Ctrl-q
+  term.kill();
+};
+
+export const CreateTemporaryVolume = async () => {
+  await PenPal.Utils.AsyncNOOP();
+  const name = `penpal-${uuid()}`;
+  const output = await exec(`docker ${docker_host} volume create ${name}`);
+  return { name, output };
+};
+
+export const DeleteTemporaryVolume = async (name) => {
+  await PenPal.Utils.AsyncNOOP();
+  const output = await exec(`docker ${docker_host} volume rm ${name}`);
+  return output;
 };

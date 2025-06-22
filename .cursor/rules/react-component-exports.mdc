@@ -1,0 +1,101 @@
+---
+description: 
+globs: *.jsx
+alwaysApply: false
+---
+# React Component Registration & Export Pattern
+
+## **Component Registration System**
+- **PenPal uses a custom component registration system** instead of standard React imports
+- Components are registered using `registerComponent(name, Component)` from `@penpal/core`
+- This allows the plugin system to dynamically load and reference components across plugins
+- The registration system is **essential for the plugin architecture** - components won't be available without it
+
+## **HMR (Hot Module Reload) Compatibility**
+- **Vite's React Fast Refresh requires consistent component exports** to enable hot reloading
+- Without proper exports, HMR falls back to full page refresh with warning: `"Could not Fast Refresh"`
+- **All `.jsx` files with `registerComponent` must also include a default export**
+
+## **Required Pattern**
+```jsx
+// ✅ DO: Always include both registration and default export
+const MyComponent = () => {
+  return <div>Component content</div>;
+};
+
+registerComponent("MyComponent", MyComponent);
+
+// This is only needed for the fast refresh plugin, the registerComponent above is needed for the plugin system
+export default MyComponent;
+```
+
+## **Common Patterns**
+
+### **Single Component Files**
+```jsx
+const Dashboard = () => {
+  // component logic
+};
+
+registerComponent("Dashboard", Dashboard);
+
+// This is only needed for the fast refresh plugin, the registerComponent above is needed for the plugin system
+export default Dashboard;
+```
+
+### **Multiple Components (Export Main Component)**
+```jsx
+const LoginForm = () => { /* ... */ };
+const SignupForm = () => { /* ... */ };
+
+const Login = () => {
+  return (
+    <div>
+      <LoginForm />
+      <SignupForm />
+    </div>
+  );
+};
+
+registerComponent("Login", Login);
+registerComponent("LoginForm", LoginForm);
+
+// This is only needed for the fast refresh plugin, the registerComponent above is needed for the plugin system
+export default Login; // Export the main/primary component
+```
+
+### **Template-based Icon Components**
+```jsx
+const ICON_NAME = "AppleIcon";
+
+const _Icon = ({ width = 40, height = 40 }) => (
+  <img style={{ width, height }} src={SOURCE} />
+);
+
+registerComponent(ICON_NAME, _Icon);
+
+// This is only needed for the fast refresh plugin, the registerComponent above is needed for the plugin system
+export default _Icon;
+```
+
+## **Key Requirements**
+- **Always use `registerComponent`** - this is how the plugin system finds components
+- **Always add `export default`** - this enables HMR fast refresh
+- **Use the exact comment format** to explain why both are needed
+- **Export the primary/main component** when multiple components exist in one file
+- **Component names in `registerComponent` should match the actual component name** when possible
+
+## **Why Both Are Needed**
+1. **`registerComponent`**: Required for PenPal's plugin system to discover and use components
+2. **`export default`**: Required for Vite's React Fast Refresh to work properly
+3. **Without `registerComponent`**: Component won't be available to the plugin system
+4. **Without `export default`**: HMR will fall back to full page refresh instead of fast refresh
+
+## **File Locations**
+- Main app components: `PenPal/app/src/client/modules/components/**/*.jsx`
+- Plugin components: `Plugins/*/client/**/*.jsx`
+- Template components: `PluginTemplate/client/**/*.jsx`
+
+## **Related Systems**
+- See [mcp.mdc](mdc:.cursor/rules/mcp.mdc) for plugin architecture details
+- See [dev_workflow.mdc](mdc:.cursor/rules/dev_workflow.mdc) for development patterns

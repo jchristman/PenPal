@@ -6,13 +6,13 @@ export default {
           return "Project";
         case obj.projects !== undefined:
           return "Customer";
-        case network_address !== undefined:
+        case obj.network_address !== undefined:
           return "Network";
-        case ip_address !== undefined:
+        case obj.ip_address !== undefined:
           return "Host";
         default:
           return "Service";
       }
-    }
-  }
+    },
+  },
 };

@@ -46,7 +46,11 @@ const check_docker = (docker) => {
 const build_docker_images = async () => {
   const build_docker = async (docker) => {
     if (docker) {
-      await PenPal.Docker.Build(docker);
+      if (docker.image) {
+        await PenPal.Docker.Pull(docker);
+      } else {
+        await PenPal.Docker.Build(docker);
+      }
     }
   };
 

@@ -47,6 +47,7 @@ const start_networks_scan = async ({ project, network_ids }) => {
       await performDiscoveryScan({
         project_id: project,
         networks: [network],
+        top_ports: true,
         ...default_discovery_scan,
       });
     }

@@ -7,7 +7,7 @@ const __dirname = path.dirname(fileURLToPath(import.meta.url));
 const pattern = `${path.resolve(__dirname)}/**/server/index.js`;
 
 export const registerPlugins = async () => {
-  const files = await glob(pattern);
+  const files = (await glob(pattern)).sort();
 
   // Import each file using require()
   for (let file of files) {
@@ -15,7 +15,9 @@ export const registerPlugins = async () => {
     try {
       await import(file);
     } catch (e) {
-      console.error(e);
+      console.error(`[!] Error importing file: ${file}`);
+      console.error(e.message);
+      console.error(e.stack);
     }
   }
 };

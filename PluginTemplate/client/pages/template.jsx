@@ -8,3 +8,6 @@ const REPLACE_MEComponent = () => {
 };
 
 registerComponent("REPLACE_ME", REPLACE_MEComponent);
+
+// This is only needed for the fast refresh plugin, the registerComponent above is needed for the plugin system
+export default REPLACE_MEComponent;

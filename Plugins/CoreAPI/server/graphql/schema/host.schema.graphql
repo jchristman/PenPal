@@ -1,5 +1,5 @@
 "An individual host, usually associated with a single IP Address"
-type Host implements Annotatable & Auditable {
+type Host implements Annotatable & Auditable & Enrichable {
   id: ID!
   "A link back to the project."
   project: Project!
@@ -22,6 +22,8 @@ type Host implements Annotatable & Auditable {
   ): ServicesConnection
   "Annotations about this host"
   annotations: Annotations
+  "Enrichments for the host from Plugins"
+  enrichments: [PluginEnrichment]
   "Audits for the host"
   changes: [Audit]
 }

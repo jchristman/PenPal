@@ -1,5 +1,19 @@
 import PenPal from "#penpal/core";
 import _ from "lodash";
+import chalk from "chalk";
+import betterLogging, { Theme } from "better-logging";
+betterLogging(console, {
+  color: {
+    base: chalk.greenBright,
+    type: {
+      debug: chalk.magentaBright,
+      info: chalk.magentaBright,
+      log: chalk.magentaBright,
+      error: chalk.red,
+      warn: chalk.orange,
+    },
+  },
+});
 
 import startGraphQLServer from "./graphql-server.js";
 

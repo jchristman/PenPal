@@ -1,0 +1,480 @@
+---
+description: PenPal uses a sophisticated plugin architecture that allows dynamic loading of cybersecurity tools and integrations.
+globs: 
+alwaysApply: false
+---
+# PenPal Plugin System Guide
+
+PenPal uses a sophisticated plugin architecture that allows dynamic loading of cybersecurity tools and integrations.
+
+## Plugin Loading System
+- **Server Plugin Loader**: [Plugins/plugins-loader-server.js](mdc:Plugins/plugins-loader-server.js)
+- **Client Plugin Loader**: [Plugins/plugins-loader-client.js](mdc:Plugins/plugins-loader-client.js)
+- **Plugin Development Script**: [penpal-plugin-develop.py](mdc:penpal-plugin-develop.py)
+
+## Core Plugins
+- **Base Plugin**: [Plugins/Base/server/manifest.json](mdc:Plugins/Base/server/manifest.json) - Foundation plugin
+- **CoreAPI Plugin**: [Plugins/CoreAPI/server/manifest.json](mdc:Plugins/CoreAPI/server/manifest.json) - Data standardization
+- **DataStore Plugin**: [Plugins/DataStore/server/plugin.js](mdc:Plugins/DataStore/server/plugin.js) - Data abstraction layer
+- **MongoDB Adapter**: [Plugins/DataStoreMongoAdapter/server/plugin.js](mdc:Plugins/DataStoreMongoAdapter/server/plugin.js)
+- **JobsTracker Plugin**: [Plugins/JobsTracker/server/plugin.js](mdc:Plugins/JobsTracker/server/plugin.js) - Centralized job management
+
+## Plugin Structure Requirements
+Each plugin must have:
+1. **manifest.json** - Plugin metadata, dependencies, and versioning
+2. **index.js** - Plugin registration with PenPal core
+3. **plugin.js** - Plugin implementation and GraphQL integration
+4. **install-dependencies.sh** (optional) - Custom dependency installation
+
+## Security Tool Plugins
+- **Nmap**: [Plugins/Nmap/server/plugin.js](mdc:Plugins/Nmap/server/plugin.js) - Network scanning
+- **Rustscan**: [Plugins/Rustscan/server/plugin.js](mdc:Plugins/Rustscan/server/plugin.js) - Fast port scanning
+- **Docker**: [Plugins/Docker/server/plugin.js](mdc:Plugins/Docker/server/plugin.js) - Container management
+
+## Plugin Development Template
+Use [PluginTemplate/](mdc:PluginTemplate) as a starting point for new plugins.
+
+## Plugin Communication
+- **MQTT Plugin**: [Plugins/MQTT/server/plugin.js](mdc:Plugins/MQTT/server/plugin.js) - Inter-plugin messaging
+- Plugins can subscribe to events like new hosts/networks discovery
+- Job queue system for long-running tasks
+
+## Jobs API - Centralized Job Management
+
+The **JobsTracker Plugin** provides a centralized job management system for long-running tasks across all plugins. This replaces the need for individual plugins to manage their own job queues.
+
+### Jobs API Usage
+
+**✅ CRITICAL: Jobs API Signature**
+All Jobs operations are available through the `PenPal.Jobs` object:
+
+```javascript
+// ✅ CORRECT Jobs API usage
+const job = await PenPal.Jobs.Create(jobData);
+await PenPal.Jobs.Update(job_id, updates);
+await PenPal.Jobs.UpdateProgress(job_id, progress);
+await PenPal.Jobs.UpdateStage(job_id, stage_index, updates);
+const job = await PenPal.Jobs.Get(job_id);
+const jobs = await PenPal.Jobs.GetAll();
+const filtered = await PenPal.Jobs.GetFiltered(filterMode);
+
+// ❌ WRONG - Don't manage jobs locally
+const jobs = []; // Local job arrays
+const job_id = "manual-id"; // Manual ID generation
+```
+
+### Job Structure
+
+**Basic Job Fields:**
+```javascript
+const jobData = {
+  name: "Descriptive Job Name",
+  plugin: "YourPluginName", // Auto-populated if not provided
+  statusText: "Initial status message",
+  progress: 0, // 0-100 percentage
+  status: "running", // running, done, failed, cancelled
+  // Optional fields:
+  stages: [/* array of stage objects */],
+};
+```
+
+**Job with Stages:**
+```javascript
+const jobWithStages = {
+  name: "Multi-Stage Job",
+  plugin: "YourPluginName",
+  statusText: "Starting multi-stage process",
+  progress: 0,
+  stages: [
+    {
+      name: "Stage 1: Preparation",
+      statusText: "Preparing environment",
+      progress: 0,
+      status: "pending"
+    },
+    {
+      name: "Stage 2: Execution", 
+      statusText: "Running main process",
+      progress: 0,
+      status: "pending"
+    },
+    {
+      name: "Stage 3: Cleanup",
+      statusText: "Cleaning up resources",
+      progress: 0,
+      status: "pending"
+    }
+  ]
+};
+```
+
+### Jobs API Methods
+
+**Create Job:**
+```javascript
+// Simple job without stages
+const job = await PenPal.Jobs.Create({
+  name: "Network Scan",
+  statusText: "Starting network scan",
+  progress: 0
+});
+
+// Job with stages
+const job = await PenPal.Jobs.Create(jobWithStages);
+```
+
+**Update Job:**
+```javascript
+// Update job progress and status
+await PenPal.Jobs.Update(job.id, {
+  progress: 50,
+  statusText: "Halfway complete"
+});
+
+// Mark job as complete
+await PenPal.Jobs.Update(job.id, {
+  progress: 100,
+  status: "done",
+  statusText: "Scan complete"
+});
+```
+
+**Update Job Progress (Convenience Method):**
+```javascript
+// Quick progress update
+await PenPal.Jobs.UpdateProgress(job.id, 75);
+```
+
+**Update Job Stage:**
+```javascript
+// Update specific stage by index (0-based)
+await PenPal.Jobs.UpdateStage(job.id, 0, {
+  progress: 100,
+  status: "done",
+  statusText: "Preparation complete"
+});
+
+// Start next stage
+await PenPal.Jobs.UpdateStage(job.id, 1, {
+  progress: 0,
+  status: "running",
+  statusText: "Beginning execution"
+});
+```
+
+**Retrieve Jobs:**
+```javascript
+// Get specific job
+const job = await PenPal.Jobs.Get(job_id);
+
+// Get all jobs
+const allJobs = await PenPal.Jobs.GetAll();
+
+// Get filtered jobs
+const activeJobs = await PenPal.Jobs.GetFiltered("active");
+const recentJobs = await PenPal.Jobs.GetFiltered("recent");
+```
+
+### Job Management Best Practices
+
+**Job Lifecycle Management:**
+```javascript
+// 1. Create job
+const job = await PenPal.Jobs.Create({
+  name: "Host Discovery Scan",
+  statusText: "Initializing scan parameters",
+  progress: 0
+});
+
+try {
+  // 2. Update progress during execution
+  await PenPal.Jobs.UpdateProgress(job.id, 25);
+  await performScanStep1();
+  
+  await PenPal.Jobs.Update(job.id, {
+    progress: 50,
+    statusText: "Scanning network ranges"
+  });
+  await performScanStep2();
+  
+  // 3. Complete successfully
+  await PenPal.Jobs.Update(job.id, {
+    progress: 100,
+    status: PenPal.Jobs.Status.DONE,
+    statusText: "Scan completed successfully"
+  });
+  
+} catch (error) {
+  // 4. Handle failures
+  await PenPal.Jobs.Update(job.id, {
+    status: PenPal.Jobs.Status.FAILED,
+    statusText: `Scan failed: ${error.message}`
+  });
+}
+```
+
+**Multi-Stage Job Management:**
+```javascript
+const job = await PenPal.Jobs.Create({
+  name: "Comprehensive Security Scan",
+  stages: [
+    { name: "Port Scan", statusText: "Scanning ports", progress: 0, status: PenPal.Jobs.Status.PENDING },
+    { name: "Service Detection", statusText: "Detecting services", progress: 0, status: PenPal.Jobs.Status.PENDING },
+    { name: "Vulnerability Assessment", statusText: "Checking vulnerabilities", progress: 0, status: PenPal.Jobs.Status.PENDING }
+  ]
+});
+
+// Execute stage 1
+await PenPal.Jobs.UpdateStage(job.id, 0, { status: PenPal.Jobs.Status.RUNNING });
+await performPortScan();
+await PenPal.Jobs.UpdateStage(job.id, 0, { 
+  progress: 100, 
+  status: PenPal.Jobs.Status.DONE,
+  statusText: "Port scan complete"
+});
+
+// Execute stage 2
+await PenPal.Jobs.UpdateStage(job.id, 1, { status: PenPal.Jobs.Status.RUNNING });
+await performServiceDetection();
+await PenPal.Jobs.UpdateStage(job.id, 1, { 
+  progress: 100, 
+  status: PenPal.Jobs.Status.DONE,
+  statusText: "Service detection complete"
+});
+
+// Update overall job progress
+await PenPal.Jobs.UpdateProgress(job.id, 100);
+```
+
+### Integration with Security Tools
+
+**Example: Nmap Integration**
+```javascript
+// Replace local job management with Jobs API
+export const start_detailed_hosts_scan = async (hosts) => {
+  const job = await PenPal.Jobs.Create({
+    name: `Detailed Host Scan for ${hosts.length} hosts`,
+    statusText: "Preparing detailed scan",
+    progress: 0,
+    stages: [
+      { name: "Port Scan", statusText: "Scanning ports", progress: 0, status: PenPal.Jobs.Status.PENDING },
+      { name: "Service Detection", statusText: "Detecting services", progress: 0, status: PenPal.Jobs.Status.PENDING },
+      { name: "OS Detection", statusText: "Identifying operating systems", progress: 0, status: PenPal.Jobs.Status.PENDING }
+    ]
+  });
+
+  // Pass job_id to scan function instead of job_stages
+  performScan(hosts, job.id);
+  return job.id;
+};
+```
+
+### Job Status and Filtering
+
+**✅ CRITICAL: Standardized Job Status Constants**
+Always use the predefined status constants to ensure consistency:
+
+```javascript
+// ✅ CORRECT Status constants
+PenPal.Jobs.Status.PENDING    // "pending" - Job is queued/waiting
+PenPal.Jobs.Status.RUNNING    // "running" - Job is actively executing  
+PenPal.Jobs.Status.DONE       // "done" - Job completed successfully
+PenPal.Jobs.Status.FAILED     // "failed" - Job failed with error
+PenPal.Jobs.Status.CANCELLED  // "cancelled" - Job was cancelled
+
+// ✅ CORRECT Check if status is completed
+const isCompleted = PenPal.Jobs.CompletedStatuses.includes(job.status);
+
+// ❌ WRONG - Don't use hardcoded status strings
+status: "completed" // Invalid status - use PenPal.Jobs.Status.DONE
+status: "finished"  // Invalid status - use PenPal.Jobs.Status.DONE
+status: "running"   // Use PenPal.Jobs.Status.RUNNING instead
+```
+
+**Job Status Values:**
+- `PenPal.Jobs.Status.PENDING` - Job is queued/waiting to start
+- `PenPal.Jobs.Status.RUNNING` - Job is currently executing
+- `PenPal.Jobs.Status.DONE` - Job completed successfully
+- `PenPal.Jobs.Status.FAILED` - Job encountered an error
+- `PenPal.Jobs.Status.CANCELLED` - Job was manually cancelled
+
+**Filter Modes:**
+- `"active"` - Shows running jobs and recent completed jobs (default UI view)
+- `"recent"` - Shows jobs from the last 24 hours
+- `"all"` - Shows all jobs with pagination
+
+### Automatic Job Cleanup
+
+The JobsTracker automatically cleans up stale jobs:
+- Jobs not updated for 5+ minutes are marked as "cancelled"
+- Cleanup runs every 5 minutes automatically
+- Prevents accumulation of orphaned jobs from crashed processes
+
+### UI Integration
+
+The JobsTracker provides a comprehensive UI at `/jobs` with:
+- **Real-time job monitoring** with 500ms polling
+- **Progress visualization** with color-coded progress bars
+- **Stage-by-stage tracking** for complex jobs
+- **Filtering and pagination** for job history
+- **Runtime and completion time tracking**
+- **Automatic cleanup** of stale jobs
+
+### Migration from Local Job Management
+
+**Before (Local Job Management):**
+```javascript
+// ❌ Old pattern - local job arrays
+const jobs = [];
+const job_id = generateId();
+jobs.push({ id: job_id, name: "Scan", progress: 0 });
+```
+
+**After (Jobs API):**
+```javascript
+// ✅ New pattern - centralized Jobs API
+const job = await PenPal.Jobs.Create({
+  name: "Scan",
+  progress: 0
+});
+```
+
+The Jobs API provides better reliability, persistence, monitoring, and user experience compared to local job management.
+
+## GraphQL Integration
+Plugins extend the GraphQL schema with:
+- Custom types and mutations
+- Resolvers and data loaders  
+- Schema stitching via plugin loading system
+
+## DataStore API Usage
+
+**✅ CRITICAL: DataStore API Signature**
+All DataStore operations require **plugin name** and **store name** as first two parameters:
+
+```javascript
+// ✅ CORRECT DataStore API usage
+await PenPal.DataStore.fetch("PluginName", "StoreName", query);
+await PenPal.DataStore.fetchOne("PluginName", "StoreName", query);
+await PenPal.DataStore.insertMany("PluginName", "StoreName", [data]);
+await PenPal.DataStore.updateOne("PluginName", "StoreName", query, updates);
+await PenPal.DataStore.delete("PluginName", "StoreName", query);
+
+// ❌ WRONG - These methods don't exist
+await PenPal.DataStore.getAll("StoreName");
+await PenPal.DataStore.get("StoreName", id);
+await PenPal.DataStore.insert("StoreName", data);
+```
+
+**DataStore Configuration in plugin.js:**
+```javascript
+const settings = {
+  datastores: [
+    {
+      name: "YourStoreName", // This becomes the "StoreName" parameter
+    },
+  ],
+};
+```
+
+**Common DataStore Patterns:**
+- **Single Record**: `fetchOne("Plugin", "Store", { id: "some-id" })`
+- **Multiple Records**: `fetch("Plugin", "Store", { status: "active" })`
+- **Query by Array**: `fetch("Plugin", "Store", { id: { $in: [id1, id2] } })`
+- **Insert Single**: `insertMany("Plugin", "Store", [singleRecord])[0]`
+- **Update**: `updateOne("Plugin", "Store", { id: "some-id" }, updateData)`
+- **Delete**: `delete("Plugin", "Store", { id: "some-id" })`
+
+## GraphQL Schema Conflicts
+
+**✅ Avoiding Type Conflicts:**
+- Check existing GraphQL types before creating new ones
+- Use unique type names prefixed with plugin name if needed
+- Remove conflicting types from Base plugin when migrating functionality
+
+**Common Conflict Scenarios:**
+```graphql
+# ❌ This will cause conflicts if Job type already exists elsewhere
+type Job {
+  id: ID!
+  name: String!
+}
+
+# ✅ Use plugin-specific prefixes if conflicts arise
+type JobsTrackerJob {
+  id: ID!
+  name: String!
+}
+```
+
+**Scalar Type Usage:**
+- Use existing scalars like `JSON` instead of `JSONObject`
+- Check [PenPal/app/src/server/graphql/schema/scalars.graphql](mdc:PenPal/app/src/server/graphql/schema/scalars.graphql) for available types
+- Consistent scalar usage prevents "Unknown type" errors
+
+## Plugin Development Best Practices
+
+**API Layer Structure:**
+```javascript
+// api/index.js - Clean separation of concerns
+export const getItems = async (item_id) => {
+  return await PenPal.DataStore.fetchOne("PluginName", "Items", { id: item_id });
+};
+
+export const insertItem = async (item_data) => {
+  const item_with_timestamps = {
+    ...item_data,
+    id: item_data.id || PenPal.Utils.UUID(),
+    created_at: new Date().toISOString(),
+    updated_at: new Date().toISOString(),
+  };
+  const result = await PenPal.DataStore.insertMany("PluginName", "Items", [item_with_timestamps]);
+  return result[0];
+};
+```
+
+**Plugin Registration Pattern:**
+```javascript
+// plugin.js - Register APIs on PenPal object
+PenPal.YourAPI = {
+  Get: API.getItem,
+  Insert: API.insertItem,
+  Update: API.updateItem,
+  // Helper functions
+  Create: async (itemData) => { /* convenience wrapper */ },
+};
+```
+
+**Dependency Management:**
+- Always specify plugin dependencies in manifest.json
+- Use `"load": false` temporarily during development to prevent loading
+- DataStore-dependent plugins must list `"DataStore@0.1.0"` in dependencies
+
+**Migration Considerations:**
+- When moving functionality from one plugin to another, update both GraphQL schemas
+- Remove old resolvers and types to prevent conflicts
+- Update client-side GraphQL queries to use new endpoints
+- Consider backward compatibility for existing data
+
+**Testing DataStore Integration:**
+- Test with empty database first
+- Verify all CRUD operations work correctly
+- Check query syntax with MongoDB-style operators (`$in`, `$lt`, etc.)
+- Ensure proper error handling for missing records
+
+**Client-Server Plugin Coordination:**
+- Client plugins should mirror server plugin structure
+- Use consistent naming between client queries and server resolvers
+- Implement proper loading states and error handling in React components
+- Consider real-time updates with polling or subscriptions
+
+## Common Pitfalls to Avoid
+
+1. **❌ Using non-existent DataStore methods** - Always check CoreAPI usage patterns
+2. **❌ Missing plugin/store parameters** - DataStore requires both plugin name and store name
+3. **❌ GraphQL type conflicts** - Check for existing types before creating new ones
+4. **❌ Incorrect scalar references** - Use existing scalars like `JSON` instead of `JSONObject`
+5. **❌ Forgetting timestamps** - Always add `created_at` and `updated_at` fields
+6. **❌ Not handling arrays properly** - Use `insertMany()` even for single records
+7. **❌ Missing error handling** - Always handle cases where records don't exist
+8. **❌ Inconsistent ID generation** - Use `PenPal.Utils.UUID()` for consistent ID format

@@ -15,4 +15,4 @@ do
 done
 
 echo Shutting down the core
-docker-compose -f docker-compose.common.yaml -f docker-compose.dev.yaml down
+docker compose -f docker-compose.common.yaml -f docker-compose.dev.yaml down

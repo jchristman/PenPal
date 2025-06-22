@@ -149,7 +149,7 @@ const Selector = () => {
           setLocalConfig(config);
           setConfigSinceLastSave(config);
         } catch (e) {
-          console.error(e);
+          console.error("Selector", e);
           enqueueSnackbar(`Error: ${e.message}`, { variant: "error" });
         }
       }
@@ -262,3 +262,6 @@ const Selector = () => {
 };
 
 registerComponent("ConfigurationSelector", Selector);
+
+// This is only needed for the fast refresh plugin, the registerComponent above is needed for the plugin system
+export default Selector;

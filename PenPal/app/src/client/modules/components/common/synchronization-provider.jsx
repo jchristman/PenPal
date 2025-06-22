@@ -18,4 +18,7 @@ const SynchronizationProvider = ({ interval, children }) => {
 const useSyncronization = () => useContext(SynchronizationContext);
 
 registerComponent("SynchronizationProvider", SynchronizationProvider);
+
+// This is only needed for the fast refresh plugin, the registerComponent above is needed for the plugin system
+export default SynchronizationProvider;
 registerHook("useSyncronization", useSyncronization);

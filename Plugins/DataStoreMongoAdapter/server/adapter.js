@@ -81,6 +81,10 @@ MongoAdapter.fetch = async (
   } = options;
 
   let cursor = get_collection(plugin_name, store_name);
+  if (cursor === undefined) {
+    console.error(`[!] No collection found for ${plugin_name}.${store_name}`);
+    return [];
+  }
 
   if (first !== undefined) {
     let _selector = normalize_data(selector);
@@ -145,7 +149,7 @@ MongoAdapter.getPaginationInfo = async (
 
   let normalized_selector = normalize_data(selector);
   const cursor = () => get_collection(plugin_name, store_name);
-  let totalCount = await cursor().find(normalized_selector).count();
+  let totalCount = await cursor().countDocuments(normalized_selector);
 
   let result = {
     startCursor: null,
@@ -167,7 +171,7 @@ MongoAdapter.getPaginationInfo = async (
     }
 
     const page_count = Math.min(
-      await cursor().find(page_selector).count(),
+      await cursor().countDocuments(page_selector),
       first
     );
 
@@ -186,7 +190,7 @@ MongoAdapter.getPaginationInfo = async (
 
     if (page_offset_selector !== null) {
       result.startCursorOffset =
-        (await cursor().find(page_offset_selector).count()) + 1;
+        (await cursor().countDocuments(page_offset_selector)) + 1;
       result.endCursorOffset = result.startCursorOffset + page_count - 1;
     } else {
       result.endCursorOffset = first - 1;
@@ -203,7 +207,7 @@ MongoAdapter.getPaginationInfo = async (
     }
 
     const page_count = Math.min(
-      await cursor().find(page_selector).count(),
+      await cursor().countDocuments(page_selector),
       last
     );
 
@@ -225,7 +229,7 @@ MongoAdapter.getPaginationInfo = async (
 
     if (page_offset_selector !== null) {
       result.endCursorOffset =
-        totalCount - (await cursor().find(page_offset_selector).count()) - 1;
+        totalCount - (await cursor().countDocuments(page_offset_selector)) - 1;
       result.startCursorOffset = result.endCursorOffset - last;
     } else {
       result.endCursorOffset = totalCount - 1;
@@ -235,7 +239,7 @@ MongoAdapter.getPaginationInfo = async (
     const pageSize = _pageSize === -1 ? totalCount : _pageSize;
     result.startCursorOffset = pageSize * pageNumber;
     const page_count = Math.min(
-      (await cursor().find(normalized_selector).count()) -
+      (await cursor().countDocuments(normalized_selector)) -
         result.startCursorOffset,
       pageSize
     );
@@ -298,19 +302,35 @@ MongoAdapter.insertMany = async (plugin_name, store_name, data = []) => {
 };
 
 MongoAdapter.updateOne = async (plugin_name, store_name, selector, data) => {
+  // MongoDB requires atomic operators for updates. If data doesn't contain operators, wrap in $set
+  const updateDoc =
+    data &&
+    typeof data === "object" &&
+    !Object.keys(data).some((key) => key.startsWith("$"))
+      ? { $set: data }
+      : data;
+
   return normalize_result(
     await get_collection(plugin_name, store_name).updateOne(
       normalize_data(selector),
-      data
+      updateDoc
     )
   );
 };
 
 MongoAdapter.updateMany = async (plugin_name, store_name, selector, data) => {
+  // MongoDB requires atomic operators for updates. If data doesn't contain operators, wrap in $set
+  const updateDoc =
+    data &&
+    typeof data === "object" &&
+    !Object.keys(data).some((key) => key.startsWith("$"))
+      ? { $set: data }
+      : data;
+
   return normalize_result(
     await get_collection(plugin_name, store_name).updateMany(
       normalize_data(selector),
-      data
+      updateDoc
     )
   );
 };

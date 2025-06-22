@@ -42,9 +42,15 @@ const ProjectView = ({ project_id, disable_polling = false }) => {
   return (
     <div className={classes.container}>
       <Components.ProjectViewTitleBar project={project} />
-      <Components.ProjectViewDataContainer project={project} />
+      <Components.ProjectViewDataContainer
+        project={project}
+        disable_polling={disable_polling}
+      />
     </div>
   );
 };
 
 registerComponent("ProjectView", ProjectView);
+
+// This is only needed for the fast refresh plugin, the registerComponent above is needed for the plugin system
+export default ProjectView;

@@ -6,12 +6,6 @@ import _ from "lodash";
 export const parseResults = async (project_id, data) => {
   console.log("[.] Parsing rustscan results");
 
-  let res = {
-    status: "Error Uploading Data",
-    was_success: false,
-    affected_records: [],
-  };
-
   const ips = Object.keys(data);
   let hosts = _.map(ips, (ip) => {
     return { ip_address: ip };
@@ -33,15 +27,17 @@ export const parseResults = async (project_id, data) => {
   let services_result = [];
   for (let host of valid_hosts) {
     const services =
-      data[host.ip_address]?.map((port_info) => ({
-        host: host.id,
-        network: host.network,
-        project: host.project,
-        name: "Rustscan Host Discovery Result",
-        ip_protocol: "TCP",
-        port: port_info.port,
-        status: "open",
-      })) ?? [];
+      data[host.ip_address]?.map((port_info) => {
+        return {
+          host: host.id,
+          network: host.network,
+          project: host.project,
+          name: "Rustscan Host Discovery Result",
+          ip_protocol: "TCP",
+          port: port_info,
+          status: "open",
+        };
+      }) ?? [];
 
     if (services.length > 0) {
       services_result.push(await PenPal.API.Services.UpsertMany(services));

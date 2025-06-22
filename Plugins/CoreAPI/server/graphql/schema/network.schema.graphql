@@ -1,5 +1,5 @@
 "A logical grouping of hosts"
-type Network implements Annotatable & Auditable {
+type Network implements Annotatable & Auditable & Enrichable {
   id: ID!
   project: Project!
   "The network address (e.g. 10.0.0.0)"
@@ -15,6 +15,8 @@ type Network implements Annotatable & Auditable {
   ): HostsConnection
   "Annotations about the network as a whole"
   annotations: Annotations
+  "Enrichments for the network from Plugins"
+  enrichments: [PluginEnrichment]
   "Audits for the network"
   changes: [Audit]
 }

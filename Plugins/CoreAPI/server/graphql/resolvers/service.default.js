@@ -1,3 +1,4 @@
+import { CachingDefaultResolvers } from "./common.js";
 import PenPal from "#penpal/core";
 
 export default {
@@ -8,6 +9,13 @@ export default {
           return "NetworkService";
       }
     },
+    ...CachingDefaultResolvers("Services", [
+      "id",
+      "host",
+      "network",
+      "project",
+      "name",
+    ]),
   },
 
   ServicesConnection: {

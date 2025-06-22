@@ -1,0 +1,50 @@
+---
+description: PenPal Development Workflow
+globs: 
+alwaysApply: false
+---
+# PenPal Development Workflow
+
+## Getting Started
+1. Run `./dev.sh` to start all services in development mode
+2. Frontend: http://localhost:3000
+3. GraphQL Studio: http://localhost:3001/graphql
+
+## Development Environment
+- **Docker Setup**: [docker-compose.dev.yaml](mdc:docker-compose.dev.yaml) - Volume mounts for hot reload
+- **Build Script**: [build-all.sh](mdc:build-all.sh) - Production build process
+- **Stop Script**: [stop-dev.sh](mdc:stop-dev.sh) - Clean shutdown
+
+## Hot Reload Configuration
+- **Server**: [PenPal/app/nodemon.config.json](mdc:PenPal/app/nodemon.config.json) - Nodemon config for server restart
+- **Frontend**: [PenPal/app/vite.config.js](mdc:PenPal/app/vite.config.js) - Vite configuration
+- Plugins are mounted as volumes and loaded dynamically
+
+## File Structure Conventions
+- **Server Code**: `PenPal/app/src/server/` - Backend implementation
+- **Client Code**: `PenPal/app/src/client/` - Frontend React components
+- **Common Code**: `PenPal/app/src/common/` - Shared utilities
+- **Plugins**: `Plugins/[PluginName]/` - Plugin implementations
+- **Static Assets**: `PenPal/app/static/` - Images and static files
+
+## Docker Development
+- Each service runs in its own container
+- Plugin dependencies are installed via `install-dependencies.sh` scripts
+- Development containers mount source code for hot reload
+
+## Plugin Development Workflow
+1. Use `python3 penpal-plugin-develop.py --new-plugin --name YourPlugin`
+2. Implement required files: `manifest.json`, `index.js`, `plugin.js`
+3. Add to `Plugins/` directory - automatically discovered on restart
+4. Dependencies managed per-plugin with `install-dependencies.sh`
+
+## GraphQL Development
+- Schema files use `.graphql` extension
+- Resolvers follow modular pattern per plugin
+- DataLoaders for efficient data fetching
+- GraphQL Studio available for testing queries
+
+## Code Organization
+- ES modules throughout (type: "module" in package.json)
+- Import paths use # aliases for clean imports
+- Lodash for utilities, Check-types for validation

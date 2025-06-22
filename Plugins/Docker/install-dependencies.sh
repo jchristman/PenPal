@@ -1,6 +1,6 @@
 #!/bin/bash
 
-PACKAGES="dockerode shell-quote stream-to-string"
+PACKAGES="shell-quote stream-to-string node-pty"
 
 echo "Adding Docker dependencies"
 if [ "$OFFLINE" = "true" ]; then

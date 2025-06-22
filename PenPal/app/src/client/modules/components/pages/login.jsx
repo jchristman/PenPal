@@ -311,3 +311,6 @@ const ForceLogin = ({ children }) => {
 
 registerComponent("Login", Login);
 registerComponent("ForceLogin", ForceLogin);
+
+// This is only needed for the fast refresh plugin, the registerComponent above is needed for the plugin system
+export default Login;

@@ -1,0 +1,35 @@
+---
+description: PenPal Project Overview
+globs: 
+alwaysApply: false
+---
+# PenPal Project Overview
+
+PenPal is a cybersecurity automation and reporting platform built on a pluggable architecture for penetration testing and red teaming.
+
+## Architecture Overview
+- **Frontend**: React + Material-UI with Vite build system
+- **Backend**: Node.js + GraphQL (Apollo Server) + MongoDB
+- **Plugin System**: Dynamic loading with dependency management
+- **Containerization**: Docker/Docker Compose for development and deployment
+
+## Key Entry Points
+- **Server**: [PenPal/app/src/server/main.js](mdc:PenPal/app/src/server/main.js) - Main server entry point
+- **Frontend**: [PenPal/app/src/client/main.jsx](mdc:PenPal/app/src/client/main.jsx) - React app entry point
+- **Core Server**: [PenPal/app/src/server/penpal/server.js](mdc:PenPal/app/src/server/penpal/server.js) - Core PenPal server implementation
+- **GraphQL Server**: [PenPal/app/src/server/graphql-server.js](mdc:PenPal/app/src/server/graphql-server.js) - GraphQL API setup
+
+## Package Configuration
+- **Server Dependencies**: [PenPal/app/package-server.json](mdc:PenPal/app/package-server.json)
+- **Frontend Dependencies**: [PenPal/app/package-frontend.json](mdc:PenPal/app/package-frontend.json)
+
+## Development Scripts
+- **Development Startup**: [dev.sh](mdc:dev.sh) - Starts all services
+- **Docker Compose Dev**: [docker-compose.dev.yaml](mdc:docker-compose.dev.yaml) - Development containers
+- **Docker Compose Common**: [docker-compose.common.yaml](mdc:docker-compose.common.yaml) - Shared container config
+
+## Data Model
+The core data structure flows: **Customers → Projects → Hosts → Services**
+- Networks contain multiple hosts
+- All entities support enrichment and audit trails
+- GraphQL API provides unified access to all data

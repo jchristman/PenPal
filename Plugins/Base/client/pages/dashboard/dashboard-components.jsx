@@ -28,3 +28,6 @@ const DashboardComponents = ({ data }) => {
 };
 
 registerComponent("DashboardComponents", DashboardComponents);
+
+// This is only needed for the fast refresh plugin, the registerComponent above is needed for the plugin system
+export default DashboardComponents;

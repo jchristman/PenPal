@@ -61,7 +61,7 @@ const AccountProvider = ({ children }) => {
       await storeLoginToken(userId, token, new Date(tokenExpires));
       setAuthTokenLoaded(true);
     } catch (e) {
-      console.error(e);
+      console.error("Login error", e);
       enqueueSnackbar(e.message, {
         variant: "error",
         autoHideDuration: 5000,
@@ -99,7 +99,7 @@ const AccountProvider = ({ children }) => {
       // we only delete our stored tokens after the server return
       await clearTokensAndState();
     } catch (e) {
-      console.error(e);
+      console.error("Logout error", e);
       enqueueSnackbar(e.message, {
         variant: "error",
         autoHideDuration: 10000,
@@ -159,7 +159,7 @@ const AccountProvider = ({ children }) => {
   // logged in session to get rid of any weird cache issues
   useEffect(() => {
     if (user_error !== undefined) {
-      console.error(user_error);
+      console.error("Account Provider error", user_error);
       console.log("Clearing tokens and state");
       (async () => clearTokensAndState())();
     }
@@ -210,4 +210,7 @@ const AccountProvider = ({ children }) => {
 const useAccount = () => useContext(AccountContext);
 
 registerComponent("AccountProvider", AccountProvider);
+
+// This is only needed for the fast refresh plugin, the registerComponent above is needed for the plugin system
+export default AccountProvider;
 registerHook("useAccount", useAccount);

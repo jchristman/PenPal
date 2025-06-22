@@ -1,0 +1,46 @@
+---
+description: The CoreAPI plugin provides standardized data models and patterns for cybersecurity data.
+globs: 
+alwaysApply: false
+---
+# CoreAPI Patterns and Data Model
+
+The CoreAPI plugin provides standardized data models and patterns for cybersecurity data.
+
+## Data Model Hierarchy
+**Customers** → **Projects** → **Hosts** → **Services**
+
+## Core Data Types
+- **Customer**: [Plugins/CoreAPI/server/graphql/schema/customer.schema.graphql](mdc:Plugins/CoreAPI/server/graphql/schema/customer.schema.graphql)
+- **Project**: [Plugins/CoreAPI/server/graphql/schema/project.schema.graphql](mdc:Plugins/CoreAPI/server/graphql/schema/project.schema.graphql)  
+- **Host**: [Plugins/CoreAPI/server/graphql/schema/host.schema.graphql](mdc:Plugins/CoreAPI/server/graphql/schema/host.schema.graphql)
+- **Network**: [Plugins/CoreAPI/server/graphql/schema/network.schema.graphql](mdc:Plugins/CoreAPI/server/graphql/schema/network.schema.graphql)
+- **Service**: [Plugins/CoreAPI/server/graphql/schema/service.schema.graphql](mdc:Plugins/CoreAPI/server/graphql/schema/service.schema.graphql)
+
+## Resolver Patterns
+- **Query Resolvers**: [Plugins/CoreAPI/server/graphql/resolvers/project.queries.js](mdc:Plugins/CoreAPI/server/graphql/resolvers/project.queries.js)
+- **Mutation Resolvers**: [Plugins/CoreAPI/server/graphql/resolvers/project.mutations.js](mdc:Plugins/CoreAPI/server/graphql/resolvers/project.mutations.js)
+- **Default Resolvers**: [Plugins/CoreAPI/server/graphql/resolvers/project.default.js](mdc:Plugins/CoreAPI/server/graphql/resolvers/project.default.js)
+
+## API Patterns
+- **REST API**: [Plugins/CoreAPI/server/api/](mdc:Plugins/CoreAPI/server/api) - RESTful endpoints for data access
+- **Common Utilities**: [Plugins/CoreAPI/server/api/common.js](mdc:Plugins/CoreAPI/server/api/common.js)
+
+## Enrichment System
+- **Enrichable Interface**: [Plugins/CoreAPI/server/graphql/schema/enrichable.schema.graphql](mdc:Plugins/CoreAPI/server/graphql/schema/enrichable.schema.graphql)
+- **Enrichment Resolvers**: [Plugins/CoreAPI/server/graphql/resolvers/enrichable.default.js](mdc:Plugins/CoreAPI/server/graphql/resolvers/enrichable.default.js)
+- Hosts and services can be enriched with additional data from scanning tools
+
+## Audit Trail System
+- **Auditable Interface**: [Plugins/CoreAPI/server/graphql/schema/audit.schema.graphql](mdc:Plugins/CoreAPI/server/graphql/schema/audit.schema.graphql)
+- **Audit Resolvers**: [Plugins/CoreAPI/server/graphql/resolvers/auditable.default.js](mdc:Plugins/CoreAPI/server/graphql/resolvers/auditable.default.js)
+- Tracks all changes to core entities
+
+## Frontend Components
+- **Project View**: [Plugins/CoreAPI/client/pages/project-view/project-view.jsx](mdc:Plugins/CoreAPI/client/pages/project-view/project-view.jsx)
+- **Host Management**: [Plugins/CoreAPI/client/pages/project-view/project-view-hosts.jsx](mdc:Plugins/CoreAPI/client/pages/project-view/project-view-hosts.jsx)
+- **Data Containers**: [Plugins/CoreAPI/client/pages/project-view/project-view-data-container.jsx](mdc:Plugins/CoreAPI/client/pages/project-view/project-view-data-container.jsx)
+
+## Query Patterns
+- **GraphQL Fragments**: [Plugins/CoreAPI/client/pages/project-view/queries/project-details-fragment.js](mdc:Plugins/CoreAPI/client/pages/project-view/queries/project-details-fragment.js)
+- **Query Utilities**: [PenPal/app/src/client/penpal/graphql-utils.js](mdc:PenPal/app/src/client/penpal/graphql-utils.js)
