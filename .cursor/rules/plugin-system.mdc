@@ -39,6 +39,308 @@ Use [PluginTemplate/](mdc:PluginTemplate) as a starting point for new plugins.
 - Plugins can subscribe to events like new hosts/networks discovery
 - Job queue system for long-running tasks
 
+## Jobs API - Centralized Job Management
+
+The **JobsTracker Plugin** provides a centralized job management system for long-running tasks across all plugins. This replaces the need for individual plugins to manage their own job queues.
+
+### Jobs API Usage
+
+**✅ CRITICAL: Jobs API Signature**
+All Jobs operations are available through the `PenPal.Jobs` object:
+
+```javascript
+// ✅ CORRECT Jobs API usage
+const job = await PenPal.Jobs.Create(jobData);
+await PenPal.Jobs.Update(job_id, updates);
+await PenPal.Jobs.UpdateProgress(job_id, progress);
+await PenPal.Jobs.UpdateStage(job_id, stage_index, updates);
+const job = await PenPal.Jobs.Get(job_id);
+const jobs = await PenPal.Jobs.GetAll();
+const filtered = await PenPal.Jobs.GetFiltered(filterMode);
+
+// ❌ WRONG - Don't manage jobs locally
+const jobs = []; // Local job arrays
+const job_id = "manual-id"; // Manual ID generation
+```
+
+### Job Structure
+
+**Basic Job Fields:**
+```javascript
+const jobData = {
+  name: "Descriptive Job Name",
+  plugin: "YourPluginName", // Auto-populated if not provided
+  statusText: "Initial status message",
+  progress: 0, // 0-100 percentage
+  status: "running", // running, done, failed, cancelled
+  // Optional fields:
+  stages: [/* array of stage objects */],
+};
+```
+
+**Job with Stages:**
+```javascript
+const jobWithStages = {
+  name: "Multi-Stage Job",
+  plugin: "YourPluginName",
+  statusText: "Starting multi-stage process",
+  progress: 0,
+  stages: [
+    {
+      name: "Stage 1: Preparation",
+      statusText: "Preparing environment",
+      progress: 0,
+      status: "pending"
+    },
+    {
+      name: "Stage 2: Execution", 
+      statusText: "Running main process",
+      progress: 0,
+      status: "pending"
+    },
+    {
+      name: "Stage 3: Cleanup",
+      statusText: "Cleaning up resources",
+      progress: 0,
+      status: "pending"
+    }
+  ]
+};
+```
+
+### Jobs API Methods
+
+**Create Job:**
+```javascript
+// Simple job without stages
+const job = await PenPal.Jobs.Create({
+  name: "Network Scan",
+  statusText: "Starting network scan",
+  progress: 0
+});
+
+// Job with stages
+const job = await PenPal.Jobs.Create(jobWithStages);
+```
+
+**Update Job:**
+```javascript
+// Update job progress and status
+await PenPal.Jobs.Update(job.id, {
+  progress: 50,
+  statusText: "Halfway complete"
+});
+
+// Mark job as complete
+await PenPal.Jobs.Update(job.id, {
+  progress: 100,
+  status: "done",
+  statusText: "Scan complete"
+});
+```
+
+**Update Job Progress (Convenience Method):**
+```javascript
+// Quick progress update
+await PenPal.Jobs.UpdateProgress(job.id, 75);
+```
+
+**Update Job Stage:**
+```javascript
+// Update specific stage by index (0-based)
+await PenPal.Jobs.UpdateStage(job.id, 0, {
+  progress: 100,
+  status: "done",
+  statusText: "Preparation complete"
+});
+
+// Start next stage
+await PenPal.Jobs.UpdateStage(job.id, 1, {
+  progress: 0,
+  status: "running",
+  statusText: "Beginning execution"
+});
+```
+
+**Retrieve Jobs:**
+```javascript
+// Get specific job
+const job = await PenPal.Jobs.Get(job_id);
+
+// Get all jobs
+const allJobs = await PenPal.Jobs.GetAll();
+
+// Get filtered jobs
+const activeJobs = await PenPal.Jobs.GetFiltered("active");
+const recentJobs = await PenPal.Jobs.GetFiltered("recent");
+```
+
+### Job Management Best Practices
+
+**Job Lifecycle Management:**
+```javascript
+// 1. Create job
+const job = await PenPal.Jobs.Create({
+  name: "Host Discovery Scan",
+  statusText: "Initializing scan parameters",
+  progress: 0
+});
+
+try {
+  // 2. Update progress during execution
+  await PenPal.Jobs.UpdateProgress(job.id, 25);
+  await performScanStep1();
+  
+  await PenPal.Jobs.Update(job.id, {
+    progress: 50,
+    statusText: "Scanning network ranges"
+  });
+  await performScanStep2();
+  
+  // 3. Complete successfully
+  await PenPal.Jobs.Update(job.id, {
+    progress: 100,
+    status: PenPal.Jobs.Status.DONE,
+    statusText: "Scan completed successfully"
+  });
+  
+} catch (error) {
+  // 4. Handle failures
+  await PenPal.Jobs.Update(job.id, {
+    status: PenPal.Jobs.Status.FAILED,
+    statusText: `Scan failed: ${error.message}`
+  });
+}
+```
+
+**Multi-Stage Job Management:**
+```javascript
+const job = await PenPal.Jobs.Create({
+  name: "Comprehensive Security Scan",
+  stages: [
+    { name: "Port Scan", statusText: "Scanning ports", progress: 0, status: PenPal.Jobs.Status.PENDING },
+    { name: "Service Detection", statusText: "Detecting services", progress: 0, status: PenPal.Jobs.Status.PENDING },
+    { name: "Vulnerability Assessment", statusText: "Checking vulnerabilities", progress: 0, status: PenPal.Jobs.Status.PENDING }
+  ]
+});
+
+// Execute stage 1
+await PenPal.Jobs.UpdateStage(job.id, 0, { status: PenPal.Jobs.Status.RUNNING });
+await performPortScan();
+await PenPal.Jobs.UpdateStage(job.id, 0, { 
+  progress: 100, 
+  status: PenPal.Jobs.Status.DONE,
+  statusText: "Port scan complete"
+});
+
+// Execute stage 2
+await PenPal.Jobs.UpdateStage(job.id, 1, { status: PenPal.Jobs.Status.RUNNING });
+await performServiceDetection();
+await PenPal.Jobs.UpdateStage(job.id, 1, { 
+  progress: 100, 
+  status: PenPal.Jobs.Status.DONE,
+  statusText: "Service detection complete"
+});
+
+// Update overall job progress
+await PenPal.Jobs.UpdateProgress(job.id, 100);
+```
+
+### Integration with Security Tools
+
+**Example: Nmap Integration**
+```javascript
+// Replace local job management with Jobs API
+export const start_detailed_hosts_scan = async (hosts) => {
+  const job = await PenPal.Jobs.Create({
+    name: `Detailed Host Scan for ${hosts.length} hosts`,
+    statusText: "Preparing detailed scan",
+    progress: 0,
+    stages: [
+      { name: "Port Scan", statusText: "Scanning ports", progress: 0, status: PenPal.Jobs.Status.PENDING },
+      { name: "Service Detection", statusText: "Detecting services", progress: 0, status: PenPal.Jobs.Status.PENDING },
+      { name: "OS Detection", statusText: "Identifying operating systems", progress: 0, status: PenPal.Jobs.Status.PENDING }
+    ]
+  });
+
+  // Pass job_id to scan function instead of job_stages
+  performScan(hosts, job.id);
+  return job.id;
+};
+```
+
+### Job Status and Filtering
+
+**✅ CRITICAL: Standardized Job Status Constants**
+Always use the predefined status constants to ensure consistency:
+
+```javascript
+// ✅ CORRECT Status constants
+PenPal.Jobs.Status.PENDING    // "pending" - Job is queued/waiting
+PenPal.Jobs.Status.RUNNING    // "running" - Job is actively executing  
+PenPal.Jobs.Status.DONE       // "done" - Job completed successfully
+PenPal.Jobs.Status.FAILED     // "failed" - Job failed with error
+PenPal.Jobs.Status.CANCELLED  // "cancelled" - Job was cancelled
+
+// ✅ CORRECT Check if status is completed
+const isCompleted = PenPal.Jobs.CompletedStatuses.includes(job.status);
+
+// ❌ WRONG - Don't use hardcoded status strings
+status: "completed" // Invalid status - use PenPal.Jobs.Status.DONE
+status: "finished"  // Invalid status - use PenPal.Jobs.Status.DONE
+status: "running"   // Use PenPal.Jobs.Status.RUNNING instead
+```
+
+**Job Status Values:**
+- `PenPal.Jobs.Status.PENDING` - Job is queued/waiting to start
+- `PenPal.Jobs.Status.RUNNING` - Job is currently executing
+- `PenPal.Jobs.Status.DONE` - Job completed successfully
+- `PenPal.Jobs.Status.FAILED` - Job encountered an error
+- `PenPal.Jobs.Status.CANCELLED` - Job was manually cancelled
+
+**Filter Modes:**
+- `"active"` - Shows running jobs and recent completed jobs (default UI view)
+- `"recent"` - Shows jobs from the last 24 hours
+- `"all"` - Shows all jobs with pagination
+
+### Automatic Job Cleanup
+
+The JobsTracker automatically cleans up stale jobs:
+- Jobs not updated for 5+ minutes are marked as "cancelled"
+- Cleanup runs every 5 minutes automatically
+- Prevents accumulation of orphaned jobs from crashed processes
+
+### UI Integration
+
+The JobsTracker provides a comprehensive UI at `/jobs` with:
+- **Real-time job monitoring** with 500ms polling
+- **Progress visualization** with color-coded progress bars
+- **Stage-by-stage tracking** for complex jobs
+- **Filtering and pagination** for job history
+- **Runtime and completion time tracking**
+- **Automatic cleanup** of stale jobs
+
+### Migration from Local Job Management
+
+**Before (Local Job Management):**
+```javascript
+// ❌ Old pattern - local job arrays
+const jobs = [];
+const job_id = generateId();
+jobs.push({ id: job_id, name: "Scan", progress: 0 });
+```
+
+**After (Jobs API):**
+```javascript
+// ✅ New pattern - centralized Jobs API
+const job = await PenPal.Jobs.Create({
+  name: "Scan",
+  progress: 0
+});
+```
+
+The Jobs API provides better reliability, persistence, monitoring, and user experience compared to local job management.
+
 ## GraphQL Integration
 Plugins extend the GraphQL schema with:
 - Custom types and mutations

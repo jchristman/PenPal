@@ -174,17 +174,27 @@ export const getJobsFiltered = async (filterMode = "active") => {
     case "active":
       // Only show active jobs and completed jobs from last 10 minutes
       const tenMinutesAgo = new Date(now.getTime() - 10 * 60 * 1000);
-      return await PenPal.DataStore.fetch("JobsTracker", "Jobs", {
-        $or: [
-          { status: { $nin: ["done", "cancelled", "failed"] } },
-          {
-            $and: [
-              { status: { $in: ["done", "cancelled", "failed"] } },
-              { updated_at: { $gte: tenMinutesAgo.toISOString() } },
-            ],
-          },
-        ],
+
+      // First get all jobs, then filter in JavaScript for more reliable filtering
+      const allJobs = await PenPal.DataStore.fetch("JobsTracker", "Jobs", {});
+
+      const filteredJobs = allJobs.filter((job) => {
+        // Always show jobs that are not completed
+        // Use PenPal.Jobs.CompletedStatuses if available, otherwise fallback to hardcoded list
+        const completedStatuses = PenPal.Jobs.CompletedStatuses;
+
+        if (!completedStatuses.includes(job.status)) {
+          return true;
+        }
+
+        // For completed jobs, only show if updated within last 10 minutes
+        const jobUpdatedAt = new Date(job.updated_at);
+        const isRecent = jobUpdatedAt > tenMinutesAgo;
+
+        return isRecent;
       });
+
+      return filteredJobs;
 
     case "recent":
       // Jobs from the last day
@@ -219,9 +229,10 @@ export const cleanupStaleJobs = async (timeoutMinutes = 5) => {
   }
 
   // Update stale jobs to cancelled status
+  const cancelledStatus = PenPal.Jobs?.Status?.CANCELLED || "cancelled";
   const updates = staleJobs.map((job) => ({
     id: job.id,
-    status: "cancelled",
+    status: cancelledStatus,
     statusText: `Cancelled due to inactivity (no updates for ${timeoutMinutes} minutes)`,
     //updated_at: new Date().toISOString(), // don't update the updated_at field because that will change the runtime calculation
   }));

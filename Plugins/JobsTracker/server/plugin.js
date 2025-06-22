@@ -14,8 +14,42 @@ const JobsTrackerPlugin = {
   cleanupInterval: null,
 
   async loadPlugin() {
+    // Define standardized job status constants
+    const JobStatus = {
+      PENDING: "pending",
+      RUNNING: "running",
+      DONE: "done",
+      FAILED: "failed",
+      CANCELLED: "cancelled",
+    };
+
+    // Define which statuses are considered "completed" (finished)
+    const COMPLETED_STATUSES = [
+      JobStatus.DONE,
+      JobStatus.FAILED,
+      JobStatus.CANCELLED,
+    ];
+
+    // Validation function for job status
+    const validateStatus = (status) => {
+      const validStatuses = Object.values(JobStatus);
+      if (!validStatuses.includes(status)) {
+        throw new Error(
+          `Invalid job status: ${status}. Valid statuses are: ${validStatuses.join(
+            ", "
+          )}`
+        );
+      }
+      return status;
+    };
+
     // Register Jobs API
     PenPal.Jobs = {
+      // Status constants
+      Status: JobStatus,
+      CompletedStatuses: COMPLETED_STATUSES,
+
+      // Core API methods
       Get: API.getJob,
       GetMany: API.getJobs,
       GetByPlugin: API.getJobsByPlugin,
@@ -23,8 +57,6 @@ const JobsTrackerPlugin = {
       GetByStatus: API.getJobsByStatus,
       Insert: API.insertJob,
       InsertMany: API.insertJobs,
-      Update: API.updateJob,
-      UpdateMany: API.updateJobs,
       UpdateStage: API.updateJobStage,
       Remove: API.removeJob,
       RemoveMany: API.removeJobs,
@@ -32,24 +64,50 @@ const JobsTrackerPlugin = {
       CleanupStale: API.cleanupStaleJobs,
     };
 
+    // Wrapped Update method with status validation
+    PenPal.Jobs.Update = async (jobId, updates) => {
+      if (updates.status) {
+        validateStatus(updates.status);
+      }
+      return await API.updateJob(jobId, updates);
+    };
+
+    // Wrapped UpdateMany method with status validation
+    PenPal.Jobs.UpdateMany = async (updatesArray, updateUpdatedAt = true) => {
+      // Validate all statuses before updating
+      for (const update of updatesArray) {
+        if (update.status) {
+          validateStatus(update.status);
+        }
+      }
+      return await API.updateJobs(updatesArray, updateUpdatedAt);
+    };
+
     // Helper function to create a job with proper structure
     PenPal.Jobs.Create = async (jobData) => {
+      const defaultStatus = jobData.status || JobStatus.PENDING;
+      validateStatus(defaultStatus);
+
       const job = {
         name: jobData.name,
         plugin: jobData.plugin,
         progress: jobData.progress || 0.0,
         statusText: jobData.statusText || "",
-        status: jobData.status || "pending",
+        status: defaultStatus,
         stages:
-          jobData.stages?.map((stage) => ({
-            name: stage.name,
-            plugin: stage.plugin || jobData.plugin,
-            progress: stage.progress || 0.0,
-            statusText: stage.statusText || "",
-            status: stage.status || "pending",
-            order: stage.order || 0,
-            metadata: stage.metadata || {},
-          })) || [],
+          jobData.stages?.map((stage) => {
+            const stageStatus = stage.status || JobStatus.PENDING;
+            validateStatus(stageStatus);
+            return {
+              name: stage.name,
+              plugin: stage.plugin || jobData.plugin,
+              progress: stage.progress || 0.0,
+              statusText: stage.statusText || "",
+              status: stageStatus,
+              order: stage.order || 0,
+              metadata: stage.metadata || {},
+            };
+          }) || [],
         project_id: jobData.project_id,
         metadata: jobData.metadata || {},
       };

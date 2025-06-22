@@ -300,7 +300,7 @@ export const performScan = async ({
           await PenPal.Jobs.UpdateStage(job_id, i, {
             progress: 100,
             statusText: `${stage.name} completed`,
-            status: "completed",
+            status: PenPal.Jobs.Status.DONE,
           });
         }
       }
@@ -312,7 +312,7 @@ export const performScan = async ({
   // Mark the job as completed
   if (job_id) {
     await PenPal.Jobs.Update(job_id, {
-      status: "completed",
+      status: PenPal.Jobs.Status.DONE,
       progress: 100.0,
       statusText: "Scan complete",
     });
