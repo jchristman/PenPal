@@ -81,6 +81,10 @@ MongoAdapter.fetch = async (
   } = options;
 
   let cursor = get_collection(plugin_name, store_name);
+  if (cursor === undefined) {
+    console.error(`[!] No collection found for ${plugin_name}.${store_name}`);
+    return [];
+  }
 
   if (first !== undefined) {
     let _selector = normalize_data(selector);

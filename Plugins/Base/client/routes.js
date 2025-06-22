@@ -2,7 +2,6 @@ import { registerRoute } from "@penpal/core";
 
 import HomeIcon from "@mui/icons-material/Home";
 import SettingsInputSvideoIcon from "@mui/icons-material/SettingsInputSvideo";
-import AutorenewIcon from "@mui/icons-material/Autorenew";
 
 const registerRoutes = () => {
   const Dashboard = {
@@ -22,15 +21,6 @@ const registerRoutes = () => {
     icon: SettingsInputSvideoIcon,
   };
   registerRoute(Configuration);
-
-  const Jobs = {
-    name: "jobs",
-    path: "/jobs",
-    componentName: "Jobs",
-    prettyName: "Jobs",
-    icon: AutorenewIcon,
-  };
-  registerRoute(Jobs);
 };
 
 export default registerRoutes;

@@ -10,7 +10,28 @@ class MQTTClient {
   constructor() {}
 
   async Initialize() {
-    this.client = await MQTT.connectAsync("mqtt://penpal-mqtt");
+    let retries = 0;
+    while (retries < 3) {
+      try {
+        this.client = await MQTT.connectAsync("mqtt://penpal-mqtt");
+      } catch (e) {
+        console.error(
+          "MQTT: Failed to connect, trying again in 5 seconds",
+          e.stack
+        );
+        retries++;
+        await PenPal.Utils.Sleep(5000);
+      }
+      if (this.client) {
+        break;
+      }
+    }
+
+    if (!this.client) {
+      console.error("Giving up on MQTT: Failed to connect");
+      throw new Error("MQTT: Failed to connect");
+    }
+
     this.client.on("message", (topic, message) =>
       this.HandleMessage(topic, message)
     );

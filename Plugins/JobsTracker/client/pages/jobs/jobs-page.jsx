@@ -3,7 +3,7 @@ import { useQuery } from "@apollo/client";
 import { Components, registerComponent } from "@penpal/core";
 import { makeStyles } from "@mui/styles";
 
-import GetPluginJobs from "./queries/get-all-jobs.js";
+import GetAllJobs from "./queries/get-all-jobs.js";
 
 const useStyles = makeStyles((theme) => ({
   jobsPage: {
@@ -551,25 +551,25 @@ const JobCard = ({ job }) => {
   );
 };
 
-const PluginSection = ({ plugin }) => {
+const PluginSection = ({ plugin, jobs }) => {
   const classes = useStyles();
-  const hasJobs = plugin.jobs && plugin.jobs.length > 0;
+  const hasJobs = jobs && jobs.length > 0;
 
   return (
     <div className={classes.pluginSection}>
       <div className={classes.pluginHeader}>
-        <h3 className={classes.pluginName}>{plugin.name}</h3>
-        <span className={classes.pluginId}>{plugin.id}</span>
+        <h3 className={classes.pluginName}>{plugin}</h3>
+        <span className={classes.pluginId}>{plugin}</span>
         {hasJobs && (
           <span className={classes.jobCount}>
-            {plugin.jobs.length} job{plugin.jobs.length !== 1 ? "s" : ""}
+            {jobs.length} job{jobs.length !== 1 ? "s" : ""}
           </span>
         )}
       </div>
 
       {hasJobs ? (
         <div className={classes.jobsList}>
-          {plugin.jobs.map((job) => (
+          {jobs.map((job) => (
             <JobCard key={job.id} job={job} />
           ))}
         </div>
@@ -582,7 +582,7 @@ const PluginSection = ({ plugin }) => {
 
 const JobsPage = () => {
   const classes = useStyles();
-  const { loading, error, data } = useQuery(GetPluginJobs, {
+  const { loading, error, data } = useQuery(GetAllJobs, {
     pollInterval: 500,
   });
 
@@ -604,29 +604,34 @@ const JobsPage = () => {
     );
   }
 
-  const plugins = data?.getPlugins || [];
-  const pluginsWithJobs = plugins.filter(
-    (plugin) => plugin.jobs && plugin.jobs.length > 0
-  );
-  const pluginsWithoutJobs = plugins.filter(
-    (plugin) => !plugin.jobs || plugin.jobs.length === 0
-  );
-  const totalJobs = pluginsWithJobs.reduce(
-    (sum, plugin) => sum + plugin.jobs.length,
-    0
+  const jobs = data?.getAllJobs?.jobs || [];
+
+  // Group jobs by plugin
+  const jobsByPlugin = jobs.reduce((acc, job) => {
+    const plugin = job.plugin || "Unknown";
+    if (!acc[plugin]) {
+      acc[plugin] = [];
+    }
+    acc[plugin].push(job);
+    return acc;
+  }, {});
+
+  const pluginsWithJobs = Object.keys(jobsByPlugin).filter(
+    (plugin) => jobsByPlugin[plugin].length > 0
   );
 
-  // Sort plugins so those with jobs appear first
-  const sortedPlugins = [...pluginsWithJobs, ...pluginsWithoutJobs];
+  const totalJobs = jobs.length;
+  const activeJobs = jobs.filter((job) => job.progress < 100);
 
   return (
     <div className={classes.jobsPage}>
       <div className={classes.jobsHeader}>
         <h2 className={classes.jobsHeaderTitle}>Plugin Jobs</h2>
         <div className={classes.jobsSummary}>
-          {totalJobs > 0 ? (
+          {activeJobs.length > 0 ? (
             <span className={classes.activeJobs}>
-              {totalJobs} active job{totalJobs !== 1 ? "s" : ""} running
+              {activeJobs.length} active job{activeJobs.length !== 1 ? "s" : ""}{" "}
+              running
             </span>
           ) : (
             <span className={classes.noActiveJobs}>No active jobs</span>
@@ -635,9 +640,16 @@ const JobsPage = () => {
       </div>
 
       <div className={classes.pluginsContainer}>
-        {sortedPlugins.map((plugin) => (
-          <PluginSection key={plugin.id} plugin={plugin} />
+        {pluginsWithJobs.map((plugin) => (
+          <PluginSection
+            key={plugin}
+            plugin={plugin}
+            jobs={jobsByPlugin[plugin]}
+          />
         ))}
+        {pluginsWithJobs.length === 0 && (
+          <div className={classes.noJobs}>No jobs found</div>
+        )}
       </div>
     </div>
   );

@@ -1,0 +1,13 @@
+extend type Query {
+  getJob(id: ID!): Job
+  getJobs(ids: [ID!]): [Job!]!
+  getJobsByPlugin(plugin: String!): [Job!]!
+  getActiveJobs: [Job!]!
+  getJobsByStatus(status: String!): [Job!]!
+  getAllJobs(
+    limit: Int = 100
+    offset: Int = 0
+    plugin: String
+    status: String
+  ): JobsConnection!
+}

@@ -3,7 +3,6 @@ type Plugin {
   name: String!
   version: String!
   settings: PluginSettings
-  jobs: [Job]
 }
 
 type PluginSettings {
@@ -20,13 +19,4 @@ type PluginConfigurationSettings {
 type PluginDashboardSettings {
   schema_root: String!
   getter: String!
-}
-
-type Job {
-  id: ID!
-  name: String!
-  plugin: Plugin!
-  progress: Float!
-  statusText: String!
-  stages: [Job]
 }

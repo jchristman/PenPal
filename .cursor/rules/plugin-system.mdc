@@ -17,6 +17,7 @@ PenPal uses a sophisticated plugin architecture that allows dynamic loading of c
 - **CoreAPI Plugin**: [Plugins/CoreAPI/server/manifest.json](mdc:Plugins/CoreAPI/server/manifest.json) - Data standardization
 - **DataStore Plugin**: [Plugins/DataStore/server/plugin.js](mdc:Plugins/DataStore/server/plugin.js) - Data abstraction layer
 - **MongoDB Adapter**: [Plugins/DataStoreMongoAdapter/server/plugin.js](mdc:Plugins/DataStoreMongoAdapter/server/plugin.js)
+- **JobsTracker Plugin**: [Plugins/JobsTracker/server/plugin.js](mdc:Plugins/JobsTracker/server/plugin.js) - Centralized job management
 
 ## Plugin Structure Requirements
 Each plugin must have:
@@ -43,3 +44,135 @@ Plugins extend the GraphQL schema with:
 - Custom types and mutations
 - Resolvers and data loaders  
 - Schema stitching via plugin loading system
+
+## DataStore API Usage
+
+**✅ CRITICAL: DataStore API Signature**
+All DataStore operations require **plugin name** and **store name** as first two parameters:
+
+```javascript
+// ✅ CORRECT DataStore API usage
+await PenPal.DataStore.fetch("PluginName", "StoreName", query);
+await PenPal.DataStore.fetchOne("PluginName", "StoreName", query);
+await PenPal.DataStore.insertMany("PluginName", "StoreName", [data]);
+await PenPal.DataStore.updateOne("PluginName", "StoreName", query, updates);
+await PenPal.DataStore.delete("PluginName", "StoreName", query);
+
+// ❌ WRONG - These methods don't exist
+await PenPal.DataStore.getAll("StoreName");
+await PenPal.DataStore.get("StoreName", id);
+await PenPal.DataStore.insert("StoreName", data);
+```
+
+**DataStore Configuration in plugin.js:**
+```javascript
+const settings = {
+  datastores: [
+    {
+      name: "YourStoreName", // This becomes the "StoreName" parameter
+    },
+  ],
+};
+```
+
+**Common DataStore Patterns:**
+- **Single Record**: `fetchOne("Plugin", "Store", { id: "some-id" })`
+- **Multiple Records**: `fetch("Plugin", "Store", { status: "active" })`
+- **Query by Array**: `fetch("Plugin", "Store", { id: { $in: [id1, id2] } })`
+- **Insert Single**: `insertMany("Plugin", "Store", [singleRecord])[0]`
+- **Update**: `updateOne("Plugin", "Store", { id: "some-id" }, updateData)`
+- **Delete**: `delete("Plugin", "Store", { id: "some-id" })`
+
+## GraphQL Schema Conflicts
+
+**✅ Avoiding Type Conflicts:**
+- Check existing GraphQL types before creating new ones
+- Use unique type names prefixed with plugin name if needed
+- Remove conflicting types from Base plugin when migrating functionality
+
+**Common Conflict Scenarios:**
+```graphql
+# ❌ This will cause conflicts if Job type already exists elsewhere
+type Job {
+  id: ID!
+  name: String!
+}
+
+# ✅ Use plugin-specific prefixes if conflicts arise
+type JobsTrackerJob {
+  id: ID!
+  name: String!
+}
+```
+
+**Scalar Type Usage:**
+- Use existing scalars like `JSON` instead of `JSONObject`
+- Check [PenPal/app/src/server/graphql/schema/scalars.graphql](mdc:PenPal/app/src/server/graphql/schema/scalars.graphql) for available types
+- Consistent scalar usage prevents "Unknown type" errors
+
+## Plugin Development Best Practices
+
+**API Layer Structure:**
+```javascript
+// api/index.js - Clean separation of concerns
+export const getItems = async (item_id) => {
+  return await PenPal.DataStore.fetchOne("PluginName", "Items", { id: item_id });
+};
+
+export const insertItem = async (item_data) => {
+  const item_with_timestamps = {
+    ...item_data,
+    id: item_data.id || PenPal.Utils.UUID(),
+    created_at: new Date().toISOString(),
+    updated_at: new Date().toISOString(),
+  };
+  const result = await PenPal.DataStore.insertMany("PluginName", "Items", [item_with_timestamps]);
+  return result[0];
+};
+```
+
+**Plugin Registration Pattern:**
+```javascript
+// plugin.js - Register APIs on PenPal object
+PenPal.YourAPI = {
+  Get: API.getItem,
+  Insert: API.insertItem,
+  Update: API.updateItem,
+  // Helper functions
+  Create: async (itemData) => { /* convenience wrapper */ },
+};
+```
+
+**Dependency Management:**
+- Always specify plugin dependencies in manifest.json
+- Use `"load": false` temporarily during development to prevent loading
+- DataStore-dependent plugins must list `"DataStore@0.1.0"` in dependencies
+
+**Migration Considerations:**
+- When moving functionality from one plugin to another, update both GraphQL schemas
+- Remove old resolvers and types to prevent conflicts
+- Update client-side GraphQL queries to use new endpoints
+- Consider backward compatibility for existing data
+
+**Testing DataStore Integration:**
+- Test with empty database first
+- Verify all CRUD operations work correctly
+- Check query syntax with MongoDB-style operators (`$in`, `$lt`, etc.)
+- Ensure proper error handling for missing records
+
+**Client-Server Plugin Coordination:**
+- Client plugins should mirror server plugin structure
+- Use consistent naming between client queries and server resolvers
+- Implement proper loading states and error handling in React components
+- Consider real-time updates with polling or subscriptions
+
+## Common Pitfalls to Avoid
+
+1. **❌ Using non-existent DataStore methods** - Always check CoreAPI usage patterns
+2. **❌ Missing plugin/store parameters** - DataStore requires both plugin name and store name
+3. **❌ GraphQL type conflicts** - Check for existing types before creating new ones
+4. **❌ Incorrect scalar references** - Use existing scalars like `JSON` instead of `JSONObject`
+5. **❌ Forgetting timestamps** - Always add `created_at` and `updated_at` fields
+6. **❌ Not handling arrays properly** - Use `insertMany()` even for single records
+7. **❌ Missing error handling** - Always handle cases where records don't exist
+8. **❌ Inconsistent ID generation** - Use `PenPal.Utils.UUID()` for consistent ID format

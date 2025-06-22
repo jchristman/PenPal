@@ -1,0 +1,7 @@
+extend type Mutation {
+  createJob(input: JobInput!): Job!
+  updateJob(id: ID!, input: JobUpdateInput!): Job!
+  updateJobStage(jobId: ID!, stageId: ID!, input: JobStageUpdateInput!): Job!
+  deleteJob(id: ID!): Boolean!
+  deleteJobs(ids: [ID!]!): Boolean!
+}

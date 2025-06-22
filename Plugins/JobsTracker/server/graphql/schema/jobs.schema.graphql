@@ -1,0 +1,68 @@
+type Job {
+  id: ID!
+  name: String!
+  plugin: String!
+  progress: Float!
+  statusText: String!
+  status: String
+  stages: [JobStage!]
+  created_at: String!
+  updated_at: String!
+  project_id: String
+  metadata: JSON
+}
+
+type JobStage {
+  id: ID!
+  name: String!
+  plugin: String!
+  progress: Float!
+  statusText: String!
+  status: String
+  order: Int
+  metadata: JSON
+}
+
+type JobsConnection {
+  jobs: [Job!]!
+  totalCount: Int!
+  hasMore: Boolean!
+}
+
+input JobInput {
+  name: String!
+  plugin: String!
+  progress: Float = 0.0
+  statusText: String = ""
+  status: String = "pending"
+  stages: [JobStageInput!]
+  project_id: String
+  metadata: JSON
+}
+
+input JobStageInput {
+  id: ID
+  name: String!
+  plugin: String!
+  progress: Float = 0.0
+  statusText: String = ""
+  status: String = "pending"
+  order: Int
+  metadata: JSON
+}
+
+input JobUpdateInput {
+  name: String
+  progress: Float
+  statusText: String
+  status: String
+  stages: [JobStageInput!]
+  metadata: JSON
+}
+
+input JobStageUpdateInput {
+  progress: Float
+  statusText: String
+  status: String
+  metadata: JSON
+}
