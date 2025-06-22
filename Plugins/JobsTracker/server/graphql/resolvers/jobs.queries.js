@@ -21,16 +21,25 @@ export default {
     return await API.getJobsByStatus(status);
   },
 
-  async getAllJobs(parent, { limit, offset, plugin, status }, context) {
+  async getAllJobs(
+    parent,
+    { limit, offset, plugin, status, filterMode },
+    context
+  ) {
     let jobs;
 
     if (plugin) {
       jobs = await API.getJobsByPlugin(plugin);
     } else if (status) {
       jobs = await API.getJobsByStatus(status);
+    } else if (filterMode) {
+      jobs = await API.getJobsFiltered(filterMode);
     } else {
-      jobs = await API.getJobs();
+      jobs = await API.getJobsFiltered("active"); // Default to active filter
     }
+
+    // Sort jobs by updated_at descending (most recent first)
+    jobs.sort((a, b) => new Date(b.updated_at) - new Date(a.updated_at));
 
     // Apply pagination
     const totalCount = jobs.length;

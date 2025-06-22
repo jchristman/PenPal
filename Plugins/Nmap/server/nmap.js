@@ -185,7 +185,7 @@ export const performScan = async ({
   outdir_base = "/penpal-plugin-share",
   outfile_prefix = "output",
   update_job = async () => {},
-  job_stages = null,
+  job_id = null,
 }) => {
   const outdir = [outdir_base, "nmap", project_id].join(path.sep);
   PenPal.Utils.MkdirP(outdir);
@@ -247,26 +247,36 @@ export const performScan = async ({
       if (stats !== null) {
         // Determine current stage based on scan type
         let currentStage = null;
-        if (job_stages) {
-          if (stats.scanType.includes("SYN Stealth Scan")) {
-            currentStage = 0; // SYN Scan stage
-          } else if (stats.scanType.includes("Service Scan")) {
-            currentStage = 1; // Service Scan stage
-            // Mark SYN scan as complete if we're in service scan
-            if (job_stages[0] && job_stages[0].progress < 100) {
-              job_stages[0].progress = 100;
-              job_stages[0].statusText = "SYN scan completed";
-            }
-          } else if (stats.scanType.includes("Script Scan")) {
-            currentStage = 2; // UDP Scan stage
-            // Mark previous stages as complete
-            if (job_stages[0] && job_stages[0].progress < 100) {
-              job_stages[0].progress = 100;
-              job_stages[0].statusText = "SYN scan completed";
-            }
-            if (job_stages[1] && job_stages[1].progress < 100) {
-              job_stages[1].progress = 100;
-              job_stages[1].statusText = "Service scan completed";
+        if (job_id) {
+          // Get current job to check if it has stages
+          const currentJob = await PenPal.Jobs.Get(job_id);
+          if (currentJob && currentJob.stages && currentJob.stages.length > 0) {
+            if (stats.scanType.includes("SYN Stealth Scan")) {
+              currentStage = 0; // SYN Scan stage
+            } else if (stats.scanType.includes("Service Scan")) {
+              currentStage = 1; // Service Scan stage
+              // Mark SYN scan as complete if we're in service scan
+              if (currentJob.stages[0] && currentJob.stages[0].progress < 100) {
+                await PenPal.Jobs.UpdateStage(job_id, 0, {
+                  progress: 100,
+                  statusText: "SYN scan completed",
+                });
+              }
+            } else if (stats.scanType.includes("Script Scan")) {
+              currentStage = 2; // Script Scan stage
+              // Mark previous stages as complete
+              if (currentJob.stages[0] && currentJob.stages[0].progress < 100) {
+                await PenPal.Jobs.UpdateStage(job_id, 0, {
+                  progress: 100,
+                  statusText: "SYN scan completed",
+                });
+              }
+              if (currentJob.stages[1] && currentJob.stages[1].progress < 100) {
+                await PenPal.Jobs.UpdateStage(job_id, 1, {
+                  progress: 100,
+                  statusText: "Service scan completed",
+                });
+              }
             }
           }
         }
@@ -281,16 +291,33 @@ export const performScan = async ({
   }
 
   // Mark all stages as complete
-  if (job_stages) {
-    job_stages.forEach((stage, index) => {
-      if (stage.progress < 100) {
-        stage.progress = 100;
-        stage.statusText = `${stage.name} completed`;
+  if (job_id) {
+    const currentJob = await PenPal.Jobs.Get(job_id);
+    if (currentJob && currentJob.stages) {
+      for (let i = 0; i < currentJob.stages.length; i++) {
+        const stage = currentJob.stages[i];
+        if (stage.progress < 100) {
+          await PenPal.Jobs.UpdateStage(job_id, i, {
+            progress: 100,
+            statusText: `${stage.name} completed`,
+            status: "completed",
+          });
+        }
       }
-    });
+    }
   }
 
   await update_job(100.0, "Scan complete", null);
+
+  // Mark the job as completed
+  if (job_id) {
+    await PenPal.Jobs.Update(job_id, {
+      status: "completed",
+      progress: 100.0,
+      statusText: "Scan complete",
+    });
+  }
+
   console.log(`[+] nmap finished: ${container_id}`);
 
   // Read the file at ${output}.xml

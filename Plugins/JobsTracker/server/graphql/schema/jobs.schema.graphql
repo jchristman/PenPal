@@ -13,7 +13,6 @@ type Job {
 }
 
 type JobStage {
-  id: ID!
   name: String!
   plugin: String!
   progress: Float!
@@ -41,7 +40,6 @@ input JobInput {
 }
 
 input JobStageInput {
-  id: ID
   name: String!
   plugin: String!
   progress: Float = 0.0

@@ -23,7 +23,6 @@ export const getJobsByPlugin = async (plugin_name) => {
 export const insertJob = async (job) => {
   const job_with_timestamps = {
     ...job,
-    id: job.id || PenPal.Utils.UUID(),
     created_at: new Date().toISOString(),
     updated_at: new Date().toISOString(),
   };
@@ -37,7 +36,6 @@ export const insertJob = async (job) => {
 export const insertJobs = async (jobs) => {
   const jobs_with_timestamps = jobs.map((job) => ({
     ...job,
-    id: job.id || PenPal.Utils.UUID(),
     created_at: new Date().toISOString(),
     updated_at: new Date().toISOString(),
   }));
@@ -63,18 +61,21 @@ export const updateJob = async (job_id, updates) => {
   );
 };
 
-export const updateJobs = async (updates_array) => {
+export const updateJobs = async (updates_array, update_updated_at = true) => {
   const results = [];
   for (const update of updates_array) {
     const { id, ...updateData } = update;
+    const updated_job = {
+      ...updateData,
+    };
+    if (update_updated_at) {
+      updated_job.updated_at = new Date().toISOString();
+    }
     const result = await PenPal.DataStore.updateOne(
       "JobsTracker",
       "Jobs",
       { id },
-      {
-        ...updateData,
-        updated_at: new Date().toISOString(),
-      }
+      updated_job
     );
     results.push(result);
   }
@@ -94,7 +95,6 @@ export const removeJobs = async (job_ids) => {
 export const upsertJobs = async (jobs) => {
   const jobs_with_timestamps = jobs.map((job) => ({
     ...job,
-    id: job.id || PenPal.Utils.UUID(),
     created_at: job.created_at || new Date().toISOString(),
     updated_at: new Date().toISOString(),
   }));
@@ -102,18 +102,29 @@ export const upsertJobs = async (jobs) => {
   // Since there's no upsertMany in the DataStore API, we'll handle this manually
   const results = [];
   for (const job of jobs_with_timestamps) {
-    const existing = await PenPal.DataStore.fetchOne("JobsTracker", "Jobs", {
-      id: job.id,
-    });
-    if (existing) {
-      const result = await PenPal.DataStore.updateOne(
-        "JobsTracker",
-        "Jobs",
-        { id: job.id },
-        job
-      );
-      results.push(result);
+    if (job.id) {
+      // If job has an ID, try to update existing
+      const existing = await PenPal.DataStore.fetchOne("JobsTracker", "Jobs", {
+        id: job.id,
+      });
+      if (existing) {
+        const result = await PenPal.DataStore.updateOne(
+          "JobsTracker",
+          "Jobs",
+          { id: job.id },
+          job
+        );
+        results.push(result);
+      } else {
+        const result = await PenPal.DataStore.insertMany(
+          "JobsTracker",
+          "Jobs",
+          [job]
+        );
+        results.push(result[0]);
+      }
     } else {
+      // No ID provided, insert new job and let database generate ID
       const result = await PenPal.DataStore.insertMany("JobsTracker", "Jobs", [
         job,
       ]);
@@ -124,16 +135,21 @@ export const upsertJobs = async (jobs) => {
 };
 
 // Stage operations
-export const updateJobStage = async (job_id, stage_id, stage_updates) => {
+export const updateJobStage = async (job_id, stage_index, stage_updates) => {
   const job = await getJob(job_id);
   if (!job) {
     throw new Error(`Job with id ${job_id} not found`);
   }
 
-  const updated_stages =
-    job.stages?.map((stage) =>
-      stage.id === stage_id ? { ...stage, ...stage_updates } : stage
-    ) || [];
+  if (!job.stages || stage_index < 0 || stage_index >= job.stages.length) {
+    throw new Error(`Stage index ${stage_index} not found in job ${job_id}`);
+  }
+
+  const updated_stages = [...job.stages];
+  updated_stages[stage_index] = {
+    ...updated_stages[stage_index],
+    ...stage_updates,
+  };
 
   return await updateJob(job_id, { stages: updated_stages });
 };
@@ -148,4 +164,79 @@ export const getActiveJobs = async () => {
 // Jobs by status
 export const getJobsByStatus = async (status) => {
   return await PenPal.DataStore.fetch("JobsTracker", "Jobs", { status });
+};
+
+// Get jobs with filtering options
+export const getJobsFiltered = async (filterMode = "active") => {
+  const now = new Date();
+
+  switch (filterMode) {
+    case "active":
+      // Only show active jobs and completed jobs from last 10 minutes
+      const tenMinutesAgo = new Date(now.getTime() - 10 * 60 * 1000);
+      return await PenPal.DataStore.fetch("JobsTracker", "Jobs", {
+        $or: [
+          { status: { $nin: ["done", "cancelled", "failed"] } },
+          {
+            $and: [
+              { status: { $in: ["done", "cancelled", "failed"] } },
+              { updated_at: { $gte: tenMinutesAgo.toISOString() } },
+            ],
+          },
+        ],
+      });
+
+    case "recent":
+      // Jobs from the last day
+      const oneDayAgo = new Date(now.getTime() - 24 * 60 * 60 * 1000);
+      return await PenPal.DataStore.fetch("JobsTracker", "Jobs", {
+        created_at: { $gte: oneDayAgo.toISOString() },
+      });
+
+    case "all":
+    default:
+      // All jobs
+      return await PenPal.DataStore.fetch("JobsTracker", "Jobs", {});
+  }
+};
+
+// Cleanup stale jobs
+export const cleanupStaleJobs = async (timeoutMinutes = 5) => {
+  const timeoutMs = timeoutMinutes * 60 * 1000;
+  const cutoffTime = new Date(Date.now() - timeoutMs);
+
+  // Find jobs that haven't been updated in the specified time and are still active
+  const staleJobs = await PenPal.DataStore.fetch("JobsTracker", "Jobs", {
+    $and: [
+      { updated_at: { $lt: cutoffTime.toISOString() } },
+      { progress: { $lt: 100 } },
+      { status: { $nin: ["done", "cancelled", "failed"] } },
+    ],
+  });
+
+  if (staleJobs.length === 0) {
+    return { cancelledCount: 0, jobs: [] };
+  }
+
+  // Update stale jobs to cancelled status
+  const updates = staleJobs.map((job) => ({
+    id: job.id,
+    status: "cancelled",
+    statusText: `Cancelled due to inactivity (no updates for ${timeoutMinutes} minutes)`,
+    //updated_at: new Date().toISOString(), // don't update the updated_at field because that will change the runtime calculation
+  }));
+
+  await updateJobs(updates, false); // don't update the updated_at field because that will change the runtime calculation
+
+  console.log(`[JobsTracker] Cleaned up ${staleJobs.length} stale jobs`);
+
+  return {
+    cancelledCount: staleJobs.length,
+    jobs: staleJobs.map((job) => ({
+      id: job.id,
+      name: job.name,
+      plugin: job.plugin,
+      lastUpdated: job.updated_at,
+    })),
+  };
 };

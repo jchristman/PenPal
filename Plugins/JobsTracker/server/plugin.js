@@ -11,6 +11,8 @@ const settings = {
 };
 
 const JobsTrackerPlugin = {
+  cleanupInterval: null,
+
   async loadPlugin() {
     // Register Jobs API
     PenPal.Jobs = {
@@ -27,12 +29,12 @@ const JobsTrackerPlugin = {
       Remove: API.removeJob,
       RemoveMany: API.removeJobs,
       Upsert: API.upsertJobs,
+      CleanupStale: API.cleanupStaleJobs,
     };
 
     // Helper function to create a job with proper structure
     PenPal.Jobs.Create = async (jobData) => {
       const job = {
-        id: jobData.id || PenPal.Utils.UUID(),
         name: jobData.name,
         plugin: jobData.plugin,
         progress: jobData.progress || 0.0,
@@ -40,7 +42,6 @@ const JobsTrackerPlugin = {
         status: jobData.status || "pending",
         stages:
           jobData.stages?.map((stage) => ({
-            id: stage.id || PenPal.Utils.UUID(),
             name: stage.name,
             plugin: stage.plugin || jobData.plugin,
             progress: stage.progress || 0.0,
@@ -122,6 +123,9 @@ const JobsTrackerPlugin = {
       return await API.updateJob(jobId, updates);
     };
 
+    // Start automatic cleanup of stale jobs
+    this.startCleanupTimer();
+
     const types = await loadGraphQLFiles();
 
     return {
@@ -131,6 +135,36 @@ const JobsTrackerPlugin = {
       },
       settings,
     };
+  },
+
+  startCleanupTimer() {
+    // Clear any existing interval
+    if (this.cleanupInterval) {
+      clearInterval(this.cleanupInterval);
+    }
+
+    // Set up periodic cleanup every 5 minutes
+    const cleanupIntervalMs = 5 * 60 * 1000; // 5 minutes
+
+    console.log(
+      "[JobsTracker] Starting automatic job cleanup (every 5 minutes)"
+    );
+
+    this.cleanupInterval = setInterval(async () => {
+      try {
+        await API.cleanupStaleJobs(5); // Clean up jobs older than 5 minutes
+      } catch (error) {
+        console.error("[JobsTracker] Error during automatic cleanup:", error);
+      }
+    }, cleanupIntervalMs);
+  },
+
+  stopCleanupTimer() {
+    if (this.cleanupInterval) {
+      clearInterval(this.cleanupInterval);
+      this.cleanupInterval = null;
+      console.log("[JobsTracker] Stopped automatic job cleanup");
+    }
   },
 };
 

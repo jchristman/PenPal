@@ -30,82 +30,47 @@ export const settings = {
 // push and pop out of this work queue for if a job is running. To be implemented
 export const work_queue = [];
 
-// this variable is passed by reference to PenPal
-export const jobs = [];
-
 const start_detailed_hosts_scan = async ({ project, host_ids }) => {
-  const job = {
-    id: jobs.length,
+  // Create job using the centralized Jobs API
+  const job = await PenPal.Jobs.Create({
     name: `Detailed Host Scan for ${host_ids.length} hosts in ${project}`,
     plugin: "Nmap",
     progress: 0.0,
     statusText: "Beginning detailed host scan...",
+    project_id: project,
     stages: [
       {
-        id: `${jobs.length}-syn`,
         name: "SYN Stealth Scan",
         plugin: "Nmap",
         progress: 0.0,
         statusText: "Preparing SYN scan...",
+        order: 0,
       },
       {
-        id: `${jobs.length}-service`,
         name: "Service Scan",
         plugin: "Nmap",
         progress: 0.0,
         statusText: "Waiting for SYN scan completion",
+        order: 1,
       },
       {
-        id: `${jobs.length}-script`,
         name: "Script Scan",
         plugin: "Nmap",
         progress: 0.0,
         statusText: "Waiting for Service Scan completion",
+        order: 2,
       },
     ],
-  };
-  // insert the job at index initial_job.id
-  jobs.splice(job.id, 0, job);
+  });
+
   const update_job = async (progress, statusText, currentStage = null) => {
-    job.statusText = statusText;
-
-    // Update current stage progress if specified
-    if (currentStage !== null && job.stages[currentStage]) {
-      job.stages[currentStage].progress = progress;
-      job.stages[currentStage].statusText = statusText;
-    }
-
-    // Calculate overall job progress based on completed stages
-    const totalStages = job.stages.length;
-    let completedStages = 0;
-    let activeStageProgress = 0;
-    let activeStageIndex = -1;
-
-    // Count completed stages and find active stage
-    for (let i = 0; i < job.stages.length; i++) {
-      if (job.stages[i].progress >= 100) {
-        completedStages++;
-      } else if (job.stages[i].progress > 0) {
-        activeStageIndex = i;
-        activeStageProgress = job.stages[i].progress;
-        break; // First non-complete stage with progress is the active one
-      }
-    }
-
-    // If no stage has progress yet but we have a current stage specified, use that
-    if (activeStageIndex === -1 && currentStage !== null && currentStage >= 0) {
-      activeStageIndex = currentStage;
-      activeStageProgress = progress;
-    }
-
-    // Calculate overall progress: each completed stage contributes equal weight
-    // Plus partial progress from the currently active stage
-    const stageWeight = 100 / totalStages; // ~33.33% per stage for 3 stages
-    const baseProgress = completedStages * stageWeight;
-    const currentStageContribution =
-      activeStageIndex >= 0 ? (activeStageProgress / 100) * stageWeight : 0;
-
-    job.progress = Math.min(100, baseProgress + currentStageContribution);
+    // Use the centralized Jobs API to update progress
+    await PenPal.Jobs.UpdateProgress(
+      job.id,
+      progress,
+      statusText,
+      currentStage
+    );
   };
 
   const hosts = (await PenPal.API.Hosts.GetMany(host_ids)) ?? [];
@@ -115,25 +80,28 @@ const start_detailed_hosts_scan = async ({ project, host_ids }) => {
       project_id: project,
       ips,
       update_job,
-      job_stages: job.stages,
+      job_id: job.id,
       ...settings.scan_configurations.detailed,
     });
   }
 };
 
 const start_initial_networks_scan = async ({ project, network_ids }) => {
-  const job = {
-    id: jobs.length,
+  // Create job using the centralized Jobs API
+  const job = await PenPal.Jobs.Create({
     name: `Initial Network Scan for ${project}: ${network_ids}`,
     plugin: "Nmap",
     progress: 0.0,
     statusText: "Beginning network scan...",
-  };
-  // insert the job at index initial_job.id
-  jobs.splice(job.id, 0, job);
+    project_id: project,
+  });
+
   const update_job = async (progress, statusText) => {
-    job.progress = progress;
-    job.statusText = statusText;
+    // Use the centralized Jobs API to update progress
+    await PenPal.Jobs.Update(job.id, {
+      progress,
+      statusText,
+    });
   };
 
   console.log("Nmap: New Networks:", network_ids);
@@ -149,7 +117,7 @@ const start_initial_networks_scan = async ({ project, network_ids }) => {
         project_id: project,
         networks: [network],
         update_job,
-        job_stages: null,
+        job_id: job.id,
         ...settings.scan_configurations.fast,
       });
     }
@@ -176,7 +144,6 @@ const NmapPlugin = {
         resolvers,
       },
       settings,
-      jobs,
     };
   },
 };

@@ -4,6 +4,12 @@ import { Components, registerComponent } from "@penpal/core";
 import { makeStyles } from "@mui/styles";
 
 import GetAllJobs from "./queries/get-all-jobs.js";
+import {
+  formatRuntime,
+  formatRelativeTime,
+  isJobStale,
+  formatCompletionTime,
+} from "../../utils/time-utils.js";
 
 const useStyles = makeStyles((theme) => ({
   jobsPage: {
@@ -47,6 +53,57 @@ const useStyles = makeStyles((theme) => ({
     marginBottom: 24,
     paddingBottom: 16,
     borderBottom: "2px solid #e1e5e9",
+  },
+  filterControls: {
+    display: "flex",
+    gap: 8,
+    alignItems: "center",
+    marginBottom: 16,
+  },
+  filterButton: {
+    padding: "8px 16px",
+    border: "1px solid #e1e5e9",
+    borderRadius: 6,
+    background: "white",
+    cursor: "pointer",
+    fontSize: 13,
+    fontWeight: 500,
+    transition: "all 0.2s ease",
+    "&:hover": {
+      background: "#f8f9fa",
+      borderColor: "#dee2e6",
+    },
+  },
+  filterButtonActive: {
+    background: "#3498db",
+    color: "white",
+    borderColor: "#3498db",
+    "&:hover": {
+      background: "#2980b9",
+      borderColor: "#2980b9",
+    },
+  },
+  toggleControl: {
+    display: "flex",
+    alignItems: "center",
+    gap: 8,
+    padding: "8px 12px",
+    border: "1px solid #e1e5e9",
+    borderRadius: 6,
+    background: "white",
+    fontSize: 13,
+    fontWeight: 500,
+    transition: "all 0.2s ease",
+    cursor: "pointer",
+    "&:hover": {
+      background: "#f8f9fa",
+      borderColor: "#dee2e6",
+    },
+  },
+  toggleCheckbox: {
+    width: 14,
+    height: 14,
+    cursor: "pointer",
   },
   jobsHeaderTitle: {
     margin: 0,
@@ -158,6 +215,71 @@ const useStyles = makeStyles((theme) => ({
     alignItems: "center",
     gap: 8,
   },
+  jobRuntime: {
+    fontSize: 11,
+    color: "#6c757d",
+    background: "#f8f9fa",
+    padding: "2px 6px",
+    borderRadius: 4,
+    fontFamily: "'Monaco', 'Menlo', monospace",
+  },
+  jobCompletionTime: {
+    fontSize: 11,
+    color: "#6c757d",
+    background: "#e9ecef",
+    padding: "2px 6px",
+    borderRadius: 4,
+    fontFamily: "'Monaco', 'Menlo', monospace",
+  },
+  paginationControls: {
+    display: "flex",
+    justifyContent: "center",
+    alignItems: "center",
+    gap: 12,
+    margin: "20px 0",
+    padding: 16,
+    background: "#f8f9fa",
+    borderRadius: 8,
+  },
+  paginationButton: {
+    padding: "6px 12px",
+    border: "1px solid #e1e5e9",
+    borderRadius: 4,
+    background: "white",
+    cursor: "pointer",
+    fontSize: 12,
+    fontWeight: 500,
+    "&:hover": {
+      background: "#f8f9fa",
+    },
+    "&:disabled": {
+      opacity: 0.5,
+      cursor: "not-allowed",
+    },
+  },
+  paginationInfo: {
+    fontSize: 12,
+    color: "#6c757d",
+  },
+  expandedJobRow: {
+    background: "white",
+    borderRadius: 8,
+    border: "1px solid #e1e5e9",
+    marginBottom: 12,
+    overflow: "hidden",
+  },
+  expandedJobHeader: {
+    padding: 12,
+    background: "#f8f9fa",
+    borderBottom: "1px solid #e1e5e9",
+    cursor: "pointer",
+    display: "flex",
+    justifyContent: "space-between",
+    alignItems: "center",
+  },
+  expandedJobContent: {
+    padding: 16,
+  },
   stagesToggle: {
     background: "#f8f9fa",
     border: "1px solid #e1e5e9",
@@ -201,8 +323,26 @@ const useStyles = makeStyles((theme) => ({
     background: "#d4edda",
     color: "#155724",
   },
+  jobStatusCancelled: {
+    background: "#f8d7da",
+    color: "#721c24",
+  },
   progressContainer: {
     marginBottom: 12,
+  },
+  progressFooter: {
+    display: "flex",
+    justifyContent: "space-between",
+    alignItems: "center",
+    marginTop: 8,
+  },
+  completionLabel: {
+    fontSize: 11,
+    color: "#6c757d",
+    background: "#e9ecef",
+    padding: "2px 6px",
+    borderRadius: 4,
+    fontFamily: "'Monaco', 'Menlo', monospace",
   },
   progressBar: {
     width: "100%",
@@ -221,6 +361,9 @@ const useStyles = makeStyles((theme) => ({
   },
   progressFillComplete: {
     background: "linear-gradient(90deg, #27ae60, #229954)",
+  },
+  progressFillCancelled: {
+    background: "linear-gradient(90deg, #dc3545, #c82333)",
   },
   jobStatusText: {
     fontSize: 12,
@@ -306,6 +449,10 @@ const useStyles = makeStyles((theme) => ({
       marginLeft: 4,
     },
   },
+  stageStatusCancelled: {
+    background: "#f8d7da",
+    color: "#721c24",
+  },
   stageProgressContainer: {
     marginBottom: 8,
   },
@@ -329,6 +476,9 @@ const useStyles = makeStyles((theme) => ({
   },
   stageProgressFillActive: {
     background: "linear-gradient(90deg, #007acc, #0066b3)",
+  },
+  stageProgressFillCancelled: {
+    background: "linear-gradient(90deg, #dc3545, #c82333)",
   },
   stageCardActive: {
     background: "#f8fcff",
@@ -413,22 +563,25 @@ const findActiveStageIndex = (stages) => {
   return -1;
 };
 
-const StageCard = ({ stage, index, isActive }) => {
+const StageCard = ({ stage, index, isActive, jobStatus }) => {
   const classes = useStyles();
   const progressPercentage = Math.round(stage.progress);
   const isComplete = progressPercentage >= 100;
+  const isCancelled = jobStatus === "cancelled";
 
   // Determine the status style based on completion and active state
   const getStatusClass = () => {
+    if (isCancelled) return classes.stageStatusCancelled;
     if (isComplete) return classes.stageStatusComplete;
-    if (isActive) return classes.stageStatusActive;
+    if (isActive && !isCancelled) return classes.stageStatusActive;
     return classes.stageStatusRunning;
   };
 
   // Determine the progress fill style
   const getProgressFillClass = () => {
+    if (isCancelled) return classes.stageProgressFillCancelled;
     if (isComplete) return classes.stageProgressFillComplete;
-    if (isActive) return classes.stageProgressFillActive;
+    if (isActive && !isCancelled) return classes.stageProgressFillActive;
     return classes.stageProgressFillRunning;
   };
 
@@ -438,7 +591,7 @@ const StageCard = ({ stage, index, isActive }) => {
         isActive ? classes.stageCardActive : ""
       }`}
     >
-      {isActive && (
+      {isActive && !isCancelled && (
         <div className={classes.activeStageIndicator}>
           Currently Active Stage
         </div>
@@ -471,10 +624,17 @@ const JobCard = ({ job }) => {
   const [stagesCollapsed, setStagesCollapsed] = useState(false);
   const progressPercentage = Math.round(job.progress);
   const isComplete = progressPercentage >= 100;
+  const isCancelled = job.status === "cancelled";
+  const isFinished =
+    isComplete ||
+    isCancelled ||
+    job.status === "done" ||
+    job.status === "failed";
   const hasStages = job.stages && job.stages.length > 0;
 
-  // Determine which stage is currently active
-  const activeStageIndex = hasStages ? findActiveStageIndex(job.stages) : -1;
+  // Determine which stage is currently active (only if job is not cancelled)
+  const activeStageIndex =
+    hasStages && !isCancelled ? findActiveStageIndex(job.stages) : -1;
   const activeStage =
     activeStageIndex >= 0 ? job.stages[activeStageIndex] : null;
 
@@ -483,6 +643,16 @@ const JobCard = ({ job }) => {
       <div className={classes.jobHeader}>
         <h4 className={classes.jobName}>{job.name}</h4>
         <div className={classes.jobHeaderControls}>
+          <span
+            className={classes.jobRuntime}
+            title={`Started: ${new Date(
+              job.created_at
+            ).toLocaleString()}\nLast updated: ${new Date(
+              job.updated_at
+            ).toLocaleString()}`}
+          >
+            {formatRuntime(job.created_at, job.updated_at)}
+          </span>
           {hasStages && (
             <button
               className={classes.stagesToggle}
@@ -503,7 +673,11 @@ const JobCard = ({ job }) => {
           )}
           <span
             className={`${classes.jobStatus} ${
-              isComplete ? classes.jobStatusComplete : classes.jobStatusRunning
+              isCancelled
+                ? classes.jobStatusCancelled
+                : isComplete
+                ? classes.jobStatusComplete
+                : classes.jobStatusRunning
             }`}
           >
             {progressPercentage}%
@@ -515,22 +689,36 @@ const JobCard = ({ job }) => {
         <div className={classes.progressBar}>
           <div
             className={`${classes.progressFill} ${
-              isComplete
+              isCancelled
+                ? classes.progressFillCancelled
+                : isComplete
                 ? classes.progressFillComplete
                 : classes.progressFillRunning
             }`}
             style={{ width: `${progressPercentage}%` }}
           />
         </div>
-      </div>
-
-      <div className={classes.jobStatusText}>
-        {job.statusText}
-        {activeStage && !isComplete && (
-          <div style={{ marginTop: 8, fontWeight: 500, color: "#007acc" }}>
-            Currently running: {activeStage.name}
+        <div className={classes.progressFooter}>
+          <div className={classes.jobStatusText}>
+            {job.statusText}
+            {activeStage && !isComplete && !isCancelled && (
+              <div style={{ marginTop: 4, fontWeight: 500, color: "#007acc" }}>
+                Currently running: {activeStage.name}
+              </div>
+            )}
           </div>
-        )}
+          {isFinished && (
+            <span
+              className={classes.completionLabel}
+              title={`${isCancelled ? "Cancelled" : "Completed"}: ${new Date(
+                job.updated_at
+              ).toLocaleString()}`}
+            >
+              {isCancelled ? "Cancelled at" : "Completed at"}{" "}
+              {formatCompletionTime(job.updated_at)}
+            </span>
+          )}
+        </div>
       </div>
 
       {hasStages && !stagesCollapsed && (
@@ -542,6 +730,7 @@ const JobCard = ({ job }) => {
                 stage={stage}
                 index={index}
                 isActive={index === activeStageIndex}
+                jobStatus={job.status}
               />
             ))}
           </div>
@@ -580,11 +769,75 @@ const PluginSection = ({ plugin, jobs }) => {
   );
 };
 
+const ExpandedJobRow = ({ job, isExpanded, onToggle }) => {
+  const classes = useStyles();
+  const progressPercentage = Math.round(job.progress);
+  const isComplete = progressPercentage >= 100;
+  const isCancelled = job.status === "cancelled";
+  const isFinished =
+    isComplete ||
+    isCancelled ||
+    job.status === "done" ||
+    job.status === "failed";
+
+  return (
+    <div className={classes.expandedJobRow}>
+      <div className={classes.expandedJobHeader} onClick={onToggle}>
+        <div style={{ display: "flex", alignItems: "center", gap: 12 }}>
+          <span style={{ fontSize: 11, color: "#6c757d" }}>{job.plugin}</span>
+          <span style={{ fontWeight: 500 }}>{job.name}</span>
+          <span className={classes.jobRuntime}>
+            {formatRuntime(job.created_at, job.updated_at)}
+          </span>
+        </div>
+        <div style={{ display: "flex", alignItems: "center", gap: 8 }}>
+          <span style={{ fontSize: 12, color: "#6c757d" }}>
+            {Math.round(job.progress)}%
+          </span>
+          <span style={{ fontSize: 12 }}>{isExpanded ? "▼" : "▶"}</span>
+        </div>
+      </div>
+      {isExpanded && (
+        <div className={classes.expandedJobContent}>
+          <JobCard job={job} />
+        </div>
+      )}
+    </div>
+  );
+};
+
 const JobsPage = () => {
   const classes = useStyles();
+  const [filterMode, setFilterMode] = useState("active");
+  const [currentPage, setCurrentPage] = useState(0);
+  const [expandedJobs, setExpandedJobs] = useState(new Set());
+  const [hideCancelled, setHideCancelled] = useState(false);
+  const pageSize = 20;
+
   const { loading, error, data } = useQuery(GetAllJobs, {
+    variables: {
+      limit: filterMode === "all" ? pageSize : 1000,
+      offset: filterMode === "all" ? currentPage * pageSize : 0,
+      filterMode: filterMode,
+    },
     pollInterval: 500,
   });
+
+  const toggleJobExpansion = (jobId) => {
+    const newExpanded = new Set(expandedJobs);
+    if (newExpanded.has(jobId)) {
+      newExpanded.delete(jobId);
+    } else {
+      newExpanded.add(jobId);
+    }
+    setExpandedJobs(newExpanded);
+  };
+
+  const handleFilterChange = (newFilter) => {
+    setFilterMode(newFilter);
+    setCurrentPage(0);
+    setExpandedJobs(new Set());
+  };
 
   if (loading) {
     return (
@@ -604,9 +857,108 @@ const JobsPage = () => {
     );
   }
 
-  const jobs = data?.getAllJobs?.jobs || [];
+  const allJobs = data?.getAllJobs?.jobs || [];
+  const totalCount = data?.getAllJobs?.totalCount || 0;
+  const hasMore = data?.getAllJobs?.hasMore || false;
 
-  // Group jobs by plugin
+  // Filter out cancelled jobs if toggle is enabled
+  const jobs = hideCancelled
+    ? allJobs.filter((job) => job.status !== "cancelled")
+    : allJobs;
+
+  // For "all" mode, show paginated table
+  if (filterMode === "all") {
+    const totalPages = Math.ceil(totalCount / pageSize);
+    const canGoNext = hasMore;
+    const canGoPrev = currentPage > 0;
+
+    return (
+      <div className={classes.jobsPage}>
+        <div className={classes.jobsHeader}>
+          <h2 className={classes.jobsHeaderTitle}>Plugin Jobs</h2>
+          <div className={classes.jobsSummary}>
+            <span className={classes.noActiveJobs}>
+              {totalCount} total job{totalCount !== 1 ? "s" : ""}
+            </span>
+          </div>
+        </div>
+
+        <div className={classes.filterControls}>
+          <button
+            className={`${classes.filterButton} ${
+              filterMode === "active" ? classes.filterButtonActive : ""
+            }`}
+            onClick={() => handleFilterChange("active")}
+          >
+            Show Active Jobs
+          </button>
+          <button
+            className={`${classes.filterButton} ${
+              filterMode === "recent" ? classes.filterButtonActive : ""
+            }`}
+            onClick={() => handleFilterChange("recent")}
+          >
+            Show Recent Jobs (24h)
+          </button>
+          <button
+            className={`${classes.filterButton} ${
+              filterMode === "all" ? classes.filterButtonActive : ""
+            }`}
+            onClick={() => handleFilterChange("all")}
+          >
+            Show All Jobs
+          </button>
+          <label className={classes.toggleControl}>
+            <input
+              type="checkbox"
+              className={classes.toggleCheckbox}
+              checked={hideCancelled}
+              onChange={(e) => setHideCancelled(e.target.checked)}
+            />
+            Hide Cancelled Jobs
+          </label>
+        </div>
+
+        <div style={{ marginBottom: 16 }}>
+          {jobs.map((job) => (
+            <ExpandedJobRow
+              key={job.id}
+              job={job}
+              isExpanded={expandedJobs.has(job.id)}
+              onToggle={() => toggleJobExpansion(job.id)}
+            />
+          ))}
+          {jobs.length === 0 && (
+            <div className={classes.noJobs}>No jobs found</div>
+          )}
+        </div>
+
+        {totalCount > pageSize && (
+          <div className={classes.paginationControls}>
+            <button
+              className={classes.paginationButton}
+              onClick={() => setCurrentPage(currentPage - 1)}
+              disabled={!canGoPrev}
+            >
+              Previous
+            </button>
+            <span className={classes.paginationInfo}>
+              Page {currentPage + 1} of {totalPages} ({totalCount} total jobs)
+            </span>
+            <button
+              className={classes.paginationButton}
+              onClick={() => setCurrentPage(currentPage + 1)}
+              disabled={!canGoNext}
+            >
+              Next
+            </button>
+          </div>
+        )}
+      </div>
+    );
+  }
+
+  // For "active" and "recent" modes, show grouped by plugin
   const jobsByPlugin = jobs.reduce((acc, job) => {
     const plugin = job.plugin || "Unknown";
     if (!acc[plugin]) {
@@ -620,8 +972,14 @@ const JobsPage = () => {
     (plugin) => jobsByPlugin[plugin].length > 0
   );
 
-  const totalJobs = jobs.length;
-  const activeJobs = jobs.filter((job) => job.progress < 100);
+  // Calculate truly active jobs from all jobs (not filtered display jobs)
+  const activeJobs = allJobs.filter(
+    (job) =>
+      job.progress < 100 &&
+      job.status !== "cancelled" &&
+      job.status !== "done" &&
+      job.status !== "failed"
+  );
 
   return (
     <div className={classes.jobsPage}>
@@ -637,6 +995,42 @@ const JobsPage = () => {
             <span className={classes.noActiveJobs}>No active jobs</span>
           )}
         </div>
+      </div>
+
+      <div className={classes.filterControls}>
+        <button
+          className={`${classes.filterButton} ${
+            filterMode === "active" ? classes.filterButtonActive : ""
+          }`}
+          onClick={() => handleFilterChange("active")}
+        >
+          Show Active Jobs
+        </button>
+        <button
+          className={`${classes.filterButton} ${
+            filterMode === "recent" ? classes.filterButtonActive : ""
+          }`}
+          onClick={() => handleFilterChange("recent")}
+        >
+          Show Recent Jobs (24h)
+        </button>
+        <button
+          className={`${classes.filterButton} ${
+            filterMode === "all" ? classes.filterButtonActive : ""
+          }`}
+          onClick={() => handleFilterChange("all")}
+        >
+          Show All Jobs
+        </button>
+        <label className={classes.toggleControl}>
+          <input
+            type="checkbox"
+            className={classes.toggleCheckbox}
+            checked={hideCancelled}
+            onChange={(e) => setHideCancelled(e.target.checked)}
+          />
+          Hide Cancelled Jobs
+        </label>
       </div>
 
       <div className={classes.pluginsContainer}>

@@ -1,8 +1,8 @@
 import { gql } from "@apollo/client";
 
 const GET_ALL_JOBS = gql`
-  query GetAllJobs {
-    getAllJobs {
+  query GetAllJobs($limit: Int, $offset: Int, $filterMode: String) {
+    getAllJobs(limit: $limit, offset: $offset, filterMode: $filterMode) {
       jobs {
         id
         name
@@ -11,7 +11,6 @@ const GET_ALL_JOBS = gql`
         statusText
         status
         stages {
-          id
           name
           plugin
           progress

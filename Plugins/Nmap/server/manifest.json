@@ -1,5 +1,5 @@
 {
   "name": "Nmap",
   "version": "0.1.0",
-  "dependsOn": ["CoreAPI@0.1.0", "Docker@0.1.0"]
+  "dependsOn": ["CoreAPI@0.1.0", "Docker@0.1.0", "JobsTracker@0.1.0"]
 }

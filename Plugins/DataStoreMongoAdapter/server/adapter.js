@@ -302,19 +302,35 @@ MongoAdapter.insertMany = async (plugin_name, store_name, data = []) => {
 };
 
 MongoAdapter.updateOne = async (plugin_name, store_name, selector, data) => {
+  // MongoDB requires atomic operators for updates. If data doesn't contain operators, wrap in $set
+  const updateDoc =
+    data &&
+    typeof data === "object" &&
+    !Object.keys(data).some((key) => key.startsWith("$"))
+      ? { $set: data }
+      : data;
+
   return normalize_result(
     await get_collection(plugin_name, store_name).updateOne(
       normalize_data(selector),
-      data
+      updateDoc
     )
   );
 };
 
 MongoAdapter.updateMany = async (plugin_name, store_name, selector, data) => {
+  // MongoDB requires atomic operators for updates. If data doesn't contain operators, wrap in $set
+  const updateDoc =
+    data &&
+    typeof data === "object" &&
+    !Object.keys(data).some((key) => key.startsWith("$"))
+      ? { $set: data }
+      : data;
+
   return normalize_result(
     await get_collection(plugin_name, store_name).updateMany(
       normalize_data(selector),
-      data
+      updateDoc
     )
   );
 };

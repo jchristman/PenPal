@@ -9,5 +9,6 @@ extend type Query {
     offset: Int = 0
     plugin: String
     status: String
+    filterMode: String = "active"
   ): JobsConnection!
 }
