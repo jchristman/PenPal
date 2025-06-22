@@ -71,7 +71,7 @@ export const parseAndUpsertResults = async (project_id, xml_data) => {
   console.log(`[+] Found ${hosts.length} hosts`);
   for (let host of hosts) {
     console.log(`[+] Processing host: ${host.address[0].$.addr}`);
-    console.log(JSON.stringify(host, null, 2));
+    //console.log(JSON.stringify(host, null, 2));
     const ip = host.address[0].$.addr;
     const hostname = host.hostnames?.[0]?.hostname?.[0]?.$?.name ?? null;
     console.log("Hostname:", hostname);
