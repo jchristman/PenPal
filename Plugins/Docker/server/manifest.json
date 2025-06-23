@@ -1,5 +1,5 @@
 {
-    "name": "Docker",
-    "version": "0.1.0",
-    "dependsOn": []
+  "name": "Docker",
+  "version": "0.1.0",
+  "dependsOn": ["JobsTracker@0.1.0"]
 }

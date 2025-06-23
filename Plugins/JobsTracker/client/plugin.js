@@ -3,7 +3,9 @@ import registerRoutes from "./routes.js";
 
 const JobsTrackerPlugin = {
   loadPlugin() {
-    return { registerRoutes };
+    return {
+      registerRoutes,
+    };
   },
 };
 

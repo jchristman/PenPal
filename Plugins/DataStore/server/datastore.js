@@ -1,3 +1,4 @@
+import PenPal from "#penpal/core";
 import FlakeId from "flake-idgen";
 import intformat from "biguint-format";
 import _ from "lodash";
@@ -5,6 +6,7 @@ import _ from "lodash";
 const DataStore = {};
 DataStore._Adapters = []; // Meant to be internal, so don't make it obviously accessible. Maybe make this a real class at some point?
 DataStore._ID = { Generator: new FlakeId() };
+DataStore._AdaptersReady = false; // Track adapter readiness state
 DataStore._Analytics = {
   RegisterAdapter: 0,
   GetAdapter: 0,
@@ -25,7 +27,12 @@ DataStore._Analytics = {
 
 DataStore.RegisterAdapter = (AdapterName, Adapter) => {
   DataStore._Analytics.RegisterAdapter += 1;
-  return DataStore._Adapters.push({ AdapterName, Adapter });
+  const result = DataStore._Adapters.push({ AdapterName, Adapter });
+
+  // Check if all expected adapters are ready
+  DataStore._checkAdaptersReady();
+
+  return result;
 };
 
 DataStore.GetAdapter = (AdapterName) => {
@@ -38,17 +45,62 @@ DataStore.GetAdapter = (AdapterName) => {
   );
 };
 
+// Check if adapters are ready and connected
+DataStore._checkAdaptersReady = async () => {
+  if (DataStore._Adapters.length === 0) {
+    DataStore._AdaptersReady = false;
+    return;
+  }
+
+  try {
+    // Test if adapters are actually ready by attempting a simple operation
+    for (const { AdapterName, Adapter } of DataStore._Adapters) {
+      if (!Adapter.isReady || !(await Adapter.isReady())) {
+        DataStore._AdaptersReady = false;
+        return;
+      }
+    }
+    DataStore._AdaptersReady = true;
+    console.log(`[+] DataStore adapters are ready`);
+  } catch (error) {
+    DataStore._AdaptersReady = false;
+  }
+};
+
+// Public function to check if adapters are ready
+DataStore.AdaptersReady = () => {
+  return DataStore._AdaptersReady;
+};
+
+// Function to mark adapters as ready (called by adapters when they're connected)
+DataStore.SetAdaptersReady = (ready = true) => {
+  DataStore._AdaptersReady = ready;
+  if (ready) {
+    console.log(`[+] DataStore adapters marked as ready`);
+  }
+};
+
 // -----------------------------------------------------------------------
 // DataStore creation/deletion functions
 
 DataStore.CreateStore = async (plugin_name, store_name) => {
-  DataStore._Analytics.CreateStore += 1;
-  return await Promise.all(
-    DataStore._Adapters.map(async ({ AdapterName, Adapter }) => ({
-      AdapterName,
-      result: (await Adapter.CreateStore?.(plugin_name, store_name)) ?? null,
-    }))
-  );
+  if (DataStore._AdaptersReady) {
+    DataStore._Analytics.CreateStore += 1;
+    return await Promise.all(
+      DataStore._Adapters.map(async ({ AdapterName, Adapter }) => ({
+        AdapterName,
+        result: (await Adapter.CreateStore?.(plugin_name, store_name)) ?? null,
+      }))
+    );
+  } else {
+    while (!DataStore._AdaptersReady) {
+      await PenPal.Utils.Sleep(1000);
+    }
+    console.log(
+      `[.] DataStore adapters are ready, creating store ${store_name}`
+    );
+    return DataStore.CreateStore(plugin_name, store_name);
+  }
 };
 
 DataStore.CreateStores = async (plugin_name, stores = []) => {

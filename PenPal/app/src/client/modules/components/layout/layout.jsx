@@ -20,6 +20,7 @@ import Divider from "@mui/material/Divider";
 import IconButton from "@mui/material/IconButton";
 import MenuIcon from "@mui/icons-material/Menu";
 import ChevronLeftIcon from "@mui/icons-material/ChevronLeft";
+import Box from "@mui/material/Box";
 
 import useMediaQuery from "@mui/material/useMediaQuery";
 import { Link } from "react-router-dom";
@@ -279,17 +280,28 @@ const Layout = () => {
             if (route === null) return <Divider key={index} />;
             if (route.prettyName === undefined) return null;
             const { icon: Icon } = route;
+            const isJobsRoute = route.name === "jobs";
             return (
               <ListItem
                 button
                 component={Link}
                 to={route.path}
                 key={route.name}
+                sx={{
+                  display: "flex",
+                  alignItems: "center",
+                  justifyContent: "space-between",
+                }}
               >
-                <ListItemIcon>
-                  <Icon />
-                </ListItemIcon>
-                <ListItemText primary={route.prettyName} />
+                <Box sx={{ display: "flex", alignItems: "center" }}>
+                  <ListItemIcon>
+                    <Icon />
+                  </ListItemIcon>
+                  <ListItemText primary={route.prettyName} />
+                </Box>
+                {isJobsRoute && Components.JobsCounter && (
+                  <Components.JobsCounter compact />
+                )}
               </ListItem>
             );
           })}

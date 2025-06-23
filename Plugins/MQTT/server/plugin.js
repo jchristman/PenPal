@@ -15,10 +15,7 @@ class MQTTClient {
       try {
         this.client = await MQTT.connectAsync("mqtt://penpal-mqtt");
       } catch (e) {
-        console.error(
-          "MQTT: Failed to connect, trying again in 5 seconds",
-          e.stack
-        );
+        console.error("MQTT: Failed to connect, trying again in 5 seconds");
         retries++;
         await PenPal.Utils.Sleep(5000);
       }
@@ -61,7 +58,22 @@ class MQTTClient {
       let tmp = JSON.parse(data);
       data = tmp;
     } catch (e) {}
-    await this.subscriptions[topic]?.(data, topic);
+
+    // Safely execute plugin subscription callbacks with error isolation
+    if (this.subscriptions[topic]) {
+      try {
+        await this.subscriptions[topic](data, topic);
+      } catch (error) {
+        console.error(
+          `[MQTT] Plugin error handling message on topic "${topic}":`,
+          error.message
+        );
+        console.error(`[MQTT] Stack trace:`, error.stack);
+        console.error(`[MQTT] Message data:`, JSON.stringify(data, null, 2));
+        console.error(`[MQTT] Continuing to process other messages...`);
+        // Don't re-throw the error - isolate plugin failures from MQTT system
+      }
+    }
   }
 }
 

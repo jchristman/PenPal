@@ -341,6 +341,21 @@ MongoAdapter.delete = async (plugin_name, store_name, selector) => {
   );
 };
 
+// Check if the MongoDB adapter is ready and connected
+MongoAdapter.isReady = async () => {
+  try {
+    if (!MongoAdapter.client) {
+      return false;
+    }
+    // Test the connection with a ping
+    await MongoAdapter.client.db("admin").command({ ping: 1 });
+    return true;
+  } catch (error) {
+    console.error("[!] MongoDB adapter not ready:", error.message);
+    return false;
+  }
+};
+
 // -----------------------------------------------------------------------
 
 export default MongoAdapter;

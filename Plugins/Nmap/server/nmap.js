@@ -74,7 +74,6 @@ export const parseAndUpsertResults = async (project_id, xml_data) => {
     //console.log(JSON.stringify(host, null, 2));
     const ip = host.address[0].$.addr;
     const hostname = host.hostnames?.[0]?.hostname?.[0]?.$?.name ?? null;
-    console.log("Hostname:", hostname);
     const closed =
       host.ports?.[0].extraports.find(
         (extra_port) => extra_port.$.state === "closed"
@@ -217,6 +216,12 @@ export const performScan = async ({
     : `--stats-every 1 -v --min-rate=150 --max-retries=2 --initial-rtt-timeout=50ms --max-rtt-timeout=200ms --max-scan-delay=5s -Pn -sS -sV -sU ${ports} ${output} ${targets}`;
 
   console.log(`[+] Running nmap ${nmap_command}`);
+
+  // Check if Docker image is ready before running
+  await PenPal.Docker.WaitForImageReady(settings.docker.name, {
+    updateCallback: (progress, message) => update_job(progress, message, null),
+    updateMessage: "Waiting for Nmap Docker image to build...",
+  });
 
   // docker run
   let result = await PenPal.Docker.Run({

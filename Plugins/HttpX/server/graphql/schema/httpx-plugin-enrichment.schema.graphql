@@ -1,0 +1,39 @@
+# File: httpx-plugin-enrichment.schema.graphql
+"""
+Extra fields for HttpX services enrichment
+
+url: The full URL that was discovered
+status_code: HTTP status code response
+content_type: Content-Type header from response
+content_length: Content-Length from response
+title: HTML title of the page
+server: Server header from response
+tech: Technology stack detected
+method: HTTP method used
+scheme: HTTP or HTTPS
+path: URL path component
+"""
+type HttpXPluginEnrichment implements PluginEnrichment {
+  "This allows the type resolver to determine if the PluginEnrichment"
+  plugin_name: String!
+  "The discovered URL"
+  url: String
+  "HTTP status code"
+  status_code: Int
+  "Content type of the response"
+  content_type: String
+  "Content length of the response"
+  content_length: Int
+  "HTML title of the page"
+  title: String
+  "Server header information"
+  server: String
+  "Detected technology stack"
+  tech: [String]
+  "HTTP method used"
+  method: String
+  "Protocol scheme (http/https)"
+  scheme: String
+  "URL path"
+  path: String
+}

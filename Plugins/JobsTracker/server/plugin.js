@@ -1,6 +1,12 @@
 import { loadGraphQLFiles, resolvers } from "./graphql/index.js";
 import * as API from "./api/index.js";
 import PenPal from "#penpal/core";
+import {
+  JobStatus,
+  COMPLETED_STATUSES,
+  ACTIVE_STATUSES,
+  validateStatus,
+} from "../common/job-constants.js";
 
 const settings = {
   datastores: [
@@ -14,40 +20,12 @@ const JobsTrackerPlugin = {
   cleanupInterval: null,
 
   async loadPlugin() {
-    // Define standardized job status constants
-    const JobStatus = {
-      PENDING: "pending",
-      RUNNING: "running",
-      DONE: "done",
-      FAILED: "failed",
-      CANCELLED: "cancelled",
-    };
-
-    // Define which statuses are considered "completed" (finished)
-    const COMPLETED_STATUSES = [
-      JobStatus.DONE,
-      JobStatus.FAILED,
-      JobStatus.CANCELLED,
-    ];
-
-    // Validation function for job status
-    const validateStatus = (status) => {
-      const validStatuses = Object.values(JobStatus);
-      if (!validStatuses.includes(status)) {
-        throw new Error(
-          `Invalid job status: ${status}. Valid statuses are: ${validStatuses.join(
-            ", "
-          )}`
-        );
-      }
-      return status;
-    };
-
     // Register Jobs API
     PenPal.Jobs = {
       // Status constants
       Status: JobStatus,
       CompletedStatuses: COMPLETED_STATUSES,
+      ActiveStatuses: ACTIVE_STATUSES,
 
       // Core API methods
       Get: API.getJob,

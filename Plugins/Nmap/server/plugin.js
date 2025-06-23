@@ -104,7 +104,6 @@ const start_initial_networks_scan = async ({ project, network_ids }) => {
     });
   };
 
-  console.log("Nmap: New Networks:", network_ids);
   const networks =
     (await PenPal.API.Networks.GetMany(network_ids))?.map(
       (network) =>
@@ -127,6 +126,7 @@ const start_initial_networks_scan = async ({ project, network_ids }) => {
 const NmapPlugin = {
   async loadPlugin() {
     const MQTT = await PenPal.MQTT.NewClient();
+    
     await MQTT.Subscribe(
       PenPal.API.MQTT.Topics.New.Networks,
       start_initial_networks_scan

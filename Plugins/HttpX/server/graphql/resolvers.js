@@ -11,11 +11,6 @@ export default [
       ...resolvers.mutations,
     },
   },
-  {
-    Subscription: {
-      ...resolvers.subscriptions,
-    },
-  },
   ...resolvers.default_resolvers,
   ...resolvers.scalars,
 ];

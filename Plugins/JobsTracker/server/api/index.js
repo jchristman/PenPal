@@ -1,4 +1,5 @@
 import PenPal from "#penpal/core";
+import { JobStatus, COMPLETED_STATUSES } from "../../common/job-constants.js";
 
 // Job CRUD operations
 export const getJob = async (job_id) => {
@@ -30,7 +31,21 @@ export const insertJob = async (job) => {
   const result = await PenPal.DataStore.insertMany("JobsTracker", "Jobs", [
     job_with_timestamps,
   ]);
-  return result[0]; // Return the first (and only) inserted job
+
+  const createdJob = result[0];
+
+  // Publish job creation event
+  if (PenPal.PubSub) {
+    PenPal.PubSub.publish("JOB_CREATED", { jobCreated: createdJob });
+
+    // Also publish active jobs change
+    const activeJobs = await getActiveJobs();
+    PenPal.PubSub.publish("ACTIVE_JOBS_CHANGED", {
+      activeJobsChanged: activeJobs,
+    });
+  }
+
+  return createdJob; // Return the first (and only) inserted job
 };
 
 export const insertJobs = async (jobs) => {
@@ -53,12 +68,28 @@ export const updateJob = async (job_id, updates) => {
     updated_at: new Date().toISOString(),
   };
 
-  return await PenPal.DataStore.updateOne(
+  const result = await PenPal.DataStore.updateOne(
     "JobsTracker",
     "Jobs",
     { id: job_id },
     updated_job
   );
+
+  // Get the updated job data
+  const updatedJobData = await getJob(job_id);
+
+  // Publish job update event
+  if (PenPal.PubSub && updatedJobData) {
+    PenPal.PubSub.publish("JOB_UPDATED", { jobUpdated: updatedJobData });
+
+    // Also publish active jobs change
+    const activeJobs = await getActiveJobs();
+    PenPal.PubSub.publish("ACTIVE_JOBS_CHANGED", {
+      activeJobsChanged: activeJobs,
+    });
+  }
+
+  return result;
 };
 
 export const updateJobs = async (updates_array, update_updated_at = true) => {
@@ -83,7 +114,22 @@ export const updateJobs = async (updates_array, update_updated_at = true) => {
 };
 
 export const removeJob = async (job_id) => {
-  return await PenPal.DataStore.delete("JobsTracker", "Jobs", { id: job_id });
+  const result = await PenPal.DataStore.delete("JobsTracker", "Jobs", {
+    id: job_id,
+  });
+
+  // Publish job deletion event
+  if (PenPal.PubSub) {
+    PenPal.PubSub.publish("JOB_DELETED", { jobDeleted: job_id });
+
+    // Also publish active jobs change
+    const activeJobs = await getActiveJobs();
+    PenPal.PubSub.publish("ACTIVE_JOBS_CHANGED", {
+      activeJobsChanged: activeJobs,
+    });
+  }
+
+  return result;
 };
 
 export const removeJobs = async (job_ids) => {
@@ -181,7 +227,7 @@ export const getJobsFiltered = async (filterMode = "active") => {
       const filteredJobs = allJobs.filter((job) => {
         // Always show jobs that are not completed
         // Use PenPal.Jobs.CompletedStatuses if available, otherwise fallback to hardcoded list
-        const completedStatuses = PenPal.Jobs.CompletedStatuses;
+        const completedStatuses = COMPLETED_STATUSES;
 
         if (!completedStatuses.includes(job.status)) {
           return true;
@@ -220,7 +266,11 @@ export const cleanupStaleJobs = async (timeoutMinutes = 5) => {
     $and: [
       { updated_at: { $lt: cutoffTime.toISOString() } },
       { progress: { $lt: 100 } },
-      { status: { $nin: ["done", "cancelled", "failed"] } },
+      {
+        status: {
+          $nin: [JobStatus.DONE, JobStatus.CANCELLED, JobStatus.FAILED],
+        },
+      },
     ],
   });
 
@@ -229,7 +279,7 @@ export const cleanupStaleJobs = async (timeoutMinutes = 5) => {
   }
 
   // Update stale jobs to cancelled status
-  const cancelledStatus = PenPal.Jobs?.Status?.CANCELLED || "cancelled";
+  const cancelledStatus = JobStatus.CANCELLED;
   const updates = staleJobs.map((job) => ({
     id: job.id,
     status: cancelledStatus,

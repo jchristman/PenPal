@@ -24,6 +24,7 @@
     "graphql-scalars": "^1.21.3",
     "graphql-tag": "^2.12.6",
     "graphql-tools": "^8.3.19",
+    "graphql-ws": "^5.14.3",
     "ip": "^1.1.8",
     "lodash": "^4.17.15",
     "moment": "^2.27.0",

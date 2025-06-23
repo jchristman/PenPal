@@ -3,3 +3,8 @@ type Query {
   currentUser: WebappUser
   getUsers(filter: WebappUserFilterInput): [WebappUser]
 }
+
+type Subscription {
+  # Base subscription type - extended by plugins
+  _empty: String
+}
