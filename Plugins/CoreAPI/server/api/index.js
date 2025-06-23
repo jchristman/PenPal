@@ -69,4 +69,10 @@ export {
   upsertServices,
   removeService,
   removeServices,
+  // Enrichment Management Functions
+  addEnrichment,
+  addEnrichments,
+  updateEnrichment,
+  upsertEnrichment,
+  removeEnrichment,
 } from "./services.js";

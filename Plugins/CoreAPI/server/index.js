@@ -1,7 +1,6 @@
 // Overall PenPal coordinating server code
 import PenPal from "#penpal/core";
 
-console.log("Creating PenPal.API");
 PenPal.API = PenPal.API || {};
 PenPal.API.InterfaceResolvers = PenPal.API.InterfaceResolvers || {};
 

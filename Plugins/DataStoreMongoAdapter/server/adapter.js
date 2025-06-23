@@ -283,9 +283,10 @@ MongoAdapter.fetchOne = async (plugin_name, store_name, selector, options) => {
 
 MongoAdapter.insert = async (plugin_name, store_name, data) => {
   // This will return an ObjectId, so cast it to a string
-  return String(
-    await get_collection(plugin_name, store_name).insert(normalize_data(data))
+  const result = await get_collection(plugin_name, store_name).insertOne(
+    normalize_data(data)
   );
+  return String(result.insertedId);
 };
 
 MongoAdapter.insertMany = async (plugin_name, store_name, data = []) => {
@@ -336,9 +337,24 @@ MongoAdapter.updateMany = async (plugin_name, store_name, selector, data) => {
 };
 
 MongoAdapter.delete = async (plugin_name, store_name, selector) => {
-  return await get_collection(plugin_name, store_name).remove(
+  return await get_collection(plugin_name, store_name).deleteMany(
     normalize_data(selector)
   );
+};
+
+// Check if the MongoDB adapter is ready and connected
+MongoAdapter.isReady = async () => {
+  try {
+    if (!MongoAdapter.client) {
+      return false;
+    }
+    // Test the connection with a ping
+    await MongoAdapter.client.db("admin").command({ ping: 1 });
+    return true;
+  } catch (error) {
+    console.error("[!] MongoDB adapter not ready:", error.message);
+    return false;
+  }
 };
 
 // -----------------------------------------------------------------------

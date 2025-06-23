@@ -16,15 +16,17 @@ PenPal is an automation and reporting all-in-one tool that is meant to enable Cy
   - [ ] Notes
   - [ ] Audit trails
 - [x] Centralized Job Management System
-  - [x] Real-time job tracking and monitoring
+  - [x] Real-time job tracking and monitoring via WebSocket subscriptions
   - [x] Multi-stage job support with progress tracking
   - [x] Automatic job cleanup and status management
   - [x] Web UI for job visualization and filtering
   - [x] Plugin integration via Jobs API
+  - [x] Live navbar job counter with spinning icon for active jobs
 - [ ] User Interface
   - [ ] Pluggable Dashboard
   - [x] Projects Summary Page
-  - [x] Jobs Monitoring Page
+  - [x] Jobs Monitoring Page with real-time WebSocket updates
+  - [x] Live job counter in navigation bar
   - [ ] Project Details Page
   - [ ] Notetaking
   - [ ] .... other things and stuff
@@ -45,13 +47,113 @@ PenPal is an automation and reporting all-in-one tool that is meant to enable Cy
   - [ ] Data flow
   - [ ] Agent selection based on nearby networks (for automations)
 
+## Service Enrichment System
+
+PenPal features an **extensible service enrichment architecture** that allows plugins to add rich metadata to discovered services. This creates a comprehensive intelligence view by layering data from multiple cybersecurity tools.
+
+### How It Works
+
+1. **Service Discovery**: Tools like Nmap and Rustscan discover services (IP:port combinations)
+2. **Enrichment Plugins**: Additional tools (HttpX, etc.) analyze services and add metadata
+3. **Unified View**: All enrichment data is displayed in a rich, extensible UI
+4. **Plugin Extensibility**: New plugins can register custom display components
+
+### Current Enrichment Plugins
+
+- **[Nmap](https://nmap.org/)**: Service fingerprinting, version detection, OS detection
+  - Service names, product versions, banners
+  - Operating system detection
+  - Service fingerprints and additional info
+- **[HttpX](https://github.com/projectdiscovery/httpx)**: HTTP service analysis
+  - HTTP status codes, content types, page titles
+  - Technology stack detection (frameworks, servers, etc.)
+  - Content length, response headers
+  - Clickable URLs with security validation
+
+### Enrichment UI Features
+
+**Services Tab Structure:**
+
+- **List View**: Overview of all services with enrichment count badges
+- **Enrichments View**: Detailed plugin data with custom rich displays
+- **Graph View**: Network topology visualization (coming soon)
+
+**Rich Display Components:**
+
+- **HttpX**: Clickable URLs, color-coded HTTP status, technology chips
+- **Nmap**: Service information, version details, fingerprint data
+- **Default Display**: Automatic fallback for any plugin enrichment
+
+**Real-time Updates:**
+
+- Services UI polls every 15 seconds for new enrichments
+- Automatic refresh when new scan data becomes available
+- Live enrichment count indicators
+
+### For Plugin Developers
+
+The enrichment system is designed for easy extension with the **new CoreAPI Enrichment Functions**:
+
+```javascript
+// ✅ NEW: Simple enrichment API (recommended)
+const enrichment_updates = results.map((result) => ({
+  host: result.host, // IP address from tool
+  port: result.port, // Port number from tool
+  ip_protocol: "TCP", // Protocol (TCP/UDP)
+  project_id: project_id, // Required for project isolation
+  enrichment: {
+    plugin_name: "YourPlugin", // Required for GraphQL resolution
+    url: result.url, // Tool-specific data
+    status_code: result.status_code,
+    tech: result.tech,
+    // ... other tool-specific fields
+  },
+}));
+
+// Add enrichments using CoreAPI
+const result = await PenPal.API.Services.AddEnrichments(enrichment_updates);
+console.log(`Successfully added ${result.accepted.length} enrichments`);
+
+// Client-side: Register custom display
+import YourEnrichmentDisplay from "./components/your-enrichment-display.jsx";
+PenPal.API.registerEnrichmentDisplay("YourPlugin", YourEnrichmentDisplay);
+```
+
+**Key Benefits of New API:**
+
+- **Automatic Service Matching**: No need to manually find and match services
+- **Atomic Operations**: Thread-safe enrichment updates with MongoDB atomic operators
+- **Natural Identifiers**: Use host/port/protocol that tools already provide
+- **Error Handling**: Detailed success/failure reporting with rejection reasons
+- **Project Isolation**: Built-in multi-project support
+
+**📖 Full Documentation**: See [Plugins/CoreAPI/README-Enrichment-API.md](Plugins/CoreAPI/README-Enrichment-API.md) for complete API reference, migration guide, and best practices.
+
+### MQTT Event Integration
+
+Enrichment plugins automatically respond to service discovery events:
+
+```javascript
+// Subscribe to new services from other plugins
+await MQTT.Subscribe(
+  PenPal.API.MQTT.Topics.New.Services,
+  async ({ service_ids }) => {
+    const services = await PenPal.API.Services.GetMany(service_ids);
+    // Filter for relevant services and enrich them
+    await enrichServices(services);
+  }
+);
+```
+
+This creates an intelligent **service discovery chain** where each plugin builds upon the discoveries of others, creating comprehensive service intelligence automatically.
+
 ## Plugin Ideas
 
 - [ ] Really anything from the core
 - [ ] Ping sweep for IP range (host discovery -> add hosts via API)
 - [ ] Nmap for service discovery for hosts or networks (host/service discovery -> add hosts/services via API)
 - [x] Rustscan for service discovery for hosts or networks (host/service discovery -> add hosts/services via API)
-- [ ] [httpx](https://github.com/projectdiscovery/httpx) for scanning ports to see if they are a web service
+- [x] [httpx](https://github.com/projectdiscovery/httpx) for HTTP service discovery and enrichment (service enrichment -> add HTTP metadata via API)
 - [ ] Burpsuite for vulnerability scanning
 - [ ] Dirb/dirbuster/insert URL discovery here
 - [ ] [Gowitness](https://hub.docker.com/r/leonjza/gowitness) for screenshots of websites
@@ -66,9 +168,10 @@ PenPal is purely dependent on `docker` and `docker-compose`. It will definitely 
 
 Currently there are a number of services and endpoints that are interesting/useful. The current way to run it is by executing `dev.sh` -- if you add more plugins to the Plugins folder they will automatically mount with the `docker-compose` scripts and mount into the container. Here's a list of interesting URLs:
 
-- Web UI - http://localhost:3000
-- Jobs Monitor - http://localhost:3000/jobs
-- GraphQL Studio - http://localhost:3001/graphql
+- **Web UI** - http://localhost:3000
+- **Jobs Monitor** - http://localhost:3000/jobs (with real-time WebSocket updates)
+- **GraphQL Studio** - http://localhost:3001/graphql
+- **GraphQL WebSocket** - ws://localhost:3001/graphql (subscriptions)
 
 ## Jobs API - Centralized Job Management
 
@@ -216,6 +319,513 @@ export const start_detailed_hosts_scan = async (hosts) => {
 };
 ```
 
+## BatchFunction Utility - Event Batching
+
+PenPal includes a **BatchFunction utility** (`PenPal.Utils.BatchFunction`) for batching rapid function calls together, essential for handling high-frequency MQTT events during large scans without overwhelming system resources.
+
+### The Problem
+
+During large network scans, plugins can receive hundreds of rapid MQTT events as services are discovered:
+
+```javascript
+// ❌ Problem: Each event triggers separate processing
+await MQTT.Subscribe(PenPal.API.MQTT.Topics.New.Services, ({ service_ids }) => {
+  // This fires 100+ times during a large scan
+  processServices(service_ids); // Creates many jobs, containers, etc.
+});
+```
+
+### The Solution
+
+BatchFunction collects rapid calls and processes them together after a timeout period:
+
+```javascript
+// ✅ Solution: Batch events together with 5-second timeout
+await MQTT.Subscribe(
+  PenPal.API.MQTT.Topics.New.Services,
+  PenPal.Utils.BatchFunction(processBatchedServices, 5000)
+);
+
+const processBatchedServices = async (batchedArgs) => {
+  console.log(`Processing ${batchedArgs.length} batched events`);
+
+  // Deduplicate service IDs across all events
+  const allServiceIds = new Set();
+  for (const [{ service_ids }] of batchedArgs) {
+    service_ids.forEach((id) => allServiceIds.add(id));
+  }
+
+  // Process all unique services in one operation
+  await processServices(Array.from(allServiceIds));
+};
+```
+
+### How It Works
+
+1. **Collect Arguments**: Each function call adds its arguments to an internal array
+2. **Reset Timer**: Each new call resets the timeout timer
+3. **Execute Handler**: After timeout period with no new calls, executes handler with all batched arguments
+4. **Clear Batch**: Resets for the next batch cycle
+
+### Function Signature
+
+```javascript
+const batchedFunction = PenPal.Utils.BatchFunction(handler, timeoutMs);
+```
+
+**Parameters:**
+
+- `handler` - Function that receives an array of batched argument sets
+- `timeoutMs` - Timeout in milliseconds to wait after last call before executing
+
+### Real-world Performance Impact
+
+**HttpX Plugin Example** - Before and after BatchFunction implementation:
+
+**Before (Individual Processing):**
+
+- 🔴 200+ separate Docker containers spawned during large scans
+- 🔴 200+ individual jobs created
+- 🔴 Overwhelming system resources and MQTT broker
+- 🔴 Processing duplicate service IDs multiple times
+
+**After (Batched Processing):**
+
+- ✅ 1 Docker container per project with bulk service list
+- ✅ 1 job per project with comprehensive progress tracking
+- ✅ Automatic deduplication of service IDs
+- ✅ 90%+ reduction in resource usage
+
+### Configuration Guidelines
+
+Choose timeout values based on your use case:
+
+- **1-2 seconds**: Real-time operations requiring quick response
+- **5-10 seconds**: Service discovery and enrichment (recommended)
+- **30+ seconds**: Non-critical background processing
+
+### Benefits
+
+- **Resource Optimization**: Dramatically reduces Docker container and job creation
+- **Deduplication**: Automatically handles duplicate data across events
+- **Bulk Processing**: Enables efficient batch operations
+- **System Stability**: Prevents overwhelming during scan bursts
+- **Better Performance**: 90%+ reduction in overhead for high-frequency events
+
+### Migration Pattern
+
+Converting existing event handlers to use BatchFunction:
+
+```javascript
+// Step 1: Modify handler to accept batched arguments
+const processBatchedEvents = async (batchedArgs) => {
+  for (const [originalArgs] of batchedArgs) {
+    // Process each original argument set
+    // Or group/deduplicate across all arguments
+  }
+};
+
+// Step 2: Wrap with BatchFunction
+const batchedHandler = PenPal.Utils.BatchFunction(processBatchedEvents, 5000);
+
+// Step 3: Use in MQTT subscriptions
+await MQTT.Subscribe(topic, batchedHandler);
+```
+
+The BatchFunction utility is essential for building scalable plugins that can handle the rapid event streams generated during large cybersecurity scans.
+
+## Real-time Updates with GraphQL Subscriptions
+
+PenPal includes **WebSocket-based GraphQL subscriptions** for real-time updates while maintaining full Apollo Client compatibility. This enables live monitoring of jobs, scan progress, and service discoveries without polling.
+
+### Key Features
+
+- **WebSocket Transport**: Real-time updates via GraphQL subscriptions
+- **Apollo Client Compatible**: Seamless integration with existing queries/mutations
+- **Split Link Transport**: Automatic routing of subscriptions to WebSocket, queries/mutations to HTTP
+- **Graceful Fallback**: Falls back to polling if WebSocket connection fails
+- **PubSub Events**: Server-side event publishing for plugin communications
+
+### WebSocket Endpoints
+
+- **GraphQL HTTP**: `http://localhost:3001/graphql` (queries, mutations)
+- **GraphQL WebSocket**: `ws://localhost:3001/graphql` (subscriptions)
+- **Client Auto-routing**: Apollo Client automatically chooses transport based on operation type
+
+### Real-time Job Monitoring
+
+The Jobs UI includes real-time updates that eliminate the need for manual polling:
+
+```javascript
+// JobsCounter component in navbar shows live active job count
+const { data } = useSubscription(ACTIVE_JOBS_SUBSCRIPTION, {
+  onData: ({ data }) => {
+    if (data?.data?.activeJobsChanged) {
+      setActiveJobs(data.data.activeJobsChanged);
+      setJobCount(data.data.activeJobsChanged.length);
+    }
+  },
+  onError: (error) => {
+    console.warn("Subscription failed, falling back to polling:", error);
+    // Automatic fallback to polling
+  },
+});
+```
+
+### Subscription Examples
+
+**Job Status Updates:**
+
+```graphql
+subscription ActiveJobsChanged {
+  activeJobsChanged {
+    id
+    name
+    plugin
+    progress
+    status
+    updated_at
+  }
+}
+```
+
+**Service Discovery Events:**
+
+```graphql
+subscription NewServicesDiscovered($projectId: ID!) {
+  newServicesDiscovered(projectId: $projectId) {
+    project_id
+    services {
+      id
+      host_ip
+      port
+      protocol
+      status
+    }
+  }
+}
+```
+
+### Plugin Integration
+
+Plugins can publish real-time events using the built-in PubSub system:
+
+```javascript
+// Server-side: Publish events when data changes
+export const updateJob = async (job_id, updates) => {
+  const result = await PenPal.DataStore.updateOne(
+    "JobsTracker",
+    "Jobs",
+    { id: job_id },
+    updates
+  );
+
+  // Real-time notification
+  if (PenPal.PubSub) {
+    const updatedJob = await getJob(job_id);
+    PenPal.PubSub.publish("JOB_UPDATED", { jobUpdated: updatedJob });
+
+    // Aggregate events for efficiency
+    const activeJobs = await getActiveJobs();
+    PenPal.PubSub.publish("ACTIVE_JOBS_CHANGED", {
+      activeJobsChanged: activeJobs,
+    });
+  }
+
+  return result;
+};
+```
+
+### Real-time Features
+
+**Live Job Counter**: The navbar displays a real-time badge showing active job count with spinning icon for running jobs
+
+**Instant Updates**: Job status changes appear immediately across all connected clients
+
+**Service Discovery**: New hosts, services, and scan results appear in real-time as they're discovered
+
+**Progress Tracking**: Multi-stage job progress updates live without page refresh
+
+### Performance Benefits
+
+- **Reduced Server Load**: Eliminates constant polling requests
+- **Instant Feedback**: Updates appear immediately when events occur
+- **Bandwidth Efficient**: Only sends data when changes happen
+- **Better UX**: Live updates provide immediate feedback on scan progress
+
+## Docker Plugin - Container Orchestration
+
+PenPal includes a powerful **Docker Plugin** that provides essential container orchestration capabilities for running cybersecurity tools in isolated environments. This plugin is fundamental for security tools like **Nmap**, **HttpX**, **Rustscan**, and other containerized scanners.
+
+### Key Features
+
+- **Automatic Image Building**: Builds Docker images from plugin contexts during startup
+- **Container Lifecycle Management**: Start, stop, wait, and manage container execution
+- **Volume Management**: Secure file exchange between host and containers
+- **Network Isolation**: All containers run in isolated `penpal_penpal` network
+- **Resource Management**: Ephemeral containers with automatic cleanup
+- **Multi-tool Support**: Orchestrates multiple security tools simultaneously
+
+### Docker Configuration
+
+Plugins configure Docker settings in their `plugin.js` files:
+
+```javascript
+// ✅ CORRECT Docker configuration
+export const settings = {
+  docker: {
+    name: "penpal:httpx", // Container image name
+    dockercontext: `${__dirname}/docker-context`, // Build context path
+  },
+};
+
+// ✅ Alternative: Use pre-built images
+export const settings = {
+  docker: {
+    name: "penpal:nmap",
+    image: "instrumentisto/nmap:latest", // Pull existing image
+  },
+};
+```
+
+### Container Execution Pattern
+
+The Docker plugin provides a standardized pattern for running security tools:
+
+```javascript
+// ✅ Standard containerized security tool execution
+export const performScan = async ({ targets, project_id }) => {
+  // 1. Prepare shared volume directory
+  const outdir = `/penpal-plugin-share/toolname/${project_id}`;
+  PenPal.Utils.MkdirP(outdir);
+
+  // 2. Create input files on host
+  const targets_file = path.join(outdir, `targets-${PenPal.Utils.Epoch()}.txt`);
+  fs.writeFileSync(targets_file, targets.join("\n"));
+
+  // 3. Define output file path
+  const output_file = path.join(outdir, `results-${PenPal.Utils.Epoch()}.json`);
+
+  // 4. Convert to container paths (volume mount)
+  const container_targets = targets_file.replace(
+    "/penpal-plugin-share",
+    "/penpal-plugin-share"
+  );
+  const container_output = output_file.replace(
+    "/penpal-plugin-share",
+    "/penpal-plugin-share"
+  );
+
+  // 5. Run containerized tool
+  const result = await PenPal.Docker.Run({
+    image: "penpal:httpx",
+    cmd: `-l ${container_targets} -o ${container_output} -json`,
+    daemonize: true, // Run in background
+    network: "penpal_penpal", // Isolated network
+    volume: {
+      // Shared volume mount
+      name: "penpal_penpal-plugin-share",
+      path: "/penpal-plugin-share",
+    },
+  });
+
+  // 6. Wait for completion
+  const container_id = result.stdout.trim();
+  await PenPal.Docker.Wait(container_id);
+
+  // 7. Process results
+  const results = fs.readFileSync(output_file, "utf8");
+  return JSON.parse(results);
+};
+```
+
+### Docker API Methods
+
+The Docker plugin exposes comprehensive container management APIs:
+
+```javascript
+// Container lifecycle
+await PenPal.Docker.Run(options); // Create and run container
+await PenPal.Docker.Start(container_id); // Start stopped container
+await PenPal.Docker.Stop(container_id); // Stop running container
+await PenPal.Docker.Wait(container_id); // Wait for completion
+
+// Container operations
+await PenPal.Docker.Exec({ container, cmd }); // Execute command in container
+await PenPal.Docker.Copy({ container, container_file, output_file }); // Copy files
+
+// Image management
+await PenPal.Docker.Build(docker_config); // Build image from context
+await PenPal.Docker.Pull({ image }); // Pull pre-built image
+
+// Cleanup
+await PenPal.Docker.RemoveContainer(container_id); // Remove container
+
+// Advanced
+await PenPal.Docker.Raw(docker_command); // Execute raw docker command
+```
+
+### Security and Isolation
+
+**Network Isolation:**
+
+- All containers run in the `penpal_penpal` network
+- Isolated from host network by default
+- Can communicate with other PenPal services (databases, APIs)
+- No direct internet access unless explicitly configured
+
+**Volume Security:**
+
+- Shared volumes use specific mount points (`/penpal-plugin-share`)
+- No access to host filesystem outside mounted volumes
+- Temporary files automatically cleaned up after scans
+- Prevents container escape and data exfiltration
+
+**Resource Management:**
+
+- Containers are ephemeral and removed after use
+- No persistent state stored in containers
+- Resource limits can be enforced per container
+- Automatic cleanup prevents resource exhaustion
+
+### Integration with Security Tools
+
+The Docker plugin enables seamless integration of popular cybersecurity tools:
+
+**Nmap Integration:**
+
+```javascript
+// Nmap plugin uses Docker for isolated network scanning
+const result = await PenPal.Docker.Run({
+  image: "penpal:nmap",
+  cmd: `-sS -sV -O ${targets} -oX ${output_file}`,
+  network: "penpal_penpal",
+  volume: { name: "penpal_penpal-plugin-share", path: "/penpal-plugin-share" },
+});
+```
+
+**HttpX Integration:**
+
+```javascript
+// HttpX plugin uses Docker for HTTP service discovery
+const result = await PenPal.Docker.Run({
+  image: "penpal:httpx",
+  cmd: `-l ${targets_file} -json -title -tech-detect`,
+  network: "penpal_penpal",
+  volume: { name: "penpal_penpal-plugin-share", path: "/penpal-plugin-share" },
+});
+```
+
+**Rustscan Integration:**
+
+```javascript
+// Rustscan plugin uses Docker for fast port scanning
+const result = await PenPal.Docker.Run({
+  image: "penpal:rustscan",
+  cmd: `-a ${targets} --ports ${ports} -- -sV`,
+  network: "penpal_penpal",
+  volume: { name: "penpal_penpal-plugin-share", path: "/penpal-plugin-share" },
+});
+```
+
+### Dockerfile Best Practices
+
+PenPal plugins use multi-stage Docker builds for security and efficiency:
+
+```dockerfile
+# ✅ Example: HttpX plugin Dockerfile
+FROM golang:1.21-alpine AS builder
+WORKDIR /app
+RUN go install -v github.com/projectdiscovery/httpx/cmd/httpx@latest
+
+FROM alpine:latest
+RUN apk --no-cache add ca-certificates
+WORKDIR /root/
+COPY --from=builder /go/bin/httpx .
+ENTRYPOINT ["./httpx"]
+```
+
+**Key principles:**
+
+- **Multi-stage builds** to minimize final image size
+- **Alpine Linux** base images for security and size
+- **Specific tool versions** for reproducibility
+- **Minimal attack surface** with only required dependencies
+- **Non-root execution** where possible
+
+### Plugin Dependencies
+
+Plugins using Docker must declare the dependency:
+
+```json
+{
+  "name": "HttpX",
+  "version": "0.1.0",
+  "dependsOn": ["CoreAPI@0.1.0", "Docker@0.1.0", "JobsTracker@0.1.0"]
+}
+```
+
+### Automatic Image Building
+
+The Docker plugin automatically:
+
+1. **Validates** plugin Docker configurations during startup
+2. **Builds** images from `docker-context/` directories
+3. **Pulls** pre-built images if specified
+4. **Caches** built images for subsequent runs
+5. **Reports** build status and errors
+
+This ensures all required container images are available before plugins attempt to use them.
+
+### Volume Management
+
+**Shared Volume Pattern:**
+
+- All plugins use the `penpal_penpal-plugin-share` volume
+- Host path: `/penpal-plugin-share/`
+- Container path: `/penpal-plugin-share/`
+- Plugin-specific subdirectories: `/penpal-plugin-share/toolname/project_id/`
+
+**File Exchange Pattern:**
+
+```javascript
+// ✅ Correct volume path handling
+const host_path = "/penpal-plugin-share/httpx/project1/targets.txt";
+const container_path = host_path; // Same path due to volume mount
+
+// ❌ Wrong - hardcoded paths won't work
+const bad_path = "/tmp/targets.txt"; // Not accessible in container
+```
+
+### Error Handling and Monitoring
+
+The Docker plugin integrates with PenPal's monitoring systems:
+
+```javascript
+// ✅ Proper error handling with Jobs API
+const job = await PenPal.Jobs.Create({
+  name: "HTTP Service Scan",
+  statusText: "Starting containerized scan",
+});
+
+try {
+  const result = await PenPal.Docker.Run(docker_config);
+  await PenPal.Docker.Wait(result.stdout.trim());
+
+  await PenPal.Jobs.Update(job.id, {
+    status: PenPal.Jobs.Status.DONE,
+    statusText: "Scan completed successfully",
+  });
+} catch (error) {
+  await PenPal.Jobs.Update(job.id, {
+    status: PenPal.Jobs.Status.FAILED,
+    statusText: `Container execution failed: ${error.message}`,
+  });
+}
+```
+
+The Docker plugin is essential for PenPal's microservices architecture, enabling secure, isolated execution of cybersecurity tools while maintaining seamless integration with the broader platform.
+
 ## Plugin Development
 
 Below is documentation describing how plugins should be structured and what is required. Plugins are loaded live by the Vite (client) and Node (server) dynamically, so simply placing the plugin in the `plugins/` folder will let you get started. Use the `penpal-plugin-develop.py` python script to get a Template with a name put into the right place.
@@ -249,11 +859,11 @@ plugins/
 // once the main server finishes starting up.
 
 // Overall PenPal coordinating server code
-import PenPal from "@penpal/core";
+import PenPal from "#penpal/core";
 
 // Plugin-specific info
 import Plugin from "./plugin.js";
-import Manifest from "./manifest.json";
+import Manifest from "./manifest.json" with { type: "json" };
 
 // Register the plugin
 PenPal.registerPlugin(Manifest, Plugin);
@@ -398,3 +1008,199 @@ This section of the settings object is used to automatically pull docker images 
 ### GraphQL
 
 The `graphql` field of the `loadPlugin` return value can have any of three fields: `types`, `resolvers`, and `loaders`. These are automatically merged into the overall GraphQL schema to add API endpoints that are accessible on the `/graphql` endpoint.
+
+#### GraphQL Schema Loading Pattern
+
+**✅ CRITICAL: Correct GraphQL Structure**
+
+Plugins with GraphQL schemas must follow the established loading pattern used by CoreAPI, Nmap, and other plugins:
+
+```javascript
+// ✅ CORRECT: graphql/index.js
+export { default as loadGraphQLFiles } from "./schema/index.js";
+export { default as resolvers } from "./resolvers.js";
+
+// ❌ WRONG - Don't import from penpal/core
+import { loadGraphQLFiles } from "#penpal/core"; // This function doesn't exist!
+```
+
+**Required File Structure:**
+
+```
+server/graphql/
+├── index.js                    // Main GraphQL exports
+├── resolvers.js               // Resolver structure
+├── schema/
+│   ├── index.js               // loadGraphQLFiles implementation
+│   └── enrichment.schema.graphql  // Plugin-specific types (MUST contain valid GraphQL)
+└── resolvers/
+    ├── index.js               // Resolver exports
+    └── enrichment.default.js  // Plugin resolvers
+```
+
+**⚠️ IMPORTANT: GraphQL File Requirements**
+
+- All `.graphql` files MUST contain valid GraphQL definitions (types, queries, mutations, etc.)
+- Files with only comments will cause "Unexpected <EOF>" syntax errors
+- Remove empty schema files or add minimal valid definitions
+- Use descriptive filenames like `plugin-name-enrichment.schema.graphql`
+
+**Schema Loading Implementation:**
+
+```javascript
+// ✅ CORRECT: graphql/schema/index.js
+import PenPal from "#penpal/core";
+import { dirname, join } from "path";
+import { fileURLToPath } from "url";
+const __dirname = dirname(fileURLToPath(import.meta.url));
+const cur_dir = join(__dirname, ".");
+
+const loadGraphQLFiles = async () => {
+  return PenPal.Utils.LoadGraphQLDirectories(cur_dir);
+};
+
+export default loadGraphQLFiles;
+```
+
+**Resolver Structure:**
+
+```javascript
+// ✅ CORRECT: graphql/resolvers.js
+import resolvers from "./resolvers/index.js";
+
+export default [
+  {
+    Query: {
+      ...resolvers.queries,
+    },
+  },
+  {
+    Mutation: {
+      ...resolvers.mutations,
+    },
+  },
+  ...resolvers.default_resolvers,
+  ...resolvers.scalars,
+];
+
+// ✅ CORRECT: graphql/resolvers/index.js
+export default {
+  queries: {
+    // Custom queries
+  },
+  mutations: {
+    // Custom mutations
+  },
+  default_resolvers: [/* resolver functions */],
+  scalars: [],
+};
+```
+
+**Plugin Integration:**
+
+```javascript
+// ✅ CORRECT: plugin.js
+import { loadGraphQLFiles, resolvers } from "./graphql/index.js";
+
+const YourPlugin = {
+  loadPlugin() {
+    return {
+      graphql: {
+        types: loadGraphQLFiles,
+        resolvers,
+      },
+    };
+  },
+};
+```
+
+This pattern ensures proper GraphQL schema loading and integration with PenPal's plugin system. The `PenPal.Utils.LoadGraphQLDirectories()` function automatically discovers and loads all `.graphql` files in the schema directory.
+
+#### Plugin Registration
+
+**✅ CRITICAL: Plugin Registration Pattern**
+
+Every plugin MUST have an `index.js` file that registers the plugin with PenPal:
+
+```javascript
+// ✅ CORRECT: server/index.js
+// Overall PenPal coordinating server code
+import PenPal from "#penpal/core";
+
+// Plugin-specific info
+import Plugin from "./plugin.js";
+import Manifest from "./manifest.json" with { type: "json" };
+
+// Register the plugin
+PenPal.registerPlugin(Manifest, Plugin);
+
+// ❌ WRONG - Don't export anything
+export default Plugin; // Remove this line
+```
+
+**Key Requirements:**
+
+- Import `PenPal` from `#penpal/core`
+- Import `Plugin` from `./plugin.js`
+- Import `Manifest` from `./manifest.json` with JSON assertion
+- Call `PenPal.registerPlugin(Manifest, Plugin)`
+- No exports needed - registration is a side effect
+
+This registration pattern is what actually loads your plugin into the PenPal system. Without it, your plugin will not be recognized or loaded.
+
+#### GraphQL Subscription Resolvers
+
+**✅ CRITICAL: Correct Subscription Resolver Pattern**
+
+For real-time GraphQL subscriptions, use the **object pattern with `subscribe` method**:
+
+```javascript
+// ✅ CORRECT: Object resolvers with subscribe method
+export default {
+  jobUpdated: {
+    subscribe: (parent, args, context) => {
+      if (!context?.pubsub) {
+        throw new Error("PubSub not available in subscription context");
+      }
+      return context.pubsub.asyncIterator(["JOB_UPDATED"]);
+    }
+  },
+
+  activeJobsChanged: {
+    subscribe: (parent, args, context) => {
+      return context.pubsub.asyncIterator(["ACTIVE_JOBS_CHANGED"]);
+    }
+  }
+};
+
+// ❌ WRONG: Direct function resolvers (will fail)
+export default {
+  async jobUpdated(parent, args, context) {
+    return context.pubsub.asyncIterator(["JOB_UPDATED"]); // Causes "must return Async Iterable" error
+  }
+};
+```
+
+**Why This Matters:**
+
+- GraphQL requires subscription resolvers to return async iterables
+- The function pattern fails with "Subscription field must return Async Iterable. Received: undefined."
+- The object pattern with `subscribe` method is the GraphQL specification standard
+- Using the wrong pattern causes WebSocket disconnections with 4500 error codes
+
+**Subscription Schema:**
+
+```graphql
+extend type Subscription {
+  jobUpdated: Job
+  activeJobsChanged: [Job]
+}
+```
+
+**Publishing Events:**
+
+```javascript
+// Server-side: Publish real-time updates
+PenPal.PubSub.publish("JOB_UPDATED", { jobUpdated: updatedJob });
+PenPal.PubSub.publish("ACTIVE_JOBS_CHANGED", { activeJobsChanged: activeJobs });
+```

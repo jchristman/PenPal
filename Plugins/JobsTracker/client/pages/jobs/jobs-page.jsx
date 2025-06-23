@@ -1,15 +1,39 @@
-import React, { useState } from "react";
-import { useQuery } from "@apollo/client";
+import React, { useState, useEffect } from "react";
+import { useQuery, useSubscription, useMutation, gql } from "@apollo/client";
 import { Components, registerComponent } from "@penpal/core";
 import { makeStyles } from "@mui/styles";
+import {
+  Box,
+  Typography,
+  Card,
+  CardContent,
+  Button,
+  Chip,
+  Grid,
+  Collapse,
+  IconButton,
+  Tooltip,
+  Dialog,
+  DialogTitle,
+  DialogContent,
+  DialogActions,
+  DialogContentText,
+} from "@mui/material";
+import {
+  ExpandMore as ExpandMoreIcon,
+  ExpandLess as ExpandLessIcon,
+  Refresh as RefreshIcon,
+  Delete as DeleteIcon,
+  DeleteSweep as DeleteSweepIcon,
+} from "@mui/icons-material";
 
 import GetAllJobs from "./queries/get-all-jobs.js";
-import {
-  formatRuntime,
-  formatRelativeTime,
-  isJobStale,
-  formatCompletionTime,
-} from "../../utils/time-utils.js";
+import JobsSubscription from "./queries/jobs-subscription.js";
+import JobCreatedSubscription from "./queries/job-created-subscription.js";
+import JobDeletedSubscription from "./queries/job-deleted-subscription.js";
+import ClearAllJobs from "./mutations/clear-all-jobs.js";
+import { formatRuntime, formatCompletionTime } from "../../utils/time-utils.js";
+import { JobStatus } from "../../../common/job-constants.js";
 
 const useStyles = makeStyles((theme) => ({
   jobsPage: {
@@ -105,6 +129,30 @@ const useStyles = makeStyles((theme) => ({
     height: 14,
     cursor: "pointer",
   },
+  clearAllButton: {
+    padding: "8px 16px",
+    border: "1px solid #dc3545",
+    borderRadius: 6,
+    background: "#dc3545",
+    color: "white",
+    cursor: "pointer",
+    fontSize: 13,
+    fontWeight: 500,
+    transition: "all 0.2s ease",
+    display: "flex",
+    alignItems: "center",
+    gap: 6,
+    "&:hover": {
+      background: "#c82333",
+      borderColor: "#c82333",
+    },
+    "&:disabled": {
+      background: "#6c757d",
+      borderColor: "#6c757d",
+      cursor: "not-allowed",
+      opacity: 0.6,
+    },
+  },
   jobsHeaderTitle: {
     margin: 0,
     color: "#2c3e50",
@@ -153,6 +201,11 @@ const useStyles = makeStyles((theme) => ({
     display: "flex",
     alignItems: "center",
     gap: 12,
+    cursor: "pointer",
+    transition: "background-color 0.2s ease",
+    "&:hover": {
+      background: "#e9ecef",
+    },
   },
   pluginName: {
     margin: 0,
@@ -176,6 +229,15 @@ const useStyles = makeStyles((theme) => ({
     borderRadius: 12,
     fontSize: 12,
     fontWeight: 500,
+  },
+  collapseIcon: {
+    fontSize: 14,
+    color: "#6c757d",
+    marginLeft: 8,
+    transition: "transform 0.2s ease",
+  },
+  collapseIconCollapsed: {
+    transform: "rotate(-90deg)",
   },
   jobsList: {
     padding: 20,
@@ -567,7 +629,7 @@ const StageCard = ({ stage, index, isActive, jobStatus }) => {
   const classes = useStyles();
   const progressPercentage = Math.round(stage.progress);
   const isComplete = progressPercentage >= 100;
-  const isCancelled = jobStatus === "cancelled";
+  const isCancelled = jobStatus === JobStatus.CANCELLED;
 
   // Determine the status style based on completion and active state
   const getStatusClass = () => {
@@ -624,12 +686,12 @@ const JobCard = ({ job }) => {
   const [stagesCollapsed, setStagesCollapsed] = useState(false);
   const progressPercentage = Math.round(job.progress);
   const isComplete = progressPercentage >= 100;
-  const isCancelled = job.status === "cancelled";
+  const isCancelled = job.status === JobStatus.CANCELLED;
   const isFinished =
     isComplete ||
     isCancelled ||
-    job.status === "done" ||
-    job.status === "failed";
+    job.status === JobStatus.DONE ||
+    job.status === JobStatus.FAILED;
   const hasStages = job.stages && job.stages.length > 0;
 
   // Determine which stage is currently active (only if job is not cancelled)
@@ -740,13 +802,16 @@ const JobCard = ({ job }) => {
   );
 };
 
-const PluginSection = ({ plugin, jobs }) => {
+const PluginSection = ({ plugin, jobs, isCollapsed, onToggleCollapse }) => {
   const classes = useStyles();
   const hasJobs = jobs && jobs.length > 0;
 
   return (
     <div className={classes.pluginSection}>
-      <div className={classes.pluginHeader}>
+      <div
+        className={classes.pluginHeader}
+        onClick={() => onToggleCollapse(plugin)}
+      >
         <h3 className={classes.pluginName}>{plugin}</h3>
         <span className={classes.pluginId}>{plugin}</span>
         {hasJobs && (
@@ -754,17 +819,25 @@ const PluginSection = ({ plugin, jobs }) => {
             {jobs.length} job{jobs.length !== 1 ? "s" : ""}
           </span>
         )}
+        <span
+          className={`${classes.collapseIcon} ${
+            isCollapsed ? classes.collapseIconCollapsed : ""
+          }`}
+        >
+          ▼
+        </span>
       </div>
 
-      {hasJobs ? (
-        <div className={classes.jobsList}>
-          {jobs.map((job) => (
-            <JobCard key={job.id} job={job} />
-          ))}
-        </div>
-      ) : (
-        <div className={classes.noJobs}>No active jobs</div>
-      )}
+      {!isCollapsed &&
+        (hasJobs ? (
+          <div className={classes.jobsList}>
+            {jobs.map((job) => (
+              <JobCard key={job.id} job={job} />
+            ))}
+          </div>
+        ) : (
+          <div className={classes.noJobs}>No active jobs</div>
+        ))}
     </div>
   );
 };
@@ -773,12 +846,12 @@ const ExpandedJobRow = ({ job, isExpanded, onToggle }) => {
   const classes = useStyles();
   const progressPercentage = Math.round(job.progress);
   const isComplete = progressPercentage >= 100;
-  const isCancelled = job.status === "cancelled";
+  const isCancelled = job.status === JobStatus.CANCELLED;
   const isFinished =
     isComplete ||
     isCancelled ||
-    job.status === "done" ||
-    job.status === "failed";
+    job.status === JobStatus.DONE ||
+    job.status === JobStatus.FAILED;
 
   return (
     <div className={classes.expandedJobRow}>
@@ -811,17 +884,218 @@ const JobsPage = () => {
   const [filterMode, setFilterMode] = useState("active");
   const [currentPage, setCurrentPage] = useState(0);
   const [expandedJobs, setExpandedJobs] = useState(new Set());
+  const [collapsedPlugins, setCollapsedPlugins] = useState(new Set());
   const [hideCancelled, setHideCancelled] = useState(false);
+  const [freezeSort, setFreezeSort] = useState(false);
+  const [frozenPluginOrder, setFrozenPluginOrder] = useState([]);
+  const [lastStableOrder, setLastStableOrder] = useState([]);
+  const [jobs, setJobs] = useState([]);
+  const [clearDialogOpen, setClearDialogOpen] = useState(false);
   const pageSize = 20;
 
-  const { loading, error, data } = useQuery(GetAllJobs, {
+  // Clear all jobs mutation
+  const [clearAllJobs, { loading: clearingJobs }] = useMutation(ClearAllJobs, {
+    onCompleted: (data) => {
+      if (data?.clearAllJobs?.error) {
+        console.error("Error clearing jobs:", data.clearAllJobs.error);
+        alert(`Error clearing jobs: ${data.clearAllJobs.error}`);
+      } else {
+        console.log(
+          `Successfully cleared ${data.clearAllJobs.deletedCount} jobs`
+        );
+        // Clear local jobs state immediately for instant UI update
+        setJobs([]);
+        setClearDialogOpen(false);
+      }
+    },
+    onError: (error) => {
+      console.error("GraphQL error clearing jobs:", error);
+      alert(`Error clearing jobs: ${error.message}`);
+      setClearDialogOpen(false);
+    },
+  });
+
+  // Stability threshold: only reorder if time difference is > 30 seconds
+  const STABILITY_THRESHOLD_MS = 30 * 1000; // 30 seconds
+
+  // Initial query to load data
+  const { loading, error, data, refetch } = useQuery(GetAllJobs, {
     variables: {
       limit: filterMode === "all" ? pageSize : 1000,
       offset: filterMode === "all" ? currentPage * pageSize : 0,
       filterMode: filterMode,
     },
-    pollInterval: 500,
+    notifyOnNetworkStatusChange: true,
   });
+
+  // Subscription for job updates
+  const { data: updateSubscriptionData } = useSubscription(JobsSubscription, {
+    onData: ({ data }) => {
+      if (data?.data?.jobUpdated) {
+        const updatedJob = data.data.jobUpdated;
+
+        setJobs((prev) => {
+          const jobIndex = prev.findIndex((job) => job.id === updatedJob.id);
+          if (jobIndex >= 0) {
+            // Update existing job
+            const updated = [...prev];
+            updated[jobIndex] = updatedJob;
+            return updated;
+          } else {
+            // Add new job if it doesn't exist
+            return [updatedJob, ...prev];
+          }
+        });
+      }
+    },
+    onError: (error) => {
+      console.warn("Jobs update subscription error:", error);
+    },
+  });
+
+  // Subscription for job creation
+  const { data: createSubscriptionData } = useSubscription(
+    JobCreatedSubscription,
+    {
+      onData: ({ data }) => {
+        if (data?.data?.jobCreated) {
+          const newJob = data.data.jobCreated;
+
+          setJobs((prev) => {
+            // Check if job already exists to avoid duplicates
+            const exists = prev.some((job) => job.id === newJob.id);
+            if (!exists) {
+              return [newJob, ...prev];
+            }
+            return prev;
+          });
+        }
+      },
+      onError: (error) => {
+        console.warn("Jobs creation subscription error:", error);
+      },
+    }
+  );
+
+  // Subscription for job deletion
+  const { data: deleteSubscriptionData } = useSubscription(
+    JobDeletedSubscription,
+    {
+      onData: ({ data }) => {
+        if (data?.data?.jobDeleted) {
+          const deletedJobId = data.data.jobDeleted;
+
+          setJobs((prev) => prev.filter((job) => job.id !== deletedJobId));
+        }
+      },
+      onError: (error) => {
+        console.warn("Jobs deletion subscription error:", error);
+      },
+    }
+  );
+
+  // Update local jobs state when query data changes
+  useEffect(() => {
+    if (data?.getAllJobs?.jobs) {
+      setJobs(data.getAllJobs.jobs);
+    }
+  }, [data]);
+
+  // Refetch when filter mode or pagination changes
+  useEffect(() => {
+    refetch({
+      limit: filterMode === "all" ? pageSize : 1000,
+      offset: filterMode === "all" ? currentPage * pageSize : 0,
+      filterMode: filterMode,
+    });
+  }, [filterMode, currentPage, refetch]);
+
+  // Update stable order when needed (moved to top to follow Rules of Hooks)
+  useEffect(() => {
+    if (!freezeSort && jobs.length > 0) {
+      const filteredJobs = hideCancelled
+        ? jobs.filter((job) => job.status !== JobStatus.CANCELLED)
+        : jobs;
+
+      const jobsByPlugin = filteredJobs.reduce((acc, job) => {
+        const plugin = job.plugin || "Unknown";
+        if (!acc[plugin]) {
+          acc[plugin] = [];
+        }
+        acc[plugin].push(job);
+        return acc;
+      }, {});
+
+      const pluginsWithJobs = Object.keys(jobsByPlugin).filter(
+        (plugin) => jobsByPlugin[plugin].length > 0
+      );
+
+      if (pluginsWithJobs.length === 0) return;
+
+      // Calculate plugin timestamps for sorting
+      const pluginTimestamps = {};
+      pluginsWithJobs.forEach((plugin) => {
+        const jobs = jobsByPlugin[plugin];
+        pluginTimestamps[plugin] = Math.max(
+          ...jobs.map((job) => new Date(job.created_at).getTime())
+        );
+      });
+
+      // Determine if we need to reorder
+      let needsReorder = false;
+      let needsReorderForNewPlugins = false;
+
+      if (lastStableOrder.length > 0) {
+        // Check if we need to reorder based on stability threshold
+        needsReorder = lastStableOrder.some((plugin, index) => {
+          const nextPlugin = lastStableOrder[index + 1];
+          if (
+            !nextPlugin ||
+            !pluginTimestamps[plugin] ||
+            !pluginTimestamps[nextPlugin]
+          ) {
+            return false;
+          }
+
+          // If a lower-ranked plugin is now significantly newer, reorder
+          const timeDiff =
+            pluginTimestamps[nextPlugin] - pluginTimestamps[plugin];
+          return timeDiff > STABILITY_THRESHOLD_MS;
+        });
+
+        // Also check for new plugins that are significantly newer than the top plugin
+        const newPlugins = pluginsWithJobs.filter(
+          (plugin) => !lastStableOrder.includes(plugin)
+        );
+        needsReorderForNewPlugins = newPlugins.some((newPlugin) => {
+          const topPlugin = lastStableOrder[0];
+          if (!topPlugin || !pluginTimestamps[topPlugin]) return true;
+
+          const timeDiff =
+            pluginTimestamps[newPlugin] - pluginTimestamps[topPlugin];
+          return timeDiff > STABILITY_THRESHOLD_MS;
+        });
+      }
+
+      // Update stable order when needed
+      if (
+        needsReorder ||
+        needsReorderForNewPlugins ||
+        lastStableOrder.length === 0
+      ) {
+        const newOrder = pluginsWithJobs.sort((pluginA, pluginB) => {
+          return pluginTimestamps[pluginB] - pluginTimestamps[pluginA];
+        });
+        setLastStableOrder(newOrder);
+      }
+    }
+  }, [
+    jobs,
+    hideCancelled,
+    freezeSort,
+    lastStableOrder,
+    STABILITY_THRESHOLD_MS,
+  ]);
 
   const toggleJobExpansion = (jobId) => {
     const newExpanded = new Set(expandedJobs);
@@ -833,10 +1107,77 @@ const JobsPage = () => {
     setExpandedJobs(newExpanded);
   };
 
+  const togglePluginCollapse = (pluginName) => {
+    const newCollapsed = new Set(collapsedPlugins);
+    if (newCollapsed.has(pluginName)) {
+      newCollapsed.delete(pluginName);
+    } else {
+      newCollapsed.add(pluginName);
+    }
+    setCollapsedPlugins(newCollapsed);
+  };
+
   const handleFilterChange = (newFilter) => {
     setFilterMode(newFilter);
     setCurrentPage(0);
     setExpandedJobs(new Set());
+    // Reset freeze and stable order when changing filters
+    setFreezeSort(false);
+    setFrozenPluginOrder([]);
+    setLastStableOrder([]);
+  };
+
+  const toggleFreezeSort = () => {
+    if (!freezeSort) {
+      // About to freeze - save current plugin order
+      const filteredJobs = hideCancelled
+        ? jobs.filter((job) => job.status !== JobStatus.CANCELLED)
+        : jobs;
+
+      const jobsByPlugin = filteredJobs.reduce((acc, job) => {
+        const plugin = job.plugin || "Unknown";
+        if (!acc[plugin]) {
+          acc[plugin] = [];
+        }
+        acc[plugin].push(job);
+        return acc;
+      }, {});
+
+      const pluginsWithJobs = Object.keys(jobsByPlugin).filter(
+        (plugin) => jobsByPlugin[plugin].length > 0
+      );
+
+      // Sort plugins by most recent job creation time to capture current order
+      const currentSortedPlugins = pluginsWithJobs.sort((pluginA, pluginB) => {
+        const jobsA = jobsByPlugin[pluginA];
+        const jobsB = jobsByPlugin[pluginB];
+
+        const mostRecentA = Math.max(
+          ...jobsA.map((job) => new Date(job.created_at).getTime())
+        );
+        const mostRecentB = Math.max(
+          ...jobsB.map((job) => new Date(job.created_at).getTime())
+        );
+
+        return mostRecentB - mostRecentA;
+      });
+
+      setFrozenPluginOrder(currentSortedPlugins);
+    }
+
+    setFreezeSort(!freezeSort);
+  };
+
+  const handleClearAllJobs = () => {
+    setClearDialogOpen(true);
+  };
+
+  const handleConfirmClearJobs = () => {
+    clearAllJobs();
+  };
+
+  const handleCancelClearJobs = () => {
+    setClearDialogOpen(false);
   };
 
   if (loading) {
@@ -857,13 +1198,13 @@ const JobsPage = () => {
     );
   }
 
-  const allJobs = data?.getAllJobs?.jobs || [];
+  const allJobs = jobs; // Using state instead of query data
   const totalCount = data?.getAllJobs?.totalCount || 0;
   const hasMore = data?.getAllJobs?.hasMore || false;
 
   // Filter out cancelled jobs if toggle is enabled
-  const jobs = hideCancelled
-    ? allJobs.filter((job) => job.status !== "cancelled")
+  const filteredJobs = hideCancelled
+    ? allJobs.filter((job) => job.status !== JobStatus.CANCELLED)
     : allJobs;
 
   // For "all" mode, show paginated table
@@ -880,6 +1221,21 @@ const JobsPage = () => {
             <span className={classes.noActiveJobs}>
               {totalCount} total job{totalCount !== 1 ? "s" : ""}
             </span>
+            {freezeSort && (
+              <span
+                style={{
+                  marginLeft: 12,
+                  background: "#e3f2fd",
+                  color: "#1565c0",
+                  padding: "6px 12px",
+                  borderRadius: 20,
+                  fontSize: 12,
+                  fontWeight: 500,
+                }}
+              >
+                🧊 Sort frozen
+              </span>
+            )}
           </div>
         </div>
 
@@ -917,10 +1273,30 @@ const JobsPage = () => {
             />
             Hide Cancelled Jobs
           </label>
+          <button
+            className={`${classes.filterButton} ${
+              freezeSort ? classes.filterButtonActive : ""
+            }`}
+            onClick={toggleFreezeSort}
+            title={
+              freezeSort ? "Resume live updates" : "Freeze sorting and updates"
+            }
+          >
+            {freezeSort ? "🧊 Sort Frozen" : "❄️ Freeze Sort"}
+          </button>
+          <button
+            className={classes.clearAllButton}
+            onClick={handleClearAllJobs}
+            disabled={clearingJobs || totalCount === 0}
+            title="Clear all jobs from datastore (ALL users)"
+          >
+            <DeleteSweepIcon style={{ fontSize: 14 }} />
+            {clearingJobs ? "Clearing..." : "Clear All Jobs"}
+          </button>
         </div>
 
         <div style={{ marginBottom: 16 }}>
-          {jobs.map((job) => (
+          {filteredJobs.map((job) => (
             <ExpandedJobRow
               key={job.id}
               job={job}
@@ -928,7 +1304,7 @@ const JobsPage = () => {
               onToggle={() => toggleJobExpansion(job.id)}
             />
           ))}
-          {jobs.length === 0 && (
+          {filteredJobs.length === 0 && (
             <div className={classes.noJobs}>No jobs found</div>
           )}
         </div>
@@ -954,12 +1330,41 @@ const JobsPage = () => {
             </button>
           </div>
         )}
+
+        {/* Clear All Jobs Confirmation Dialog */}
+        <Dialog
+          open={clearDialogOpen}
+          onClose={handleCancelClearJobs}
+          maxWidth="sm"
+          fullWidth
+        >
+          <DialogTitle>Confirm Clear All Jobs</DialogTitle>
+          <DialogContent>
+            <DialogContentText>
+              Warning: This will clear all logs of plugin jobs for ALL users.
+              This action cannot be undone. Are you sure you want to continue?
+            </DialogContentText>
+          </DialogContent>
+          <DialogActions>
+            <Button onClick={handleCancelClearJobs} color="primary">
+              Cancel
+            </Button>
+            <Button
+              onClick={handleConfirmClearJobs}
+              color="error"
+              variant="contained"
+              disabled={clearingJobs}
+            >
+              {clearingJobs ? "Clearing..." : "Clear All Jobs"}
+            </Button>
+          </DialogActions>
+        </Dialog>
       </div>
     );
   }
 
   // For "active" and "recent" modes, show grouped by plugin
-  const jobsByPlugin = jobs.reduce((acc, job) => {
+  const jobsByPlugin = filteredJobs.reduce((acc, job) => {
     const plugin = job.plugin || "Unknown";
     if (!acc[plugin]) {
       acc[plugin] = [];
@@ -972,13 +1377,42 @@ const JobsPage = () => {
     (plugin) => jobsByPlugin[plugin].length > 0
   );
 
+  // Sort plugins by most recent job creation time (unless frozen)
+  const sortedPlugins = freezeSort
+    ? frozenPluginOrder
+        .filter((plugin) => pluginsWithJobs.includes(plugin))
+        .concat(
+          pluginsWithJobs.filter(
+            (plugin) => !frozenPluginOrder.includes(plugin)
+          )
+        )
+    : lastStableOrder.length > 0
+    ? // Use stable order + any new plugins at the end
+      lastStableOrder
+        .filter((plugin) => pluginsWithJobs.includes(plugin))
+        .concat(
+          pluginsWithJobs.filter((plugin) => !lastStableOrder.includes(plugin))
+        )
+    : // Fallback to simple sort if no stable order exists yet
+      pluginsWithJobs.sort((pluginA, pluginB) => {
+        const jobsA = jobsByPlugin[pluginA];
+        const jobsB = jobsByPlugin[pluginB];
+        const timestampA = Math.max(
+          ...jobsA.map((job) => new Date(job.created_at).getTime())
+        );
+        const timestampB = Math.max(
+          ...jobsB.map((job) => new Date(job.created_at).getTime())
+        );
+        return timestampB - timestampA;
+      });
+
   // Calculate truly active jobs from all jobs (not filtered display jobs)
   const activeJobs = allJobs.filter(
     (job) =>
       job.progress < 100 &&
-      job.status !== "cancelled" &&
-      job.status !== "done" &&
-      job.status !== "failed"
+      job.status !== JobStatus.CANCELLED &&
+      job.status !== JobStatus.DONE &&
+      job.status !== JobStatus.FAILED
   );
 
   return (
@@ -993,6 +1427,37 @@ const JobsPage = () => {
             </span>
           ) : (
             <span className={classes.noActiveJobs}>No active jobs</span>
+          )}
+          {freezeSort && (
+            <span
+              style={{
+                marginLeft: 12,
+                background: "#e3f2fd",
+                color: "#1565c0",
+                padding: "6px 12px",
+                borderRadius: 20,
+                fontSize: 12,
+                fontWeight: 500,
+              }}
+            >
+              🧊 Sort frozen
+            </span>
+          )}
+          {!freezeSort && lastStableOrder.length > 0 && (
+            <span
+              style={{
+                marginLeft: 12,
+                background: "#f1f8e9",
+                color: "#33691e",
+                padding: "6px 12px",
+                borderRadius: 20,
+                fontSize: 12,
+                fontWeight: 500,
+              }}
+              title="Plugins sorted with 30s stability threshold to prevent constant reshuffling"
+            >
+              📌 Stable sort
+            </span>
           )}
         </div>
       </div>
@@ -1031,20 +1496,71 @@ const JobsPage = () => {
           />
           Hide Cancelled Jobs
         </label>
+        <button
+          className={`${classes.filterButton} ${
+            freezeSort ? classes.filterButtonActive : ""
+          }`}
+          onClick={toggleFreezeSort}
+          title={
+            freezeSort ? "Resume live updates" : "Freeze sorting and updates"
+          }
+        >
+          {freezeSort ? "🧊 Sort Frozen" : "❄️ Freeze Sort"}
+        </button>
+        <button
+          className={classes.clearAllButton}
+          onClick={handleClearAllJobs}
+          disabled={clearingJobs || allJobs.length === 0}
+          title="Clear all jobs from datastore (ALL users)"
+        >
+          <DeleteSweepIcon style={{ fontSize: 14 }} />
+          {clearingJobs ? "Clearing..." : "Clear All Jobs"}
+        </button>
       </div>
 
       <div className={classes.pluginsContainer}>
-        {pluginsWithJobs.map((plugin) => (
+        {sortedPlugins.map((plugin) => (
           <PluginSection
             key={plugin}
             plugin={plugin}
             jobs={jobsByPlugin[plugin]}
+            isCollapsed={collapsedPlugins.has(plugin)}
+            onToggleCollapse={togglePluginCollapse}
           />
         ))}
-        {pluginsWithJobs.length === 0 && (
+        {sortedPlugins.length === 0 && (
           <div className={classes.noJobs}>No jobs found</div>
         )}
       </div>
+
+      {/* Clear All Jobs Confirmation Dialog */}
+      <Dialog
+        open={clearDialogOpen}
+        onClose={handleCancelClearJobs}
+        maxWidth="sm"
+        fullWidth
+      >
+        <DialogTitle>Confirm Clear All Jobs</DialogTitle>
+        <DialogContent>
+          <DialogContentText>
+            Warning: This will clear all logs of plugin jobs for ALL users. This
+            action cannot be undone. Are you sure you want to continue?
+          </DialogContentText>
+        </DialogContent>
+        <DialogActions>
+          <Button onClick={handleCancelClearJobs} color="primary">
+            Cancel
+          </Button>
+          <Button
+            onClick={handleConfirmClearJobs}
+            color="error"
+            variant="contained"
+            disabled={clearingJobs}
+          >
+            {clearingJobs ? "Clearing..." : "Clear All Jobs"}
+          </Button>
+        </DialogActions>
+      </Dialog>
     </div>
   );
 };

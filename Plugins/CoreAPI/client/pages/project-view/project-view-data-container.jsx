@@ -4,8 +4,6 @@ import { makeStyles } from "@mui/styles";
 import Paper from "@mui/material/Paper";
 import Tabs from "@mui/material/Tabs";
 import Tab from "@mui/material/Tab";
-import Typography from "@mui/material/Typography";
-import Box from "@mui/material/Box";
 
 const useStyles = makeStyles((theme) => ({
   root: {
@@ -68,6 +66,10 @@ const ProjectViewDataContainer = ({ project, disable_polling }) => {
     {
       title: "Networks",
       content: Components.ProjectViewNetworks,
+    },
+    {
+      title: "Services",
+      content: Components.ProjectViewServices,
     },
   ];
 

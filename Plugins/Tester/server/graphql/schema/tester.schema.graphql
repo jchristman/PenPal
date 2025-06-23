@@ -1,0 +1,34 @@
+type TestHandler {
+  id: ID!
+  plugin_name: String!
+  handler_name: String!
+  args_schema: [ArgumentSchema!]!
+  registered_at: String!
+}
+
+type ArgumentSchema {
+  name: String!
+  type: String!
+  required: Boolean
+  description: String
+}
+
+type TestExecutionResult {
+  success: Boolean!
+  result: JSON
+  error: String
+  stack: String
+  execution_time: Int
+  invoked_at: String!
+}
+
+extend type Query {
+  getTestHandlers: [TestHandler!]!
+  getTestHandler(handler_id: ID!): TestHandler
+}
+
+extend type Mutation {
+  invokeTestHandler(handler_id: ID!, args: [JSON]): TestExecutionResult!
+  unregisterTestHandler(handler_id: ID!): Boolean!
+  clearPluginTestHandlers(plugin_name: String!): Int!
+}

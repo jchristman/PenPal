@@ -1,0 +1,6 @@
+extend type Subscription {
+  jobUpdated: Job
+  jobCreated: Job
+  jobDeleted: ID
+  activeJobsChanged: [Job!]!
+}

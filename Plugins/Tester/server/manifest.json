@@ -1,0 +1,5 @@
+{
+  "name": "Tester",
+  "version": "0.1.0",
+  "dependsOn": ["Base@0.1.0", "DataStore@0.1.0"]
+}

@@ -28,11 +28,18 @@ export default {
         }
       }
 
-      return result;
+      // Return null if no resolver matches
+      return null;
     },
 
     plugin_name(obj) {
       return obj.plugin_name;
+    },
+
+    data(obj) {
+      // Return all properties except plugin_name as the data object
+      const { plugin_name, ...data } = obj;
+      return data;
     },
   },
 };

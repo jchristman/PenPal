@@ -8,4 +8,24 @@ extend type Mutation {
   ): Job!
   deleteJob(id: ID!): Boolean!
   deleteJobs(ids: [ID!]!): Boolean!
+  cleanupStaleJobs(timeoutMinutes: Int): CleanupResult!
+  clearAllJobs: ClearAllJobsResult!
+}
+
+type CleanupResult {
+  cancelledCount: Int!
+  jobs: [CleanupJobInfo!]!
+  error: String
+}
+
+type CleanupJobInfo {
+  id: ID!
+  name: String!
+  plugin: String!
+  lastUpdated: String!
+}
+
+type ClearAllJobsResult {
+  deletedCount: Int!
+  error: String
 }

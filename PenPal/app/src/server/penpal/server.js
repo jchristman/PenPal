@@ -73,6 +73,31 @@ PenPal.Utils.RunAfterImport = (fn) => {
 
 PenPal.Utils.isFunction = isFunction;
 
+PenPal.Utils.BatchFunction = (handler, timeoutMs) => {
+  let batchedArgs = [];
+  let timeoutId = null;
+
+  return (...args) => {
+    // Add the arguments to the batch
+    batchedArgs.push(args);
+
+    // Clear existing timeout if one is already set
+    if (timeoutId) {
+      clearTimeout(timeoutId);
+    }
+
+    // Set new timeout to process the batch
+    timeoutId = setTimeout(() => {
+      const argsToProcess = [...batchedArgs];
+      batchedArgs = [];
+      timeoutId = null;
+
+      // Call the handler with the array of batched arguments
+      handler(argsToProcess);
+    }, timeoutMs);
+  };
+};
+
 // ----------------------------------------------------------------------------
 
 PenPal.init = async () => {

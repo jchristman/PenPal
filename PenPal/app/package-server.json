@@ -13,16 +13,20 @@
     "better-logging": "^5.0.0",
     "chalk": "^5.3.0",
     "check-types": "^11.2.2",
+    "cors": "^2.8.5",
     "express": "^4.17.3",
     "glob": "^10.2.2",
     "gql-query-builder": "^3.5.7",
     "graphql": "^16.3.0",
     "graphql-middleware": "^6.1.33",
     "graphql-scalars": "^1.21.3",
+    "graphql-subscriptions": "^2.0.0",
     "graphql-tag": "^2.12.6",
+    "graphql-ws": "^5.14.3",
     "lodash": "^4.17.15",
     "mongodb": "^5.3.0",
-    "uuid": "^8.3.1"
+    "uuid": "^8.3.1",
+    "ws": "^8.15.0"
   },
   "devDependencies": {
     "depcheck": "^1.4.3",

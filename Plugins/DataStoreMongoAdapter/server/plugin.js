@@ -28,6 +28,10 @@ const MongoDataStorePlugin = {
     });
     await MongoAdapter.connect();
     PenPal.DataStore.RegisterAdapter("MongoAdapter", MongoAdapter);
+
+    // Mark adapters as ready after successful connection
+    PenPal.DataStore.SetAdaptersReady(true);
+
     const types = await loadGraphQLFiles();
 
     return {

@@ -1,6 +1,12 @@
 import { loadGraphQLFiles, resolvers } from "./graphql/index.js";
 import * as API from "./api/index.js";
 import PenPal from "#penpal/core";
+import {
+  JobStatus,
+  COMPLETED_STATUSES,
+  ACTIVE_STATUSES,
+  validateStatus,
+} from "../common/job-constants.js";
 
 const settings = {
   datastores: [
@@ -14,40 +20,12 @@ const JobsTrackerPlugin = {
   cleanupInterval: null,
 
   async loadPlugin() {
-    // Define standardized job status constants
-    const JobStatus = {
-      PENDING: "pending",
-      RUNNING: "running",
-      DONE: "done",
-      FAILED: "failed",
-      CANCELLED: "cancelled",
-    };
-
-    // Define which statuses are considered "completed" (finished)
-    const COMPLETED_STATUSES = [
-      JobStatus.DONE,
-      JobStatus.FAILED,
-      JobStatus.CANCELLED,
-    ];
-
-    // Validation function for job status
-    const validateStatus = (status) => {
-      const validStatuses = Object.values(JobStatus);
-      if (!validStatuses.includes(status)) {
-        throw new Error(
-          `Invalid job status: ${status}. Valid statuses are: ${validStatuses.join(
-            ", "
-          )}`
-        );
-      }
-      return status;
-    };
-
     // Register Jobs API
     PenPal.Jobs = {
       // Status constants
       Status: JobStatus,
       CompletedStatuses: COMPLETED_STATUSES,
+      ActiveStatuses: ACTIVE_STATUSES,
 
       // Core API methods
       Get: API.getJob,
@@ -62,6 +40,18 @@ const JobsTrackerPlugin = {
       RemoveMany: API.removeJobs,
       Upsert: API.upsertJobs,
       CleanupStale: API.cleanupStaleJobs,
+
+      // Manual cleanup trigger for debugging
+      TriggerCleanup: async (timeoutMinutes = 5) => {
+        console.log("[JobsTracker] Manual cleanup triggered");
+        return await API.cleanupStaleJobs(timeoutMinutes);
+      },
+
+      // Clear all jobs for debugging
+      ClearAll: async () => {
+        console.log("[JobsTracker] Manual clear all jobs triggered");
+        return await API.clearAllJobs();
+      },
     };
 
     // Wrapped Update method with status validation
@@ -201,7 +191,7 @@ const JobsTrackerPlugin = {
       clearInterval(this.cleanupInterval);
     }
 
-    // Set up periodic cleanup every 5 minutes
+    // Set up periodeic cleanup every 5 minutes
     const cleanupIntervalMs = 5 * 60 * 1000; // 5 minutes
 
     console.log(
@@ -210,11 +200,43 @@ const JobsTrackerPlugin = {
 
     this.cleanupInterval = setInterval(async () => {
       try {
-        await API.cleanupStaleJobs(5); // Clean up jobs older than 5 minutes
+        // Check if DataStore adapters are ready before attempting cleanup
+        if (!PenPal.DataStore || !PenPal.DataStore.AdaptersReady()) {
+          console.log(
+            "[JobsTracker] DataStore adapters not ready, skipping cleanup cycle"
+          );
+          return;
+        }
+
+        const result = await API.cleanupStaleJobs(5); // Clean up jobs older than 5 minutes
+        if (result.cancelledCount > 0) {
+          console.log(
+            `[JobsTracker] Cleanup cycle completed: ${result.cancelledCount} stale jobs cancelled`
+          );
+        }
       } catch (error) {
         console.error("[JobsTracker] Error during automatic cleanup:", error);
       }
     }, cleanupIntervalMs);
+
+    // Also run cleanup once immediately (with delay to allow adapters to be ready)
+    setTimeout(async () => {
+      try {
+        console.log("[JobsTracker] Running initial cleanup check");
+        if (PenPal.DataStore && PenPal.DataStore.AdaptersReady()) {
+          const result = await API.cleanupStaleJobs(5);
+          if (result.cancelledCount > 0) {
+            console.log(
+              `[JobsTracker] Initial cleanup: ${result.cancelledCount} stale jobs cancelled`
+            );
+          }
+        } else {
+          console.log("[JobsTracker] DataStore not ready for initial cleanup");
+        }
+      } catch (error) {
+        console.error("[JobsTracker] Error during initial cleanup:", error);
+      }
+    }, 10000); // Wait 10 seconds for adapters to be ready
   },
 
   stopCleanupTimer() {

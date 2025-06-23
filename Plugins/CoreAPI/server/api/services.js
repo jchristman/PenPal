@@ -198,12 +198,12 @@ export const updateServices = async (services) => {
 
   for (let { id, ...service } of _accepted) {
     // TODO: Optimize with updateMany
-    console.log("Update service", id, service);
+
     let res = await PenPal.DataStore.updateOne(
       "CoreAPI",
       "Services",
       { id },
-      { $set: service }
+      { $set: service } // Use explicit $set for partial updates like other entities
     );
 
     // TODO: See if this is actually right
@@ -235,21 +235,53 @@ export const upsertServices = async (services) => {
 
   for (let i = 0; i < services.length; i++) {
     let service = services[i];
-    let selector = {
-      $and: [
-        { host: service.host },
-        { ip_protocol: service.ip_protocol },
-        { port: service.port },
-      ],
-    };
 
-    let exists = await PenPal.DataStore.fetch("CoreAPI", "Services", selector);
-    if (exists.length > 0) {
-      to_update.push({ id: exists[0].id, ...service });
-
+    // If service has an ID, treat it as an update
+    if (service.id) {
+      to_update.push(service);
       // Splice and decrement the counter to account for the changed length of the array
       services.splice(i, 1);
       i--;
+    } else {
+      // If no ID, check for existing service by host/protocol/port within the project
+
+      // Project is required to prevent cross-project conflicts
+      if (!service.project) {
+        rejected.push({
+          service,
+          error:
+            "project is required when upserting services without ID to avoid conflicts across customers/projects",
+        });
+        services.splice(i, 1);
+        i--;
+        continue;
+      }
+
+      let selector = {
+        $and: [
+          { host: service.host },
+          {
+            ip_protocol: {
+              $regex: new RegExp(`^${service.ip_protocol}$`, "i"),
+            },
+          }, // Case-insensitive protocol match
+          { port: service.port },
+          { project: service.project }, // Always include project scoping
+        ],
+      };
+
+      let exists = await PenPal.DataStore.fetch(
+        "CoreAPI",
+        "Services",
+        selector
+      );
+      if (exists.length > 0) {
+        to_update.push({ id: exists[0].id, ...service });
+
+        // Splice and decrement the counter to account for the changed length of the array
+        services.splice(i, 1);
+        i--;
+      }
     }
   }
 
@@ -295,4 +327,528 @@ export const removeServices = async (service_ids) => {
   }
 
   return false;
+};
+
+// -----------------------------------------------------------
+// Enrichment Management Functions
+//
+// These functions provide a safe, atomic way to manage service enrichments
+// without risk of overwriting existing service data. They support two ways
+// to identify services:
+//
+// 1. By service_id (backward compatibility):
+//    { service_id: "12345" }
+//
+// 2. By host/port combination (recommended for plugins):
+//    { host: "host_id", port: 80, ip_protocol: "TCP" }
+//
+// All functions use MongoDB atomic operators ($push, $set, $pull) to ensure
+// data integrity during concurrent operations.
+// -----------------------------------------------------------
+
+export const addEnrichment = async (service_selector, enrichment) => {
+  return await addEnrichments([{ ...service_selector, enrichment }]);
+};
+
+export const addEnrichments = async (enrichment_updates) => {
+  const results = [];
+  const rejected = [];
+
+  for (const enrichment_update of enrichment_updates) {
+    try {
+      const { enrichment, ...service_selector } = enrichment_update;
+
+      // Validate required fields
+      if (!enrichment || !enrichment.plugin_name) {
+        throw new Error("enrichment must have plugin_name");
+      }
+
+      // Find the service using either service_id or host/port combination
+      let service;
+      let service_id;
+
+      if (service_selector.service_id) {
+        // Direct service ID lookup (backward compatibility)
+        service_id = service_selector.service_id;
+        service = await PenPal.DataStore.fetchOne("CoreAPI", "Services", {
+          id: service_id,
+        });
+        if (!service) {
+          throw new Error(`Service not found: ${service_id}`);
+        }
+      } else if (service_selector.host && service_selector.port) {
+        // Find service by host/port combination
+        // Note: host can be either a Host ID or an IP address
+        const {
+          host,
+          port,
+          ip_protocol = "tcp",
+          project_id,
+        } = service_selector;
+
+        // Project ID is required when using host/port lookup to avoid conflicts across projects
+        if (!project_id) {
+          throw new Error(
+            "project_id is required when using host/port lookup to avoid conflicts across customers/projects"
+          );
+        }
+
+        let host_id = host;
+
+        // Check if host is an IP address (not a Host ID)
+        // Host IDs are typically long alphanumeric strings, IP addresses contain dots
+        if (host.includes(".") || host.includes(":")) {
+          // This looks like an IP address, need to find the Host ID first with project scoping
+          const hosts = await PenPal.DataStore.fetch("CoreAPI", "Hosts", {
+            $and: [{ ip_address: host }, { project: project_id }],
+          });
+
+          if (hosts.length === 0) {
+            throw new Error(
+              `Host not found for IP address=${host} in project=${project_id}`
+            );
+          }
+
+          if (hosts.length > 1) {
+            throw new Error(
+              `Multiple hosts found for IP address=${host} in project=${project_id}`
+            );
+          }
+
+          host_id = hosts[0].id;
+        }
+
+        const selector = {
+          $and: [
+            { host: host_id }, // Use the Host ID, not IP address
+            { port },
+            { ip_protocol: { $regex: new RegExp(`^${ip_protocol}$`, "i") } }, // Case-insensitive protocol match
+            { project: project_id }, // Ensure service belongs to correct project
+          ],
+        };
+
+        const services = await PenPal.DataStore.fetch(
+          "CoreAPI",
+          "Services",
+          selector
+        );
+        if (services.length === 0) {
+          throw new Error(
+            `Service not found for host=${host}, port=${port}, protocol=${ip_protocol} in project=${project_id}`
+          );
+        }
+        if (services.length > 1) {
+          throw new Error(
+            `Multiple services found for host=${host}, port=${port}, protocol=${ip_protocol} in project=${project_id}`
+          );
+        }
+
+        service = services[0];
+        service_id = service.id;
+      } else {
+        throw new Error("Either service_id or host+port must be provided");
+      }
+
+      // Use MongoDB $push to append enrichment to array
+      const result = await PenPal.DataStore.updateOne(
+        "CoreAPI",
+        "Services",
+        { id: service_id },
+        { $push: { enrichments: enrichment } }
+      );
+
+      results.push({ service_id, enrichment, result });
+    } catch (error) {
+      rejected.push({ enrichment_update, error: error.message });
+    }
+  }
+
+  // Publish MQTT update for successful enrichments
+  if (results.length > 0) {
+    const service_ids = results.map((r) => r.service_id);
+    const first_service = await PenPal.DataStore.fetchOne(
+      "CoreAPI",
+      "Services",
+      { id: service_ids[0] }
+    );
+
+    if (first_service) {
+      PenPal.API.MQTT.Publish(PenPal.API.MQTT.Topics.Update.Services, {
+        project: first_service.project,
+        service_ids,
+      });
+    }
+  }
+
+  return { accepted: results, rejected };
+};
+
+export const updateEnrichment = async (
+  service_selector,
+  plugin_name,
+  updated_enrichment
+) => {
+  try {
+    // Validate required fields
+    if (!plugin_name) {
+      throw new Error("plugin_name is required");
+    }
+    if (!updated_enrichment || !updated_enrichment.plugin_name) {
+      throw new Error("updated_enrichment must have plugin_name");
+    }
+
+    // Find the service using either service_id or host/port combination
+    let service;
+    let service_id;
+
+    if (service_selector.service_id) {
+      // Direct service ID lookup (backward compatibility)
+      service_id = service_selector.service_id;
+      service = await PenPal.DataStore.fetchOne("CoreAPI", "Services", {
+        id: service_id,
+      });
+      if (!service) {
+        throw new Error(`Service not found: ${service_id}`);
+      }
+    } else if (service_selector.host && service_selector.port) {
+      // Find service by host/port combination
+      // Note: host can be either a Host ID or an IP address
+      const { host, port, ip_protocol = "tcp", project_id } = service_selector;
+
+      // Project ID is required when using host/port lookup to avoid conflicts across projects
+      if (!project_id) {
+        throw new Error(
+          "project_id is required when using host/port lookup to avoid conflicts across customers/projects"
+        );
+      }
+
+      let host_id = host;
+
+      // Check if host is an IP address (not a Host ID)
+      // Host IDs are typically long alphanumeric strings, IP addresses contain dots
+      if (host.includes(".") || host.includes(":")) {
+        // This looks like an IP address, need to find the Host ID first with project scoping
+        const hosts = await PenPal.DataStore.fetch("CoreAPI", "Hosts", {
+          $and: [{ ip_address: host }, { project: project_id }],
+        });
+
+        if (hosts.length === 0) {
+          throw new Error(
+            `Host not found for IP address=${host} in project=${project_id}`
+          );
+        }
+
+        if (hosts.length > 1) {
+          throw new Error(
+            `Multiple hosts found for IP address=${host} in project=${project_id}`
+          );
+        }
+
+        host_id = hosts[0].id;
+      }
+
+      const selector = {
+        $and: [
+          { host: host_id },
+          { port },
+          { ip_protocol: { $regex: new RegExp(`^${ip_protocol}$`, "i") } }, // Case-insensitive protocol match
+          { project: project_id }, // Ensure service belongs to correct project
+        ],
+      };
+
+      const services = await PenPal.DataStore.fetch(
+        "CoreAPI",
+        "Services",
+        selector
+      );
+      if (services.length === 0) {
+        throw new Error(
+          `Service not found for host=${host}, port=${port}, protocol=${ip_protocol} in project=${project_id}`
+        );
+      }
+      if (services.length > 1) {
+        throw new Error(
+          `Multiple services found for host=${host}, port=${port}, protocol=${ip_protocol} in project=${project_id}`
+        );
+      }
+
+      service = services[0];
+      service_id = service.id;
+    } else {
+      throw new Error("Either service_id or host+port must be provided");
+    }
+
+    // Use MongoDB positional operator to update specific enrichment
+    const result = await PenPal.DataStore.updateOne(
+      "CoreAPI",
+      "Services",
+      {
+        id: service_id,
+        "enrichments.plugin_name": plugin_name,
+      },
+      { $set: { "enrichments.$": updated_enrichment } }
+    );
+
+    // Publish MQTT update
+    PenPal.API.MQTT.Publish(PenPal.API.MQTT.Topics.Update.Services, {
+      project: service.project,
+      service_ids: [service_id],
+    });
+
+    return { success: true, service_id, plugin_name, updated_enrichment };
+  } catch (error) {
+    return {
+      success: false,
+      service_selector,
+      plugin_name,
+      error: error.message,
+    };
+  }
+};
+
+export const upsertEnrichment = async (service_selector, enrichment) => {
+  try {
+    // Validate required fields
+    if (!enrichment || !enrichment.plugin_name) {
+      throw new Error("enrichment must have plugin_name");
+    }
+
+    // Find the service using either service_id or host/port combination
+    let service;
+    let service_id;
+
+    if (service_selector.service_id) {
+      // Direct service ID lookup (backward compatibility)
+      service_id = service_selector.service_id;
+      service = await PenPal.DataStore.fetchOne("CoreAPI", "Services", {
+        id: service_id,
+      });
+      if (!service) {
+        throw new Error(`Service not found: ${service_id}`);
+      }
+    } else if (service_selector.host && service_selector.port) {
+      // Find service by host/port combination
+      // Note: host can be either a Host ID or an IP address
+      const { host, port, ip_protocol = "tcp", project_id } = service_selector;
+
+      // Project ID is required when using host/port lookup to avoid conflicts across projects
+      if (!project_id) {
+        throw new Error(
+          "project_id is required when using host/port lookup to avoid conflicts across customers/projects"
+        );
+      }
+
+      let host_id = host;
+
+      // Check if host is an IP address (not a Host ID)
+      // Host IDs are typically long alphanumeric strings, IP addresses contain dots
+      if (host.includes(".") || host.includes(":")) {
+        // This looks like an IP address, need to find the Host ID first with project scoping
+        const hosts = await PenPal.DataStore.fetch("CoreAPI", "Hosts", {
+          $and: [{ ip_address: host }, { project: project_id }],
+        });
+
+        if (hosts.length === 0) {
+          throw new Error(
+            `Host not found for IP address=${host} in project=${project_id}`
+          );
+        }
+
+        if (hosts.length > 1) {
+          throw new Error(
+            `Multiple hosts found for IP address=${host} in project=${project_id}`
+          );
+        }
+
+        host_id = hosts[0].id;
+      }
+
+      const selector = {
+        $and: [
+          { host: host_id },
+          { port },
+          { ip_protocol: { $regex: new RegExp(`^${ip_protocol}$`, "i") } }, // Case-insensitive protocol match
+          { project: project_id }, // Ensure service belongs to correct project
+        ],
+      };
+
+      const services = await PenPal.DataStore.fetch(
+        "CoreAPI",
+        "Services",
+        selector
+      );
+      if (services.length === 0) {
+        throw new Error(
+          `Service not found for host=${host}, port=${port}, protocol=${ip_protocol} in project=${project_id}`
+        );
+      }
+      if (services.length > 1) {
+        throw new Error(
+          `Multiple services found for host=${host}, port=${port}, protocol=${ip_protocol} in project=${project_id}`
+        );
+      }
+
+      service = services[0];
+      service_id = service.id;
+    } else {
+      throw new Error("Either service_id or host+port must be provided");
+    }
+
+    const plugin_name = enrichment.plugin_name;
+    const existing_enrichments = service.enrichments || [];
+
+    // Check if enrichment from this plugin already exists
+    const existing_index = existing_enrichments.findIndex(
+      (e) => e.plugin_name === plugin_name
+    );
+
+    let result;
+    let operation;
+
+    if (existing_index >= 0) {
+      // Update existing enrichment
+      result = await PenPal.DataStore.updateOne(
+        "CoreAPI",
+        "Services",
+        {
+          id: service_id,
+          "enrichments.plugin_name": plugin_name,
+        },
+        { $set: { "enrichments.$": enrichment } }
+      );
+      operation = "updated";
+    } else {
+      // Add new enrichment
+      result = await PenPal.DataStore.updateOne(
+        "CoreAPI",
+        "Services",
+        { id: service_id },
+        { $push: { enrichments: enrichment } }
+      );
+      operation = "added";
+    }
+
+    // Publish MQTT update
+    PenPal.API.MQTT.Publish(PenPal.API.MQTT.Topics.Update.Services, {
+      project: service.project,
+      service_ids: [service_id],
+    });
+
+    return { success: true, service_id, operation, enrichment };
+  } catch (error) {
+    return { success: false, service_selector, error: error.message };
+  }
+};
+
+export const removeEnrichment = async (service_selector, plugin_name) => {
+  try {
+    // Validate required fields
+    if (!plugin_name) {
+      throw new Error("plugin_name is required");
+    }
+
+    // Find the service using either service_id or host/port combination
+    let service;
+    let service_id;
+
+    if (service_selector.service_id) {
+      // Direct service ID lookup (backward compatibility)
+      service_id = service_selector.service_id;
+      service = await PenPal.DataStore.fetchOne("CoreAPI", "Services", {
+        id: service_id,
+      });
+      if (!service) {
+        throw new Error(`Service not found: ${service_id}`);
+      }
+    } else if (service_selector.host && service_selector.port) {
+      // Find service by host/port combination
+      // Note: host can be either a Host ID or an IP address
+      const { host, port, ip_protocol = "tcp", project_id } = service_selector;
+
+      // Project ID is required when using host/port lookup to avoid conflicts across projects
+      if (!project_id) {
+        throw new Error(
+          "project_id is required when using host/port lookup to avoid conflicts across customers/projects"
+        );
+      }
+
+      let host_id = host;
+
+      // Check if host is an IP address (not a Host ID)
+      // Host IDs are typically long alphanumeric strings, IP addresses contain dots
+      if (host.includes(".") || host.includes(":")) {
+        // This looks like an IP address, need to find the Host ID first with project scoping
+        const hosts = await PenPal.DataStore.fetch("CoreAPI", "Hosts", {
+          $and: [{ ip_address: host }, { project: project_id }],
+        });
+
+        if (hosts.length === 0) {
+          throw new Error(
+            `Host not found for IP address=${host} in project=${project_id}`
+          );
+        }
+
+        if (hosts.length > 1) {
+          throw new Error(
+            `Multiple hosts found for IP address=${host} in project=${project_id}`
+          );
+        }
+
+        host_id = hosts[0].id;
+      }
+
+      const selector = {
+        $and: [
+          { host: host_id },
+          { port },
+          { ip_protocol: { $regex: new RegExp(`^${ip_protocol}$`, "i") } }, // Case-insensitive protocol match
+          { project: project_id }, // Ensure service belongs to correct project
+        ],
+      };
+
+      const services = await PenPal.DataStore.fetch(
+        "CoreAPI",
+        "Services",
+        selector
+      );
+      if (services.length === 0) {
+        throw new Error(
+          `Service not found for host=${host}, port=${port}, protocol=${ip_protocol} in project=${project_id}`
+        );
+      }
+      if (services.length > 1) {
+        throw new Error(
+          `Multiple services found for host=${host}, port=${port}, protocol=${ip_protocol} in project=${project_id}`
+        );
+      }
+
+      service = services[0];
+      service_id = service.id;
+    } else {
+      throw new Error("Either service_id or host+port must be provided");
+    }
+
+    // Use MongoDB $pull to remove enrichment by plugin_name
+    const result = await PenPal.DataStore.updateOne(
+      "CoreAPI",
+      "Services",
+      { id: service_id },
+      { $pull: { enrichments: { plugin_name } } }
+    );
+
+    // Publish MQTT update
+    PenPal.API.MQTT.Publish(PenPal.API.MQTT.Topics.Update.Services, {
+      project: service.project,
+      service_ids: [service_id],
+    });
+
+    return { success: true, service_id, plugin_name };
+  } catch (error) {
+    return {
+      success: false,
+      service_selector,
+      plugin_name,
+      error: error.message,
+    };
+  }
 };

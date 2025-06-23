@@ -1,4 +1,5 @@
 import PenPal from "#penpal/core";
+import { JobStatus, COMPLETED_STATUSES } from "../../common/job-constants.js";
 
 // Job CRUD operations
 export const getJob = async (job_id) => {
@@ -30,7 +31,21 @@ export const insertJob = async (job) => {
   const result = await PenPal.DataStore.insertMany("JobsTracker", "Jobs", [
     job_with_timestamps,
   ]);
-  return result[0]; // Return the first (and only) inserted job
+
+  const createdJob = result[0];
+
+  // Publish job creation event
+  if (PenPal.PubSub) {
+    PenPal.PubSub.publish("JOB_CREATED", { jobCreated: createdJob });
+
+    // Also publish active jobs change
+    const activeJobs = await getActiveJobs();
+    PenPal.PubSub.publish("ACTIVE_JOBS_CHANGED", {
+      activeJobsChanged: activeJobs,
+    });
+  }
+
+  return createdJob; // Return the first (and only) inserted job
 };
 
 export const insertJobs = async (jobs) => {
@@ -53,12 +68,28 @@ export const updateJob = async (job_id, updates) => {
     updated_at: new Date().toISOString(),
   };
 
-  return await PenPal.DataStore.updateOne(
+  const result = await PenPal.DataStore.updateOne(
     "JobsTracker",
     "Jobs",
     { id: job_id },
     updated_job
   );
+
+  // Get the updated job data
+  const updatedJobData = await getJob(job_id);
+
+  // Publish job update event
+  if (PenPal.PubSub && updatedJobData) {
+    PenPal.PubSub.publish("JOB_UPDATED", { jobUpdated: updatedJobData });
+
+    // Also publish active jobs change
+    const activeJobs = await getActiveJobs();
+    PenPal.PubSub.publish("ACTIVE_JOBS_CHANGED", {
+      activeJobsChanged: activeJobs,
+    });
+  }
+
+  return result;
 };
 
 export const updateJobs = async (updates_array, update_updated_at = true) => {
@@ -83,7 +114,22 @@ export const updateJobs = async (updates_array, update_updated_at = true) => {
 };
 
 export const removeJob = async (job_id) => {
-  return await PenPal.DataStore.delete("JobsTracker", "Jobs", { id: job_id });
+  const result = await PenPal.DataStore.delete("JobsTracker", "Jobs", {
+    id: job_id,
+  });
+
+  // Publish job deletion event
+  if (PenPal.PubSub) {
+    PenPal.PubSub.publish("JOB_DELETED", { jobDeleted: job_id });
+
+    // Also publish active jobs change
+    const activeJobs = await getActiveJobs();
+    PenPal.PubSub.publish("ACTIVE_JOBS_CHANGED", {
+      activeJobsChanged: activeJobs,
+    });
+  }
+
+  return result;
 };
 
 export const removeJobs = async (job_ids) => {
@@ -181,7 +227,7 @@ export const getJobsFiltered = async (filterMode = "active") => {
       const filteredJobs = allJobs.filter((job) => {
         // Always show jobs that are not completed
         // Use PenPal.Jobs.CompletedStatuses if available, otherwise fallback to hardcoded list
-        const completedStatuses = PenPal.Jobs.CompletedStatuses;
+        const completedStatuses = COMPLETED_STATUSES;
 
         if (!completedStatuses.includes(job.status)) {
           return true;
@@ -212,42 +258,122 @@ export const getJobsFiltered = async (filterMode = "active") => {
 
 // Cleanup stale jobs
 export const cleanupStaleJobs = async (timeoutMinutes = 5) => {
+  console.log(
+    `[JobsTracker] Starting cleanup of stale jobs (timeout: ${timeoutMinutes} minutes)`
+  );
+
+  // Check if DataStore adapters are ready
+  if (!PenPal.DataStore || !PenPal.DataStore.AdaptersReady()) {
+    console.log("[JobsTracker] DataStore adapters not ready, skipping cleanup");
+    return { cancelledCount: 0, jobs: [], error: "DataStore not ready" };
+  }
+
   const timeoutMs = timeoutMinutes * 60 * 1000;
   const cutoffTime = new Date(Date.now() - timeoutMs);
 
-  // Find jobs that haven't been updated in the specified time and are still active
-  const staleJobs = await PenPal.DataStore.fetch("JobsTracker", "Jobs", {
-    $and: [
-      { updated_at: { $lt: cutoffTime.toISOString() } },
-      { progress: { $lt: 100 } },
-      { status: { $nin: ["done", "cancelled", "failed"] } },
-    ],
-  });
+  try {
+    // First, get all jobs to see what we're working with
+    const allJobs = await PenPal.DataStore.fetch("JobsTracker", "Jobs", {});
+    // console.log(`[JobsTracker] Total jobs in database: ${allJobs.length}`);
 
-  if (staleJobs.length === 0) {
-    return { cancelledCount: 0, jobs: [] };
+    // Find jobs that haven't been updated in the specified time and are still active
+    const staleJobs = await PenPal.DataStore.fetch("JobsTracker", "Jobs", {
+      $and: [
+        { updated_at: { $lt: cutoffTime.toISOString() } },
+        { progress: { $lt: 100 } },
+        {
+          status: {
+            $nin: [JobStatus.DONE, JobStatus.CANCELLED, JobStatus.FAILED],
+          },
+        },
+      ],
+    });
+
+    if (staleJobs.length === 0) {
+      console.log("[JobsTracker] No stale jobs found");
+      return { cancelledCount: 0, jobs: [] };
+    }
+
+    // Update stale jobs to cancelled status
+    const cancelledStatus = JobStatus.CANCELLED;
+    console.log(
+      `[JobsTracker] Marking ${staleJobs.length} jobs as cancelled with status: ${cancelledStatus}`
+    );
+
+    const updates = staleJobs.map((job) => ({
+      id: job.id,
+      status: cancelledStatus,
+      statusText: `Cancelled due to inactivity (no updates for ${timeoutMinutes} minutes)`,
+      //updated_at: new Date().toISOString(), // don't update the updated_at field because that will change the runtime calculation
+    }));
+
+    const updateResult = await updateJobs(updates, false); // don't update the updated_at field because that will change the runtime calculation
+
+    return {
+      cancelledCount: staleJobs.length,
+      jobs: staleJobs.map((job) => ({
+        id: job.id,
+        name: job.name,
+        plugin: job.plugin,
+        lastUpdated: job.updated_at,
+      })),
+    };
+  } catch (error) {
+    console.error(`[JobsTracker] Error during cleanup:`, error);
+    return { cancelledCount: 0, jobs: [], error: error.message };
+  }
+};
+
+// Clear all jobs
+export const clearAllJobs = async () => {
+  console.log("[JobsTracker] Starting to clear all jobs from datastore");
+
+  // Check if DataStore adapters are ready
+  if (!PenPal.DataStore || !PenPal.DataStore.AdaptersReady()) {
+    console.log(
+      "[JobsTracker] DataStore adapters not ready, cannot clear jobs"
+    );
+    return { deletedCount: 0, error: "DataStore not ready" };
   }
 
-  // Update stale jobs to cancelled status
-  const cancelledStatus = PenPal.Jobs?.Status?.CANCELLED || "cancelled";
-  const updates = staleJobs.map((job) => ({
-    id: job.id,
-    status: cancelledStatus,
-    statusText: `Cancelled due to inactivity (no updates for ${timeoutMinutes} minutes)`,
-    //updated_at: new Date().toISOString(), // don't update the updated_at field because that will change the runtime calculation
-  }));
+  try {
+    // Get all jobs count before deletion
+    const allJobs = await PenPal.DataStore.fetch("JobsTracker", "Jobs", {});
+    const totalCount = allJobs.length;
 
-  await updateJobs(updates, false); // don't update the updated_at field because that will change the runtime calculation
+    console.log(`[JobsTracker] Found ${totalCount} jobs to clear`);
 
-  console.log(`[JobsTracker] Cleaned up ${staleJobs.length} stale jobs`);
+    // Delete all jobs
+    const result = await PenPal.DataStore.delete("JobsTracker", "Jobs", {});
 
-  return {
-    cancelledCount: staleJobs.length,
-    jobs: staleJobs.map((job) => ({
-      id: job.id,
-      name: job.name,
-      plugin: job.plugin,
-      lastUpdated: job.updated_at,
-    })),
-  };
+    console.log(`[JobsTracker] DataStore delete result:`, result);
+
+    // Publish events for real-time updates
+    if (PenPal.PubSub) {
+      // Publish that all jobs were cleared
+      PenPal.PubSub.publish("ALL_JOBS_CLEARED", {
+        allJobsCleared: { deletedCount: totalCount },
+      });
+
+      // Also publish active jobs change (now empty)
+      PenPal.PubSub.publish("ACTIVE_JOBS_CHANGED", {
+        activeJobsChanged: [],
+      });
+    }
+
+    console.log(
+      `[JobsTracker] Successfully cleared ${totalCount} jobs from datastore`
+    );
+
+    return {
+      deletedCount: totalCount,
+      error: null,
+    };
+  } catch (error) {
+    console.error("[JobsTracker] Error clearing all jobs:", error);
+    return {
+      deletedCount: 0,
+      error: error.message,
+    };
+  }
 };
