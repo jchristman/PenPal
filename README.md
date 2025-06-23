@@ -47,6 +47,95 @@ PenPal is an automation and reporting all-in-one tool that is meant to enable Cy
   - [ ] Data flow
   - [ ] Agent selection based on nearby networks (for automations)
 
+## Service Enrichment System
+
+PenPal features an **extensible service enrichment architecture** that allows plugins to add rich metadata to discovered services. This creates a comprehensive intelligence view by layering data from multiple cybersecurity tools.
+
+### How It Works
+
+1. **Service Discovery**: Tools like Nmap and Rustscan discover services (IP:port combinations)
+2. **Enrichment Plugins**: Additional tools (HttpX, etc.) analyze services and add metadata
+3. **Unified View**: All enrichment data is displayed in a rich, extensible UI
+4. **Plugin Extensibility**: New plugins can register custom display components
+
+### Current Enrichment Plugins
+
+- **[Nmap](https://nmap.org/)**: Service fingerprinting, version detection, OS detection
+  - Service names, product versions, banners
+  - Operating system detection
+  - Service fingerprints and additional info
+- **[HttpX](https://github.com/projectdiscovery/httpx)**: HTTP service analysis
+  - HTTP status codes, content types, page titles
+  - Technology stack detection (frameworks, servers, etc.)
+  - Content length, response headers
+  - Clickable URLs with security validation
+
+### Enrichment UI Features
+
+**Services Tab Structure:**
+
+- **List View**: Overview of all services with enrichment count badges
+- **Enrichments View**: Detailed plugin data with custom rich displays
+- **Graph View**: Network topology visualization (coming soon)
+
+**Rich Display Components:**
+
+- **HttpX**: Clickable URLs, color-coded HTTP status, technology chips
+- **Nmap**: Service information, version details, fingerprint data
+- **Default Display**: Automatic fallback for any plugin enrichment
+
+**Real-time Updates:**
+
+- Services UI polls every 15 seconds for new enrichments
+- Automatic refresh when new scan data becomes available
+- Live enrichment count indicators
+
+### For Plugin Developers
+
+The enrichment system is designed for easy extension:
+
+```javascript
+// Server-side: Create enrichments
+const enrichment = {
+  plugin_name: "YourPlugin",
+  url: result.url,
+  status_code: result.status_code,
+  // ... your plugin's data
+};
+
+// Append to service enrichments
+const updated_enrichments = [...(service.enrichments || []), enrichment];
+
+await PenPal.API.Services.UpsertMany([
+  {
+    id: service.id,
+    enrichments: updated_enrichments,
+  },
+]);
+
+// Client-side: Register custom display
+import YourEnrichmentDisplay from "./components/your-enrichment-display.jsx";
+PenPal.API.registerEnrichmentDisplay("YourPlugin", YourEnrichmentDisplay);
+```
+
+### MQTT Event Integration
+
+Enrichment plugins automatically respond to service discovery events:
+
+```javascript
+// Subscribe to new services from other plugins
+await MQTT.Subscribe(
+  PenPal.API.MQTT.Topics.New.Services,
+  async ({ service_ids }) => {
+    const services = await PenPal.API.Services.GetMany(service_ids);
+    // Filter for relevant services and enrich them
+    await enrichServices(services);
+  }
+);
+```
+
+This creates an intelligent **service discovery chain** where each plugin builds upon the discoveries of others, creating comprehensive service intelligence automatically.
+
 ## Plugin Ideas
 
 - [ ] Really anything from the core
