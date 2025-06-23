@@ -1,5 +1,5 @@
 import React, { useState, useEffect } from "react";
-import { useQuery, useSubscription, gql } from "@apollo/client";
+import { useQuery, useSubscription, useMutation, gql } from "@apollo/client";
 import { Components, registerComponent } from "@penpal/core";
 import { makeStyles } from "@mui/styles";
 import {
@@ -13,18 +13,25 @@ import {
   Collapse,
   IconButton,
   Tooltip,
+  Dialog,
+  DialogTitle,
+  DialogContent,
+  DialogActions,
+  DialogContentText,
 } from "@mui/material";
 import {
   ExpandMore as ExpandMoreIcon,
   ExpandLess as ExpandLessIcon,
   Refresh as RefreshIcon,
   Delete as DeleteIcon,
+  DeleteSweep as DeleteSweepIcon,
 } from "@mui/icons-material";
 
 import GetAllJobs from "./queries/get-all-jobs.js";
 import JobsSubscription from "./queries/jobs-subscription.js";
 import JobCreatedSubscription from "./queries/job-created-subscription.js";
 import JobDeletedSubscription from "./queries/job-deleted-subscription.js";
+import ClearAllJobs from "./mutations/clear-all-jobs.js";
 import { formatRuntime, formatCompletionTime } from "../../utils/time-utils.js";
 import { JobStatus } from "../../../common/job-constants.js";
 
@@ -121,6 +128,30 @@ const useStyles = makeStyles((theme) => ({
     width: 14,
     height: 14,
     cursor: "pointer",
+  },
+  clearAllButton: {
+    padding: "8px 16px",
+    border: "1px solid #dc3545",
+    borderRadius: 6,
+    background: "#dc3545",
+    color: "white",
+    cursor: "pointer",
+    fontSize: 13,
+    fontWeight: 500,
+    transition: "all 0.2s ease",
+    display: "flex",
+    alignItems: "center",
+    gap: 6,
+    "&:hover": {
+      background: "#c82333",
+      borderColor: "#c82333",
+    },
+    "&:disabled": {
+      background: "#6c757d",
+      borderColor: "#6c757d",
+      cursor: "not-allowed",
+      opacity: 0.6,
+    },
   },
   jobsHeaderTitle: {
     margin: 0,
@@ -859,7 +890,30 @@ const JobsPage = () => {
   const [frozenPluginOrder, setFrozenPluginOrder] = useState([]);
   const [lastStableOrder, setLastStableOrder] = useState([]);
   const [jobs, setJobs] = useState([]);
+  const [clearDialogOpen, setClearDialogOpen] = useState(false);
   const pageSize = 20;
+
+  // Clear all jobs mutation
+  const [clearAllJobs, { loading: clearingJobs }] = useMutation(ClearAllJobs, {
+    onCompleted: (data) => {
+      if (data?.clearAllJobs?.error) {
+        console.error("Error clearing jobs:", data.clearAllJobs.error);
+        alert(`Error clearing jobs: ${data.clearAllJobs.error}`);
+      } else {
+        console.log(
+          `Successfully cleared ${data.clearAllJobs.deletedCount} jobs`
+        );
+        // Clear local jobs state immediately for instant UI update
+        setJobs([]);
+        setClearDialogOpen(false);
+      }
+    },
+    onError: (error) => {
+      console.error("GraphQL error clearing jobs:", error);
+      alert(`Error clearing jobs: ${error.message}`);
+      setClearDialogOpen(false);
+    },
+  });
 
   // Stability threshold: only reorder if time difference is > 30 seconds
   const STABILITY_THRESHOLD_MS = 30 * 1000; // 30 seconds
@@ -1114,6 +1168,18 @@ const JobsPage = () => {
     setFreezeSort(!freezeSort);
   };
 
+  const handleClearAllJobs = () => {
+    setClearDialogOpen(true);
+  };
+
+  const handleConfirmClearJobs = () => {
+    clearAllJobs();
+  };
+
+  const handleCancelClearJobs = () => {
+    setClearDialogOpen(false);
+  };
+
   if (loading) {
     return (
       <div className={classes.jobsPageLoading}>
@@ -1218,6 +1284,15 @@ const JobsPage = () => {
           >
             {freezeSort ? "🧊 Sort Frozen" : "❄️ Freeze Sort"}
           </button>
+          <button
+            className={classes.clearAllButton}
+            onClick={handleClearAllJobs}
+            disabled={clearingJobs || totalCount === 0}
+            title="Clear all jobs from datastore (ALL users)"
+          >
+            <DeleteSweepIcon style={{ fontSize: 14 }} />
+            {clearingJobs ? "Clearing..." : "Clear All Jobs"}
+          </button>
         </div>
 
         <div style={{ marginBottom: 16 }}>
@@ -1255,6 +1330,35 @@ const JobsPage = () => {
             </button>
           </div>
         )}
+
+        {/* Clear All Jobs Confirmation Dialog */}
+        <Dialog
+          open={clearDialogOpen}
+          onClose={handleCancelClearJobs}
+          maxWidth="sm"
+          fullWidth
+        >
+          <DialogTitle>Confirm Clear All Jobs</DialogTitle>
+          <DialogContent>
+            <DialogContentText>
+              Warning: This will clear all logs of plugin jobs for ALL users.
+              This action cannot be undone. Are you sure you want to continue?
+            </DialogContentText>
+          </DialogContent>
+          <DialogActions>
+            <Button onClick={handleCancelClearJobs} color="primary">
+              Cancel
+            </Button>
+            <Button
+              onClick={handleConfirmClearJobs}
+              color="error"
+              variant="contained"
+              disabled={clearingJobs}
+            >
+              {clearingJobs ? "Clearing..." : "Clear All Jobs"}
+            </Button>
+          </DialogActions>
+        </Dialog>
       </div>
     );
   }
@@ -1403,6 +1507,15 @@ const JobsPage = () => {
         >
           {freezeSort ? "🧊 Sort Frozen" : "❄️ Freeze Sort"}
         </button>
+        <button
+          className={classes.clearAllButton}
+          onClick={handleClearAllJobs}
+          disabled={clearingJobs || allJobs.length === 0}
+          title="Clear all jobs from datastore (ALL users)"
+        >
+          <DeleteSweepIcon style={{ fontSize: 14 }} />
+          {clearingJobs ? "Clearing..." : "Clear All Jobs"}
+        </button>
       </div>
 
       <div className={classes.pluginsContainer}>
@@ -1419,6 +1532,35 @@ const JobsPage = () => {
           <div className={classes.noJobs}>No jobs found</div>
         )}
       </div>
+
+      {/* Clear All Jobs Confirmation Dialog */}
+      <Dialog
+        open={clearDialogOpen}
+        onClose={handleCancelClearJobs}
+        maxWidth="sm"
+        fullWidth
+      >
+        <DialogTitle>Confirm Clear All Jobs</DialogTitle>
+        <DialogContent>
+          <DialogContentText>
+            Warning: This will clear all logs of plugin jobs for ALL users. This
+            action cannot be undone. Are you sure you want to continue?
+          </DialogContentText>
+        </DialogContent>
+        <DialogActions>
+          <Button onClick={handleCancelClearJobs} color="primary">
+            Cancel
+          </Button>
+          <Button
+            onClick={handleConfirmClearJobs}
+            color="error"
+            variant="contained"
+            disabled={clearingJobs}
+          >
+            {clearingJobs ? "Clearing..." : "Clear All Jobs"}
+          </Button>
+        </DialogActions>
+      </Dialog>
     </div>
   );
 };

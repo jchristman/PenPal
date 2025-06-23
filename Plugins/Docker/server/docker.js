@@ -137,6 +137,11 @@ const safeJobOperation = async (operation, ...args) => {
       }
     }
 
+    if (args?.stages?.length > 0) {
+      // A deferred job with stages won't work, so just return null
+      return null;
+    }
+
     if (
       PenPal.DataStore &&
       PenPal.DataStore.AdaptersReady() &&
