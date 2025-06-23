@@ -198,12 +198,12 @@ export const updateServices = async (services) => {
 
   for (let { id, ...service } of _accepted) {
     // TODO: Optimize with updateMany
-    console.log("Update service", id, service);
+
     let res = await PenPal.DataStore.updateOne(
       "CoreAPI",
       "Services",
       { id },
-      { $set: service }
+      service // MongoDB adapter automatically wraps in $set for partial updates
     );
 
     // TODO: See if this is actually right
@@ -235,21 +235,35 @@ export const upsertServices = async (services) => {
 
   for (let i = 0; i < services.length; i++) {
     let service = services[i];
-    let selector = {
-      $and: [
-        { host: service.host },
-        { ip_protocol: service.ip_protocol },
-        { port: service.port },
-      ],
-    };
 
-    let exists = await PenPal.DataStore.fetch("CoreAPI", "Services", selector);
-    if (exists.length > 0) {
-      to_update.push({ id: exists[0].id, ...service });
-
+    // If service has an ID, treat it as an update
+    if (service.id) {
+      to_update.push(service);
       // Splice and decrement the counter to account for the changed length of the array
       services.splice(i, 1);
       i--;
+    } else {
+      // If no ID, check for existing service by host/protocol/port
+      let selector = {
+        $and: [
+          { host: service.host },
+          { ip_protocol: service.ip_protocol },
+          { port: service.port },
+        ],
+      };
+
+      let exists = await PenPal.DataStore.fetch(
+        "CoreAPI",
+        "Services",
+        selector
+      );
+      if (exists.length > 0) {
+        to_update.push({ id: exists[0].id, ...service });
+
+        // Splice and decrement the counter to account for the changed length of the array
+        services.splice(i, 1);
+        i--;
+      }
     }
   }
 

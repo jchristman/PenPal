@@ -6,6 +6,10 @@ import { GraphQLWsLink } from "@apollo/client/link/subscriptions";
 import { getMainDefinition } from "@apollo/client/utilities";
 import { onError } from "@apollo/client/link/error";
 import { createClient } from "graphql-ws";
+import {
+  setWebSocketState,
+  WS_CONNECTION_STATES,
+} from "./common/websocket-utils.js";
 
 const graphql_loc = "http://localhost:3001";
 
@@ -15,6 +19,21 @@ const RETRY_CONFIG = {
   initialDelay: 1000,
   maxDelay: 10000,
   backoffMultiplier: 1.5,
+};
+
+// WebSocket reconnection configuration
+const WS_RETRY_CONFIG = {
+  maxRetries: 15,
+  initialDelay: 1000,
+  maxDelay: 30000,
+  backoffMultiplier: 1.5,
+  shouldRetry: (errorOrCloseEvent) => {
+    // Don't retry for authentication failures or intentional closures
+    if (errorOrCloseEvent?.code === 1000 || errorOrCloseEvent?.code === 4401) {
+      return false;
+    }
+    return true;
+  },
 };
 
 const sleep = (ms) => new Promise((resolve) => setTimeout(resolve, ms));
@@ -194,20 +213,112 @@ const apolloInit = async (onProgress) => {
     );
 
     onProgress?.("Setting up WebSocket connection...");
-    // Create WebSocket link for subscriptions
+    // Create WebSocket link for subscriptions with automatic reconnection
     const wsLink = new GraphQLWsLink(
       createClient({
         url: "ws://localhost:3001/graphql",
-        onError: (error) => {
-          console.error("GraphQL WebSocket Error:", error.message);
-        },
-        onClosed: (event) => {
-          console.warn(
-            "WebSocket connection closed:",
-            event.code,
-            event.reason
+        retryAttempts: WS_RETRY_CONFIG.maxRetries,
+        retryWait: async function (retries) {
+          const delay = Math.min(
+            WS_RETRY_CONFIG.initialDelay *
+              Math.pow(WS_RETRY_CONFIG.backoffMultiplier, retries),
+            WS_RETRY_CONFIG.maxDelay
           );
+          console.log(
+            `🔄 WebSocket reconnection attempt ${retries + 1}/${
+              WS_RETRY_CONFIG.maxRetries
+            } in ${delay}ms...`
+          );
+
+          // Update state to indicate we're actively reconnecting
+          setWebSocketState(WS_CONNECTION_STATES.RECONNECTING);
+
+          await sleep(delay);
         },
+        shouldRetry: WS_RETRY_CONFIG.shouldRetry,
+        connectionParams: () => {
+          // Add any authentication headers here if needed
+          return {
+            // authorization: getAuthToken(),
+          };
+        },
+        on: {
+          connecting: () => {
+            console.log("🔌 WebSocket connecting...");
+            setWebSocketState(WS_CONNECTION_STATES.CONNECTING);
+          },
+          connected: (socket, payload) => {
+            console.log("✅ WebSocket connected successfully");
+            setWebSocketState(WS_CONNECTION_STATES.CONNECTED);
+          },
+          message: ({ type, payload }) => {
+            if (type === "connection_ack") {
+              console.log("🤝 WebSocket connection acknowledged");
+            }
+          },
+          error: (error) => {
+            console.error("❌ GraphQL WebSocket Error:", error.message);
+            // Log additional error details for debugging
+            if (error.code) {
+              console.error(`WebSocket error code: ${error.code}`);
+            }
+            if (error.reason) {
+              console.error(`WebSocket error reason: ${error.reason}`);
+            }
+
+            // Update connection state based on error
+            if (error.code === 4401) {
+              setWebSocketState(WS_CONNECTION_STATES.FAILED);
+            }
+          },
+          closed: (event) => {
+            console.warn(
+              `❌ WebSocket connection closed (code: ${event.code}, reason: "${event.reason}")`
+            );
+
+            // Update connection state based on close reason
+            let newState = WS_CONNECTION_STATES.DISCONNECTED;
+
+            // Provide user-friendly error messages
+            switch (event.code) {
+              case 1000:
+                console.log("🔌 WebSocket closed normally");
+                newState = WS_CONNECTION_STATES.DISCONNECTED;
+                break;
+              case 1001:
+                console.warn("🔌 WebSocket closed - going away");
+                newState = WS_CONNECTION_STATES.DISCONNECTED;
+                break;
+              case 1006:
+                console.warn(
+                  "🔌 WebSocket closed abnormally - will attempt to reconnect"
+                );
+                newState = WS_CONNECTION_STATES.RECONNECTING;
+                break;
+              case 4400:
+                console.error("🔌 WebSocket closed - bad request");
+                newState = WS_CONNECTION_STATES.FAILED;
+                break;
+              case 4401:
+                console.error("🔌 WebSocket closed - unauthorized");
+                newState = WS_CONNECTION_STATES.FAILED;
+                break;
+              case 4500:
+                console.error("🔌 WebSocket closed - internal server error");
+                newState = WS_CONNECTION_STATES.RECONNECTING;
+                break;
+              default:
+                console.warn(
+                  `🔌 WebSocket closed with unknown code: ${event.code}`
+                );
+                newState = WS_CONNECTION_STATES.RECONNECTING;
+            }
+
+            setWebSocketState(newState);
+          },
+        },
+        // Keep connection alive with periodic pings
+        keepAlive: 30000, // 30 seconds
       })
     );
 

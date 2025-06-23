@@ -11,6 +11,8 @@ extra_info: service.extra_info,
 type NmapPluginEnrichment implements PluginEnrichment {
   "This allows the type resolver to determine if the PluginEnrichment"
   plugin_name: String!
+  "Generic data field that holds all plugin-specific enrichment data"
+  data: JSON
   "The service associated with the Nmap Plugin Enrichment"
   service: String
   "The fingerprint associated with the Nmap Plugin Enrichment"

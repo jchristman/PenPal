@@ -55,13 +55,21 @@ export const parseAndUpsertResults = async (
   const service_updates = [];
 
   for (const result of http_results) {
+    console.log(
+      `[HttpX] Trying to match result: host=${result.host}, port=${result.port}`
+    );
+
     // Find the service that matches this result (by host and port)
     const matching_service = services_data.find((service) => {
       const service_host = service.host_ip || service.host?.ip_address;
+      console.log(
+        `[HttpX] Comparing with service: host=${service_host}, port=${service.port}, id=${service.id}`
+      );
       return service_host === result.host && service.port === result.port;
     });
 
     if (matching_service) {
+      console.log(`[HttpX] Found matching service: ${matching_service.id}`);
       // Create enrichment data for this service
       const enrichment = {
         plugin_name: "HttpX",
@@ -85,6 +93,10 @@ export const parseAndUpsertResults = async (
         id: matching_service.id,
         enrichments: updated_enrichments,
       });
+    } else {
+      console.log(
+        `[HttpX] No matching service found for host=${result.host}, port=${result.port}`
+      );
     }
   }
 

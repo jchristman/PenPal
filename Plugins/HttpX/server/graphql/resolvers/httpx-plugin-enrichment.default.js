@@ -7,10 +7,15 @@ const isHttpXPluginEnrichment = (obj) => {
   return null;
 };
 
+// Register this resolver with the interface resolver system
+PenPal.Utils.RunAfterImport(() => {
+  if (!PenPal.API.InterfaceResolvers.PluginEnrichments) {
+    PenPal.API.InterfaceResolvers.PluginEnrichments = [];
+  }
+  PenPal.API.InterfaceResolvers.PluginEnrichments.push(isHttpXPluginEnrichment);
+});
+
 export default {
-  PluginEnrichment: {
-    __resolveType: isHttpXPluginEnrichment,
-  },
   HttpXPluginEnrichment: {
     url(obj) {
       return obj.url;

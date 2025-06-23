@@ -137,11 +137,6 @@ const safeJobOperation = async (operation, ...args) => {
       }
     }
 
-    if (args?.stages?.length > 0) {
-      // A deferred job with stages won't work, so just return null
-      return null;
-    }
-
     if (
       PenPal.DataStore &&
       PenPal.DataStore.AdaptersReady() &&
@@ -158,6 +153,11 @@ const safeJobOperation = async (operation, ...args) => {
         if (
           storeError.message?.includes("Cannot read properties of undefined")
         ) {
+          if (args?.[0]?.stages?.length > 0) {
+            // A deferred job with stages won't work, so just return null
+            return null;
+          }
+
           // Store not ready yet, defer the operation but don't block
           DeferredJobs.queue.push({
             operation,
@@ -173,6 +173,11 @@ const safeJobOperation = async (operation, ...args) => {
         }
       }
     } else {
+      if (args?.[0]?.stages?.length > 0) {
+        // A deferred job with stages won't work, so just return null
+        return null;
+      }
+
       // DataStore not ready, defer the operation but don't block
       DeferredJobs.queue.push({
         operation,

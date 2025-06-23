@@ -28,6 +28,7 @@ import cx from "classnames";
 
 import { matchPath } from "react-router";
 import { Routes, Route, useLocation } from "react-router-dom";
+import { ConnectionStatusChip } from "../common/connection-status.jsx";
 const { useAccount } = Hooks;
 
 const drawerWidth = 240;
@@ -306,7 +307,9 @@ const Layout = () => {
             );
           })}
           <div style={{ flex: 1 }} />
-          <div className={classes.clock_container}>Clock Unavailable</div>
+          <div className={classes.clock_container}>
+            <ConnectionStatusChip variant="outlined" size="small" />
+          </div>
         </List>
       </Drawer>
       <main

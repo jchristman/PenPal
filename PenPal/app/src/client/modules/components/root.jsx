@@ -18,6 +18,10 @@ import.meta.glob("./*/*.js", { eager: true });
 
 import apolloInit from "./apollo-init.js";
 import { waitForServerHealth } from "./common/server-health-check.js";
+import {
+  ConnectionStatusNotification,
+  ConnectionDebugPanel,
+} from "./common/connection-status.jsx";
 
 const theme = createTheme();
 
@@ -152,6 +156,12 @@ const Root = () => {
                     </Components.AccountProvider>
                   </Components.IntrospectionProvider>
                 </Components.ErrorBoundary>
+                {/* WebSocket connection status notifications */}
+                <ConnectionStatusNotification
+                  showOnConnect={true}
+                  showOnDisconnect={true}
+                  showOnReconnecting={true}
+                />
               </LocalizationProvider>
             </ThemeProvider>
           </StyledEngineProvider>
