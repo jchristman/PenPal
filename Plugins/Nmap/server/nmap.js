@@ -213,7 +213,7 @@ export const performScan = async ({
 
   const nmap_command = fast_scan
     ? `-T4 --stats-every 1 -v --max-retries=1 --min-rate 150 --max-scan-delay 5 -n -sS -Pn ${ports} ${output} ${targets}`
-    : `--stats-every 1 -v --min-rate=150 --max-retries=2 --initial-rtt-timeout=50ms --max-rtt-timeout=200ms --max-scan-delay=5s -Pn -sS -sV -sU ${ports} ${output} ${targets}`;
+    : `--stats-every 1 -v --max-retries=2 --initial-rtt-timeout=50ms --max-rtt-timeout=200ms --max-scan-delay=5s -Pn -sS -sV -sU ${ports} ${output} ${targets}`;
 
   console.log(`[+] Running nmap ${nmap_command}`);
 

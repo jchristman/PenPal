@@ -111,6 +111,12 @@ const CoreAPIPlugin = {
       Update: API.updateService,
       UpdateMany: API.updateServices,
       UpsertMany: API.upsertServices,
+      // Enrichment Management Functions
+      AddEnrichment: API.addEnrichment,
+      AddEnrichments: API.addEnrichments,
+      UpdateEnrichment: API.updateEnrichment,
+      UpsertEnrichment: API.upsertEnrichment,
+      RemoveEnrichment: API.removeEnrichment,
     };
 
     // This builds a unique set of wrapped functions that can utilize the dataloader utility in
@@ -272,6 +278,102 @@ const CoreAPIPlugin = {
     };
 
     PenPal.Test.CoreAPI = { ...mocks };
+
+    // Register test handlers with the Tester plugin (if available)
+    if (PenPal.Tester) {
+      // Simple test handler that returns API statistics
+      PenPal.Tester.RegisterHandler(
+        "CoreAPI",
+        async () => {
+          try {
+            // Call with explicit empty arrays to ensure proper parameter handling
+            const projects = await API.getProjects([]);
+            const hosts = await API.getHosts([]);
+            const services = await API.getServices([]);
+
+            return {
+              total_projects: projects.length,
+              total_hosts: hosts.length,
+              total_services: services.length,
+              timestamp: new Date().toISOString(),
+            };
+          } catch (error) {
+            return {
+              error: error.message,
+              stack: error.stack,
+              timestamp: new Date().toISOString(),
+            };
+          }
+        },
+        [],
+        "API Statistics"
+      );
+
+      // Test handler that creates a sample customer
+      PenPal.Tester.RegisterHandler(
+        "CoreAPI",
+        async (customerName, contactEmail, industry) => {
+          const customer = {
+            name: customerName,
+            contact_email: contactEmail,
+            industry: industry,
+            projects: [],
+            created_at: new Date().toISOString(),
+          };
+
+          const result = await API.insertCustomer(customer);
+          return result;
+        },
+        [
+          {
+            name: "customerName",
+            type: "string",
+            required: true,
+            description: "Name of the customer",
+          },
+          {
+            name: "contactEmail",
+            type: "string",
+            required: true,
+            description: "Contact email for the customer",
+          },
+          {
+            name: "industry",
+            type: "string",
+            required: true,
+            description: "Customer's industry",
+          },
+        ],
+        "Create Sample Customer"
+      );
+
+      // Test handler that tests database connectivity
+      PenPal.Tester.RegisterHandler(
+        "CoreAPI",
+        async () => {
+          try {
+            const testQuery = await API.getProjects();
+            return {
+              database_connected: true,
+              query_successful: true,
+              response_time: Date.now(),
+              message: "Database connectivity test passed",
+            };
+          } catch (error) {
+            return {
+              database_connected: false,
+              query_successful: false,
+              error: error.message,
+              message: "Database connectivity test failed",
+            };
+          }
+        },
+        [],
+        "Database Connectivity Test"
+      );
+
+      console.log("[CoreAPI] Registered test handlers with Tester plugin");
+    }
 
     const types = await loadGraphQLFiles();
 

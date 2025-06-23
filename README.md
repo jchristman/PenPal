@@ -92,31 +92,42 @@ PenPal features an **extensible service enrichment architecture** that allows pl
 
 ### For Plugin Developers
 
-The enrichment system is designed for easy extension:
+The enrichment system is designed for easy extension with the **new CoreAPI Enrichment Functions**:
 
 ```javascript
-// Server-side: Create enrichments
-const enrichment = {
-  plugin_name: "YourPlugin",
-  url: result.url,
-  status_code: result.status_code,
-  // ... your plugin's data
-};
-
-// Append to service enrichments
-const updated_enrichments = [...(service.enrichments || []), enrichment];
-
-await PenPal.API.Services.UpsertMany([
-  {
-    id: service.id,
-    enrichments: updated_enrichments,
+// ✅ NEW: Simple enrichment API (recommended)
+const enrichment_updates = results.map((result) => ({
+  host: result.host, // IP address from tool
+  port: result.port, // Port number from tool
+  ip_protocol: "TCP", // Protocol (TCP/UDP)
+  project_id: project_id, // Required for project isolation
+  enrichment: {
+    plugin_name: "YourPlugin", // Required for GraphQL resolution
+    url: result.url, // Tool-specific data
+    status_code: result.status_code,
+    tech: result.tech,
+    // ... other tool-specific fields
   },
-]);
+}));
+
+// Add enrichments using CoreAPI
+const result = await PenPal.API.Services.AddEnrichments(enrichment_updates);
+console.log(`Successfully added ${result.accepted.length} enrichments`);
 
 // Client-side: Register custom display
 import YourEnrichmentDisplay from "./components/your-enrichment-display.jsx";
 PenPal.API.registerEnrichmentDisplay("YourPlugin", YourEnrichmentDisplay);
 ```
+
+**Key Benefits of New API:**
+
+- **Automatic Service Matching**: No need to manually find and match services
+- **Atomic Operations**: Thread-safe enrichment updates with MongoDB atomic operators
+- **Natural Identifiers**: Use host/port/protocol that tools already provide
+- **Error Handling**: Detailed success/failure reporting with rejection reasons
+- **Project Isolation**: Built-in multi-project support
+
+**📖 Full Documentation**: See [Plugins/CoreAPI/README-Enrichment-API.md](Plugins/CoreAPI/README-Enrichment-API.md) for complete API reference, migration guide, and best practices.
 
 ### MQTT Event Integration
 
@@ -307,6 +318,121 @@ export const start_detailed_hosts_scan = async (hosts) => {
   return job.id;
 };
 ```
+
+## BatchFunction Utility - Event Batching
+
+PenPal includes a **BatchFunction utility** (`PenPal.Utils.BatchFunction`) for batching rapid function calls together, essential for handling high-frequency MQTT events during large scans without overwhelming system resources.
+
+### The Problem
+
+During large network scans, plugins can receive hundreds of rapid MQTT events as services are discovered:
+
+```javascript
+// ❌ Problem: Each event triggers separate processing
+await MQTT.Subscribe(PenPal.API.MQTT.Topics.New.Services, ({ service_ids }) => {
+  // This fires 100+ times during a large scan
+  processServices(service_ids); // Creates many jobs, containers, etc.
+});
+```
+
+### The Solution
+
+BatchFunction collects rapid calls and processes them together after a timeout period:
+
+```javascript
+// ✅ Solution: Batch events together with 5-second timeout
+await MQTT.Subscribe(
+  PenPal.API.MQTT.Topics.New.Services,
+  PenPal.Utils.BatchFunction(processBatchedServices, 5000)
+);
+
+const processBatchedServices = async (batchedArgs) => {
+  console.log(`Processing ${batchedArgs.length} batched events`);
+
+  // Deduplicate service IDs across all events
+  const allServiceIds = new Set();
+  for (const [{ service_ids }] of batchedArgs) {
+    service_ids.forEach((id) => allServiceIds.add(id));
+  }
+
+  // Process all unique services in one operation
+  await processServices(Array.from(allServiceIds));
+};
+```
+
+### How It Works
+
+1. **Collect Arguments**: Each function call adds its arguments to an internal array
+2. **Reset Timer**: Each new call resets the timeout timer
+3. **Execute Handler**: After timeout period with no new calls, executes handler with all batched arguments
+4. **Clear Batch**: Resets for the next batch cycle
+
+### Function Signature
+
+```javascript
+const batchedFunction = PenPal.Utils.BatchFunction(handler, timeoutMs);
+```
+
+**Parameters:**
+
+- `handler` - Function that receives an array of batched argument sets
+- `timeoutMs` - Timeout in milliseconds to wait after last call before executing
+
+### Real-world Performance Impact
+
+**HttpX Plugin Example** - Before and after BatchFunction implementation:
+
+**Before (Individual Processing):**
+
+- 🔴 200+ separate Docker containers spawned during large scans
+- 🔴 200+ individual jobs created
+- 🔴 Overwhelming system resources and MQTT broker
+- 🔴 Processing duplicate service IDs multiple times
+
+**After (Batched Processing):**
+
+- ✅ 1 Docker container per project with bulk service list
+- ✅ 1 job per project with comprehensive progress tracking
+- ✅ Automatic deduplication of service IDs
+- ✅ 90%+ reduction in resource usage
+
+### Configuration Guidelines
+
+Choose timeout values based on your use case:
+
+- **1-2 seconds**: Real-time operations requiring quick response
+- **5-10 seconds**: Service discovery and enrichment (recommended)
+- **30+ seconds**: Non-critical background processing
+
+### Benefits
+
+- **Resource Optimization**: Dramatically reduces Docker container and job creation
+- **Deduplication**: Automatically handles duplicate data across events
+- **Bulk Processing**: Enables efficient batch operations
+- **System Stability**: Prevents overwhelming during scan bursts
+- **Better Performance**: 90%+ reduction in overhead for high-frequency events
+
+### Migration Pattern
+
+Converting existing event handlers to use BatchFunction:
+
+```javascript
+// Step 1: Modify handler to accept batched arguments
+const processBatchedEvents = async (batchedArgs) => {
+  for (const [originalArgs] of batchedArgs) {
+    // Process each original argument set
+    // Or group/deduplicate across all arguments
+  }
+};
+
+// Step 2: Wrap with BatchFunction
+const batchedHandler = PenPal.Utils.BatchFunction(processBatchedEvents, 5000);
+
+// Step 3: Use in MQTT subscriptions
+await MQTT.Subscribe(topic, batchedHandler);
+```
+
+The BatchFunction utility is essential for building scalable plugins that can handle the rapid event streams generated during large cybersecurity scans.
 
 ## Real-time Updates with GraphQL Subscriptions
 

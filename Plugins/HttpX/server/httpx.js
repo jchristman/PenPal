@@ -47,65 +47,72 @@ export const parseAndUpsertResults = async (
 
   console.log(`[HttpX] Found ${http_results.length} HTTP services`);
 
+  if (http_results.length > 0) {
+    console.log(`[HttpX] Discovered services:`);
+    http_results.forEach((result, i) => {
+      console.log(
+        `  ${i + 1}. ${result.url} (${result.status_code}) from ${
+          result.host
+        }:${result.port}`
+      );
+    });
+  }
+
   if (http_results.length === 0) {
     return;
   }
 
-  // For each HTTP result, create enrichment data for the corresponding service
-  const service_updates = [];
+  // Convert each HTTP result to enrichment data
+  // The CoreAPI will handle service matching internally
+  const enrichment_updates = http_results.map((result) => {
+    const enrichment = {
+      plugin_name: "HttpX",
+      url: result.url,
+      status_code: result.status_code,
+      content_type: result.content_type,
+      content_length: result.content_length,
+      title: result.title,
+      server: result.server,
+      tech: result.tech,
+      method: result.method,
+      scheme: result.scheme,
+      path: result.path,
+    };
 
-  for (const result of http_results) {
+    // Use host/port/protocol for service matching - CoreAPI handles the lookup
+    return {
+      host: result.host,
+      port: result.port,
+      ip_protocol: "TCP", // HttpX results are always TCP
+      project_id: project_id, // Required for proper service lookup across projects
+      enrichment,
+    };
+  });
+
+  // Add enrichments using the new CoreAPI function
+  if (enrichment_updates.length > 0) {
     console.log(
-      `[HttpX] Trying to match result: host=${result.host}, port=${result.port}`
+      `[HttpX] Adding enrichments to ${enrichment_updates.length} discovered services`
+    );
+    const result = await PenPal.API.Services.AddEnrichments(enrichment_updates);
+
+    console.log(
+      `[HttpX] Successfully added ${
+        result.accepted?.length || 0
+      } enrichments, ${result.rejected?.length || 0} failed`
     );
 
-    // Find the service that matches this result (by host and port)
-    const matching_service = services_data.find((service) => {
-      const service_host = service.host_ip || service.host?.ip_address;
+    if (result.rejected && result.rejected.length > 0) {
       console.log(
-        `[HttpX] Comparing with service: host=${service_host}, port=${service.port}, id=${service.id}`
-      );
-      return service_host === result.host && service.port === result.port;
-    });
-
-    if (matching_service) {
-      console.log(`[HttpX] Found matching service: ${matching_service.id}`);
-      // Create enrichment data for this service
-      const enrichment = {
-        plugin_name: "HttpX",
-        url: result.url,
-        status_code: result.status_code,
-        content_type: result.content_type,
-        content_length: result.content_length,
-        title: result.title,
-        server: result.server,
-        tech: result.tech,
-        method: result.method,
-        scheme: result.scheme,
-        path: result.path,
-      };
-
-      // Add the enrichment to the service
-      const existing_enrichments = matching_service.enrichments || [];
-      const updated_enrichments = [...existing_enrichments, enrichment];
-
-      service_updates.push({
-        id: matching_service.id,
-        enrichments: updated_enrichments,
-      });
-    } else {
-      console.log(
-        `[HttpX] No matching service found for host=${result.host}, port=${result.port}`
+        `[HttpX] Some enrichments were rejected (services not found):`,
+        result.rejected.map(
+          (r) =>
+            `${r.selector?.host || "unknown"}:${
+              r.selector?.port || "unknown"
+            } - ${r.error || "unknown error"}`
+        )
       );
     }
-  }
-
-  // Update services with new enrichments
-  if (service_updates.length > 0) {
-    await PenPal.API.Services.UpsertMany(service_updates);
-    console.log(
-      `[HttpX] Updated ${service_updates.length} services with HTTP enrichments`
-    );
   }
 };
 
@@ -122,6 +129,7 @@ export const performHttpScan = async ({
 
   // Build list of targets from services
   const targets = [];
+  const input_hosts = new Set();
   for (const service of services) {
     const host = service.host_ip || service.host?.ip_address;
     if (host && service.port) {
@@ -130,8 +138,16 @@ export const performHttpScan = async ({
       if (service.port !== 80) {
         targets.push(`https://${host}:${service.port}`);
       }
+      input_hosts.add(host);
     }
   }
+
+  console.log(`[HttpX] Input hosts: ${Array.from(input_hosts).join(", ")}`);
+  console.log(
+    `[HttpX] Input targets: ${targets.slice(0, 5).join(", ")}${
+      targets.length > 5 ? "..." : ""
+    }`
+  );
 
   if (targets.length === 0) {
     console.log("[HttpX] No targets to scan");
@@ -175,10 +191,8 @@ export const performHttpScan = async ({
     "-content-type",
     "-content-length",
     "-status-code",
-    "-timeout 10",
-    "-retries 2",
     "-threads 50",
-    "-silent",
+    // "-silent",
   ].join(" ");
 
   console.log(`[HttpX] Running httpx ${httpx_command}`);
@@ -233,6 +247,9 @@ export const performHttpScan = async ({
 
   await update_job(100.0, "HTTP scan complete");
 
+  console.log("[HttpX] Waiting for file write to complete...");
+  await PenPal.Utils.Sleep(1000);
+
   // Read and parse the output
   let output_data = "";
   try {
@@ -246,5 +263,11 @@ export const performHttpScan = async ({
   await PenPal.Docker.RemoveContainer(container_id);
 
   // Parse and upsert results
-  await parseAndUpsertResults(project_id, services, output_data);
+  try {
+    await parseAndUpsertResults(project_id, services, output_data);
+  } catch (error) {
+    console.error("[HttpX] Failed to parse and upsert results:", error);
+    console.error("[HttpX] Stack trace:", error.stack);
+    // Don't throw - let the scan complete even if enrichment fails
+  }
 };

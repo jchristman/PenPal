@@ -116,57 +116,299 @@ export default {
 
 ### Enrichment Creation Pattern
 
-**✅ Standard Service Enrichment Workflow:**
+**✅ NEW: CoreAPI Enrichment Management Functions**
+The CoreAPI plugin now provides dedicated enrichment management functions that handle service matching and atomic updates automatically. This eliminates the need for plugins to implement complex matching logic.
+
+#### Available Enrichment Functions
+
+**Add Enrichments (Recommended):**
 ```javascript
-// ✅ CORRECT: Service enrichment pattern used by HttpX, Nmap, etc.
+// ✅ CORRECT: Use CoreAPI enrichment functions
+const enrichment_updates = results.map((result) => ({
+  // Service identification - use either approach:
+  
+  // Option 1: Natural host/port/protocol identification (RECOMMENDED)
+  host: result.host,                    // IP address from tool output
+  port: result.port,                    // Port number from tool output  
+  ip_protocol: "TCP",                   // Protocol (TCP/UDP)
+  project_id: project_id,               // Required for multi-project isolation
+  
+  // Option 2: Direct service ID (for backward compatibility)
+  // service_id: "known_service_id",
+  
+  // Enrichment data
+  enrichment: {
+    plugin_name: "YourPlugin",
+    url: result.url,
+    status_code: result.status_code,
+    tech: result.tech,
+    // ... other tool-specific data
+  }
+}));
+
+// Add enrichments using CoreAPI function
+const result = await PenPal.API.Services.AddEnrichments(enrichment_updates);
+console.log(`Successfully added ${result.accepted.length} enrichments, ${result.rejected.length} failed`);
+```
+
+**Single Enrichment:**
+```javascript
+// Add single enrichment
+await PenPal.API.Services.AddEnrichment({
+  host: "192.168.1.100",
+  port: 80,
+  ip_protocol: "TCP", 
+  project_id: project_id,
+  enrichment: {
+    plugin_name: "HttpX",
+    url: "http://192.168.1.100",
+    status_code: 200
+  }
+});
+```
+
+**Update Existing Enrichment:**
+```javascript
+// Update specific enrichment by plugin name
+await PenPal.API.Services.UpdateEnrichment({
+  host: "192.168.1.100",
+  port: 80,
+  ip_protocol: "TCP",
+  project_id: project_id,
+  plugin_name: "HttpX",
+  updates: {
+    status_code: 404,
+    last_checked: new Date().toISOString()
+  }
+});
+```
+
+**Upsert Enrichment (Add or Update):**
+```javascript
+// Smart add-or-update logic
+await PenPal.API.Services.UpsertEnrichment({
+  host: "192.168.1.100", 
+  port: 80,
+  ip_protocol: "TCP",
+  project_id: project_id,
+  enrichment: {
+    plugin_name: "HttpX",
+    url: "http://192.168.1.100",
+    status_code: 200,
+    title: "Web Server"
+  }
+});
+```
+
+**Remove Enrichment:**
+```javascript
+// Remove enrichment by plugin name
+await PenPal.API.Services.RemoveEnrichment({
+  host: "192.168.1.100",
+  port: 80, 
+  ip_protocol: "TCP",
+  project_id: project_id,
+  plugin_name: "HttpX"
+});
+```
+
+#### Service Identification Methods
+
+**Method 1: Host/Port/Protocol (RECOMMENDED)**
+Use natural identifiers that plugins already have from tool output:
+```javascript
+{
+  host: "192.168.1.100",        // IP address (string)
+  port: 80,                     // Port number (integer)
+  ip_protocol: "TCP",           // Protocol: "TCP" or "UDP" 
+  project_id: project_id,       // Project ID for isolation
+  enrichment: { /* ... */ }
+}
+```
+
+**Method 2: Service ID (Backward Compatibility)**
+Use when you already have the service ID:
+```javascript
+{
+  service_id: "service_123456",  // Known service ID
+  enrichment: { /* ... */ }
+}
+```
+
+#### Enrichment API Benefits
+
+**Data Safety:**
+- **Atomic Operations**: Uses MongoDB atomic operators ($push, $set, $pull)
+- **Concurrent Safe**: Prevents race conditions during bulk updates
+- **Data Preservation**: Existing enrichments from other plugins are preserved
+
+**Plugin Simplicity:**
+- **No Manual Matching**: CoreAPI handles service lookup internally
+- **Natural Identifiers**: Work with host/port data plugins already have
+- **Error Handling**: Comprehensive validation and error reporting
+
+**Architectural Decoupling:**
+- **No Service ID Tracking**: Plugins don't need to maintain service ID mappings
+- **Consistent Pattern**: Matches existing service upsert behavior
+- **Multi-Project Support**: Automatic project isolation
+
+#### Error Handling and Validation
+
+**Response Structure:**
+```javascript
+const result = await PenPal.API.Services.AddEnrichments(enrichment_updates);
+
+// Result contains:
+{
+  accepted: [                          // Successfully processed enrichments
+    { 
+      selector: { host, port, ip_protocol, project_id },
+      enrichment: { /* enrichment data */ }
+    }
+  ],
+  rejected: [                          // Failed enrichments with reasons
+    {
+      selector: { host, port, ip_protocol, project_id },
+      enrichment: { /* enrichment data */ },
+      error: "Service not found matching criteria"
+    }
+  ]
+}
+```
+
+**Common Error Scenarios:**
+- **Service Not Found**: No service matches the host/port/protocol in the project
+- **Multiple Services Found**: Ambiguous match (should not happen with proper data)
+- **Missing Parameters**: Required fields (host, port, ip_protocol, project_id) not provided
+- **Invalid Enrichment**: Missing plugin_name or malformed enrichment data
+
+#### Migration from Manual Matching
+
+**Before (Manual Service Matching):**
+```javascript
+// ❌ OLD: Complex manual matching logic
 export const parseAndUpsertResults = async (project_id, services_data, output_data) => {
   const results = parseToolOutput(output_data);
   const service_updates = [];
   
   for (const result of results) {
-    // 1. Match tool results to original services
+    // Manual service matching
     const matching_service = services_data.find(service => 
       service.host_ip === result.host && service.port === result.port
     );
     
     if (matching_service) {
-      // 2. Create plugin-specific enrichment
-      const enrichment = {
-        plugin_name: "YourPlugin",
-        // Tool-specific fields
-        url: result.url,
-        status_code: result.status_code,
-        tech: result.tech,
-        // ... other tool-specific data
-      };
-      
-      // 3. Append to existing enrichments (preserve other plugin data)
+      // Manual enrichment array management
       const updated_enrichments = [
         ...(matching_service.enrichments || []),
-        enrichment
+        { plugin_name: "YourPlugin", ...result }
       ];
       
-      // 4. Prepare service update with ID for upsert
       service_updates.push({
-        id: matching_service.id,  // CRITICAL: Include ID for updates
+        id: matching_service.id,
         enrichments: updated_enrichments
       });
     }
   }
   
-  // 5. Bulk update services with new enrichments
+  // Manual bulk update
   if (service_updates.length > 0) {
     await PenPal.API.Services.UpsertMany(service_updates);
-    console.log(`[YourPlugin] Updated ${service_updates.length} services with enrichments`);
   }
 };
 ```
 
+**After (CoreAPI Enrichment Functions):**
+```javascript
+// ✅ NEW: Simple enrichment API usage
+export const parseAndUpsertResults = async (project_id, services_data, output_data) => {
+  const results = parseToolOutput(output_data);
+  
+  // Convert results to enrichment format
+  const enrichment_updates = results.map((result) => ({
+    host: result.host,
+    port: result.port,
+    ip_protocol: "TCP",
+    project_id: project_id,
+    enrichment: {
+      plugin_name: "YourPlugin",
+      url: result.url,
+      status_code: result.status_code,
+      tech: result.tech,
+      // ... other tool-specific data
+    }
+  }));
+
+  // Add enrichments using CoreAPI
+  const result = await PenPal.API.Services.AddEnrichments(enrichment_updates);
+  console.log(`Successfully added ${result.accepted.length} enrichments`);
+  
+  if (result.rejected?.length > 0) {
+    console.log("Some enrichments were rejected:", 
+      result.rejected.map(r => `${r.selector.host}:${r.selector.port} - ${r.error}`)
+    );
+  }
+};
+```
+
+**Key Migration Benefits:**
+1. **Eliminated ~40 lines** of complex matching logic
+2. **Removed dependency** on `services_data` parameter structure  
+3. **Improved error handling** with detailed rejection reasons
+4. **Enhanced data safety** with atomic database operations
+5. **Simplified plugin architecture** with natural identifier usage
+
+#### Legacy Pattern (Deprecated)
+
+**⚠️ DEPRECATED: Manual Service Updates**
+The old pattern of manually updating service enrichments is deprecated but still supported:
+
+```javascript
+// ❌ DEPRECATED: Manual enrichment management
+export const parseAndUpsertResults = async (project_id, services_data, output_data) => {
+  const results = parseToolOutput(output_data);
+  const service_updates = [];
+  
+  for (const result of results) {
+    const matching_service = services_data.find(service => 
+      service.host_ip === result.host && service.port === result.port
+    );
+    
+    if (matching_service) {
+      const enrichment = {
+        plugin_name: "YourPlugin",
+        // Tool-specific fields...
+      };
+      
+      const updated_enrichments = [
+        ...(matching_service.enrichments || []),
+        enrichment
+      ];
+      
+      service_updates.push({
+        id: matching_service.id,
+        enrichments: updated_enrichments
+      });
+    }
+  }
+  
+  if (service_updates.length > 0) {
+    await PenPal.API.Services.UpsertMany(service_updates);
+  }
+};
+```
+
+**Migration Recommendations:**
+- **New Plugins**: Always use the new enrichment API functions
+- **Existing Plugins**: Migrate to new API for better maintainability
+- **Legacy Support**: Old pattern continues working but is not recommended
+
 **Key Enrichment Principles:**
-- **Preserve Existing Data**: Always append to existing enrichments array
-- **Include Service ID**: Use `id` field for updates to ensure proper upsert handling
-- **Plugin Identification**: Always include `plugin_name` field for proper resolution
-- **Bulk Updates**: Use `UpsertMany` for efficient database operations
+- **Plugin Identification**: Always include `plugin_name` field for proper GraphQL resolution
+- **Project Isolation**: Always include `project_id` for multi-project support
+- **Natural Identifiers**: Use host/port/protocol that tools naturally provide
+- **Atomic Operations**: Let CoreAPI handle concurrent access and data integrity
+- **Error Tolerance**: Handle rejected enrichments gracefully
 
 ### Client-Side Enrichment Display System
 
@@ -481,6 +723,210 @@ Use [PluginTemplate/](mdc:PluginTemplate) as a starting point for new plugins.
 - **MQTT Plugin**: [Plugins/MQTT/server/plugin.js](mdc:Plugins/MQTT/server/plugin.js) - Inter-plugin messaging
 - Plugins can subscribe to events like new hosts/networks discovery
 - Job queue system for long-running tasks
+
+### BatchFunction Utility - Event Batching
+
+**✅ CRITICAL: PenPal.Utils.BatchFunction for MQTT Event Batching**
+The `BatchFunction` utility allows plugins to batch rapid event calls together, preventing system overload during high-frequency operations like service discovery.
+
+#### BatchFunction Usage
+
+**Basic Pattern:**
+```javascript
+// ✅ CORRECT: Use BatchFunction to batch MQTT events
+const batchedHandler = PenPal.Utils.BatchFunction(handler, timeoutMs);
+
+// Subscribe with batched handler
+await MQTT.Subscribe(
+  PenPal.API.MQTT.Topics.New.Services,
+  PenPal.Utils.BatchFunction(start_http_service_scan_batch, 5000)
+);
+```
+
+**Function Signature:**
+```javascript
+PenPal.Utils.BatchFunction(handler, timeoutMs)
+```
+
+**Parameters:**
+- `handler` - Function that will receive an array of batched argument sets
+- `timeoutMs` - Timeout in milliseconds to wait after the last call before executing
+
+**How It Works:**
+1. **Collect Arguments**: Each function call adds its arguments to an internal array
+2. **Reset Timer**: Each new call resets the timeout timer
+3. **Execute Handler**: After `timeoutMs` of no new calls, executes the handler with all batched arguments
+4. **Clear Batch**: Resets the argument array for the next batch
+
+#### Real-World Example: HttpX Plugin
+
+**Before (Individual Processing):**
+```javascript
+// ❌ Old pattern - processes each MQTT event separately
+const start_http_service_scan = async ({ project, service_ids }) => {
+  console.log("HttpX: New Services:", service_ids);
+  // Process individual service discovery event
+  // This could fire hundreds of times during a large scan
+};
+
+await MQTT.Subscribe(
+  PenPal.API.MQTT.Topics.New.Services,
+  start_http_service_scan
+);
+```
+
+**After (Batched Processing):**
+```javascript
+// ✅ New pattern - batches multiple MQTT events together
+const start_http_service_scan_batch = async (batchedArgs) => {
+  console.log("HttpX: Processing batched events:", batchedArgs.length);
+  
+  // Collect all unique service IDs and projects from batched arguments
+  const projectServiceMap = new Map();
+  
+  for (const [{ project, service_ids }] of batchedArgs) {
+    if (!projectServiceMap.has(project)) {
+      projectServiceMap.set(project, new Set());
+    }
+    service_ids.forEach(id => projectServiceMap.get(project).add(id));
+  }
+  
+  // Process each project's services in bulk
+  for (const [project, serviceIdSet] of projectServiceMap) {
+    const service_ids = Array.from(serviceIdSet);
+    await performBulkScan(project, service_ids);
+  }
+};
+
+await MQTT.Subscribe(
+  PenPal.API.MQTT.Topics.New.Services,
+  PenPal.Utils.BatchFunction(start_http_service_scan_batch, 5000)
+);
+```
+
+#### BatchFunction Benefits
+
+**Performance Improvements:**
+- **Reduced Load**: Prevents overwhelming the system during rapid events
+- **Deduplication**: Automatically handles duplicate service IDs
+- **Bulk Processing**: Enables efficient batch operations
+- **Resource Optimization**: Reduces Docker container spawning and job creation
+
+**Use Cases:**
+- **MQTT Event Bursts**: Service/host discovery events during large scans
+- **Database Operations**: Batching multiple inserts/updates
+- **External API Calls**: Reducing API rate limit issues
+- **Container Operations**: Minimizing Docker container overhead
+
+**Configuration Guidelines:**
+- **Short Timeouts (1-2s)**: For real-time operations requiring quick response
+- **Medium Timeouts (5-10s)**: For service discovery and enrichment (recommended)
+- **Long Timeouts (30s+)**: For non-critical background processing
+
+#### Advanced BatchFunction Patterns
+
+**Multi-Project Deduplication:**
+```javascript
+const batchedHandler = async (batchedArgs) => {
+  // Group by project and deduplicate service IDs
+  const projectServiceMap = new Map();
+  
+  for (const [{ project, service_ids }] of batchedArgs) {
+    if (!projectServiceMap.has(project)) {
+      projectServiceMap.set(project, new Set());
+    }
+    service_ids.forEach(id => projectServiceMap.get(project).add(id));
+  }
+  
+  // Process each project separately
+  for (const [project, serviceIds] of projectServiceMap) {
+    await processProject(project, Array.from(serviceIds));
+  }
+};
+```
+
+**Error Handling:**
+```javascript
+const robustBatchedHandler = async (batchedArgs) => {
+  try {
+    console.log(`Processing ${batchedArgs.length} batched events`);
+    
+    // Group and process events
+    const results = await processBatchedEvents(batchedArgs);
+    
+    console.log(`Successfully processed ${results.length} items`);
+  } catch (error) {
+    console.error("Batch processing failed:", error);
+    
+    // Fallback to individual processing if batch fails
+    for (const [args] of batchedArgs) {
+      try {
+        await processIndividual(args);
+      } catch (individualError) {
+        console.error("Individual processing failed:", individualError);
+      }
+    }
+  }
+};
+```
+
+**Monitoring and Metrics:**
+```javascript
+const monitoredBatchedHandler = async (batchedArgs) => {
+  const startTime = Date.now();
+  const eventCount = batchedArgs.length;
+  const totalServices = batchedArgs.reduce((sum, [{ service_ids }]) => sum + service_ids.length, 0);
+  
+  console.log(`[Batch] Processing ${eventCount} events with ${totalServices} total services`);
+  
+  try {
+    await processBatchedEvents(batchedArgs);
+    
+    const duration = Date.now() - startTime;
+    console.log(`[Batch] Completed in ${duration}ms (${(totalServices/duration*1000).toFixed(1)} services/sec)`);
+  } catch (error) {
+    console.error(`[Batch] Failed after ${Date.now() - startTime}ms:`, error);
+    throw error;
+  }
+};
+```
+
+#### Migration to BatchFunction
+
+**Step 1: Identify Batching Candidates**
+- MQTT event handlers that process rapid events
+- Functions called repeatedly with similar arguments
+- Operations that benefit from bulk processing
+
+**Step 2: Modify Handler Signature**
+```javascript
+// Before: Single argument set
+const handler = async ({ project, service_ids }) => { /* ... */ };
+
+// After: Array of argument sets
+const batchedHandler = async (batchedArgs) => {
+  for (const [{ project, service_ids }] of batchedArgs) {
+    // Process each argument set
+  }
+};
+```
+
+**Step 3: Apply BatchFunction**
+```javascript
+// Wrap handler with BatchFunction
+const wrappedHandler = PenPal.Utils.BatchFunction(batchedHandler, 5000);
+
+// Use in MQTT subscription
+await MQTT.Subscribe(topic, wrappedHandler);
+```
+
+**Step 4: Test and Tune**
+- Monitor batch sizes and processing times
+- Adjust timeout based on use case requirements
+- Verify deduplication works correctly
+- Test error handling scenarios
+
+The `BatchFunction` utility is essential for building scalable plugins that can handle high-frequency events without overwhelming system resources.
 
 ## Docker Plugin - Container Orchestration
 
