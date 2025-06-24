@@ -14,12 +14,15 @@ import _ from "lodash";
 
 import { loadGraphQLFiles, resolvers, buildLoaders } from "./graphql/index.js";
 
+// Initialize logger for the GraphQL server
+const logger = PenPal.Utils.BuildLogger("PenPal");
+
 const startGraphQLServer = async (
   plugins_types = {},
   plugins_resolvers = {},
   plugins_buildLoaders = () => null
 ) => {
-  console.log("[.] Loading GraphQL Files...");
+  logger.log("Loading GraphQL Files...");
   const types = await loadGraphQLFiles();
   const _resolvers = _.merge(resolvers, plugins_resolvers);
   const _typeDefs = mergeTypeDefs([types, plugins_types]);
@@ -41,10 +44,31 @@ const startGraphQLServer = async (
     allowBatchedHttpRequests: true,
     introspection: true,
     formatError: (err) => {
-      console.error(
-        `${err.extensions?.code ?? "Unknown Error"} ::: ${err.message}`
-      );
-      console.error(err.extensions?.stacktrace.join("\n"));
+      const errorCode = err.extensions?.code ?? "Unknown Error";
+      logger.error(`${errorCode} ::: ${err.message}`);
+
+      // Log path information for subscription errors
+      if (err.path) {
+        logger.error(`Error path: ${err.path.join(" -> ")}`);
+      }
+
+      // Log stack trace if available
+      if (err.extensions?.stacktrace) {
+        logger.error("Stack trace:");
+        logger.error(err.extensions.stacktrace.join("\n"));
+      } else if (err.stack) {
+        logger.error("Stack trace:");
+        logger.error(err.stack);
+      }
+
+      // Log additional context for subscription errors
+      if (err.source && err.source.body) {
+        logger.error(
+          "GraphQL query/subscription:",
+          err.source.body.substring(0, 200) + "..."
+        );
+      }
+
       return err;
     },
   });
@@ -79,8 +103,15 @@ const startGraphQLServer = async (
         //  await loaders.webappUsersLoader.prime(user.id, user);
         //}
 
-        // FIXME
-        const PenPalCachingAPI = PenPal.API.CachingAPI();
+        // FIXME: Ensure API is loaded before accessing CachingAPI
+        const PenPalCachingAPI =
+          PenPal.API && PenPal.API.CachingAPI ? PenPal.API.CachingAPI() : {};
+
+        if (!PenPal.API || !PenPal.API.CachingAPI) {
+          logger.warn(
+            "PenPal.API.CachingAPI not available yet, using empty fallback"
+          );
+        }
 
         return {
           //user: user,
@@ -101,7 +132,14 @@ const startGraphQLServer = async (
         loaders = _.extend(loaders, buildLoaders());
         loaders = _.extend(loaders, plugins_buildLoaders());
 
-        const PenPalCachingAPI = PenPal.API.CachingAPI();
+        const PenPalCachingAPI =
+          PenPal.API && PenPal.API.CachingAPI ? PenPal.API.CachingAPI() : {};
+
+        if (!PenPal.API || !PenPal.API.CachingAPI) {
+          logger.warn(
+            "PenPal.API.CachingAPI not available yet in WebSocket context, using empty fallback"
+          );
+        }
 
         return {
           loaders,
@@ -110,30 +148,45 @@ const startGraphQLServer = async (
         };
       },
       onConnect: (ctx) => {
-        console.log("🔗 WebSocket client connected");
+        logger.log("🔗 WebSocket client connected");
       },
       onDisconnect: (ctx, code, reason) => {
-        console.log("❌ WebSocket client disconnected");
+        logger.log("❌ WebSocket client disconnected");
       },
       onSubscribe: (ctx, msg) => {
-        // console.log("📡 New subscription:", {
+        // logger.log("📡 New subscription:", {
         //   id: msg.id,
         //   operationName: msg.payload?.operationName,
         //   query: msg.payload?.query?.substring(0, 100) + "...",
         // });
       },
       onComplete: (ctx, msg) => {
-        // console.log("⚡ Operation executed:", {
+        // logger.log("⚡ Operation executed:", {
         //   id: msg.id,
         //   operationName: msg.payload?.operationName,
         //   hasErrors: false,
         // });
       },
       onError: (ctx, msg, errors) => {
-        console.error("❌ GraphQL WebSocket Error:", {
+        logger.error("❌ GraphQL WebSocket Error:", {
           id: msg.id,
           operationName: msg.payload?.operationName,
-          errors: errors.map((e) => e.message),
+          errors: errors.map((e) => ({
+            message: e.message,
+            path: e.path,
+            extensions: e.extensions,
+          })),
+        });
+
+        // Log the full error details for debugging
+        errors.forEach((error, index) => {
+          logger.error(`WebSocket Error ${index + 1}:`, {
+            message: error.message,
+            path: error.path,
+            locations: error.locations,
+            extensions: error.extensions,
+            stack: error.stack,
+          });
         });
       },
     },
@@ -143,11 +196,9 @@ const startGraphQLServer = async (
   // Start the HTTP server
   const port = 3001;
   httpServer.listen(port, () => {
-    console.log(
-      `[+] GraphQL Server is running at http://localhost:${port}/graphql`
-    );
-    console.log(
-      `[+] GraphQL Subscriptions (WebSocket) available at ws://localhost:${port}/graphql`
+    logger.log(`GraphQL Server is running at http://localhost:${port}/graphql`);
+    logger.log(
+      `GraphQL Subscriptions (WebSocket) available at ws://localhost:${port}/graphql`
     );
   });
 

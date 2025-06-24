@@ -67,8 +67,18 @@ const registerEnrichmentDisplay = (pluginName, component) => {
 PenPal.API.registerEnrichmentDisplay = registerEnrichmentDisplay;
 
 // Default enrichment display component
-const DefaultEnrichmentDisplay = ({ enrichment }) => {
-  console.log("DefaultEnrichmentDisplay received:", enrichment);
+const DefaultEnrichmentDisplay = ({
+  enrichment,
+  serviceSelector,
+  service,
+  project,
+}) => {
+  console.log("DefaultEnrichmentDisplay received:", {
+    enrichment,
+    serviceSelector,
+    service,
+    project,
+  });
 
   // Show all top-level properties
   const topLevelEntries = Object.entries(enrichment).filter(
@@ -120,11 +130,20 @@ const DefaultEnrichmentDisplay = ({ enrichment }) => {
           ))}
         </>
       )}
+
+      {/* Show service selector for debugging */}
+      {serviceSelector && (
+        <Box mt={2}>
+          <Typography variant="caption" color="info.main" gutterBottom>
+            Service Selector: {JSON.stringify(serviceSelector)}
+          </Typography>
+        </Box>
+      )}
     </Box>
   );
 };
 
-const ProjectViewServicesEnrichments = ({ services }) => {
+const ProjectViewServicesEnrichments = ({ services, project }) => {
   const classes = useStyles();
 
   // Filter services that have enrichments
@@ -132,7 +151,7 @@ const ProjectViewServicesEnrichments = ({ services }) => {
     (service) => service.enrichments && service.enrichments.length > 0
   );
 
-  const renderEnrichment = (enrichment, index) => {
+  const renderEnrichment = (service, enrichment, index) => {
     const { plugin_name } = enrichment;
 
     // Safely access the enrichment display registry
@@ -142,6 +161,14 @@ const ProjectViewServicesEnrichments = ({ services }) => {
         PenPal.API.EnrichmentDisplayRegistry.get(plugin_name) ||
         DefaultEnrichmentDisplay;
     }
+
+    // Create serviceSelector for file attachment queries
+    const serviceSelector = {
+      host: service.host?.ip_address,
+      port: service.port,
+      ip_protocol: service.ip_protocol,
+      project_id: project?.id,
+    };
 
     return (
       <Accordion key={index} className={classes.enrichmentAccordion}>
@@ -160,7 +187,12 @@ const ProjectViewServicesEnrichments = ({ services }) => {
           </Typography>
         </AccordionSummary>
         <AccordionDetails>
-          <DisplayComponent enrichment={enrichment} />
+          <DisplayComponent
+            enrichment={enrichment}
+            serviceSelector={serviceSelector}
+            service={service}
+            project={project}
+          />
         </AccordionDetails>
       </Accordion>
     );
@@ -190,7 +222,7 @@ const ProjectViewServicesEnrichments = ({ services }) => {
           <CardContent>
             <Stack spacing={1}>
               {service.enrichments.map((enrichment, index) =>
-                renderEnrichment(enrichment, index)
+                renderEnrichment(service, enrichment, index)
               )}
             </Stack>
           </CardContent>

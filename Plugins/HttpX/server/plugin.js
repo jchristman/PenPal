@@ -1,57 +1,49 @@
 import PenPal from "#penpal/core";
 import { loadGraphQLFiles, resolvers } from "./graphql/index.js";
-import * as url from "url";
-const __dirname = url.fileURLToPath(new URL(".", import.meta.url));
+import * as HttpX from "./httpx.js";
 
-import { performHttpScan } from "./httpx.js";
+// File-level logger that can be imported by other files
+export const HttpXLogger = PenPal.Utils.BuildLogger("HttpX");
 
 export const settings = {
   docker: {
+    // Use the official ProjectDiscovery HttpX image
+    image: "projectdiscovery/httpx:latest",
     name: "penpal:httpx",
-    dockercontext: `${__dirname}/docker-context`,
   },
   STATUS_SLEEP: 1000,
 };
 
 const start_http_service_scan_batch = async (batchedArgs) => {
-  // Collect all unique service IDs and projects from the batched arguments
+  HttpXLogger.log("HttpX: Processing batched events:", batchedArgs.length);
+
+  // Collect all unique service IDs and projects from batched arguments
   const projectServiceMap = new Map();
-  let totalServices = 0;
 
   for (const [{ project, service_ids }] of batchedArgs) {
     if (!projectServiceMap.has(project)) {
       projectServiceMap.set(project, new Set());
     }
     service_ids.forEach((id) => projectServiceMap.get(project).add(id));
-    totalServices += service_ids.length;
   }
 
-  // Process each project's services
+  // Process each project's services in bulk
   for (const [project, serviceIdSet] of projectServiceMap) {
     const service_ids = Array.from(serviceIdSet);
 
-    // Create job using the centralized Jobs API
-    const job = await PenPal.Jobs.Create({
-      name: `HTTP Service Discovery for ${service_ids.length} services in project ${project}`,
-      plugin: "HttpX",
-      progress: 0.0,
-      statusText: "Beginning HTTP service discovery...",
-      project_id: project,
-    });
-
-    const update_job = async (progress, statusText) => {
-      // Use the centralized Jobs API to update progress
-      await PenPal.Jobs.Update(job.id, {
-        progress,
-        statusText,
-      });
-    };
+    HttpXLogger.log(
+      "HttpX: New Services for project",
+      project,
+      ":",
+      service_ids
+    );
 
     // Get the service details
-    const services = (await PenPal.API.Services.GetMany(service_ids)) ?? [];
+    const services = await PenPal.API.Services.GetMany(service_ids);
 
-    // Filter services to only include network services with ports
-    // These are likely to be potential HTTP services
+    HttpXLogger.log(`Retrieved ${services.length} services for analysis`);
+
+    // Filter for HTTP-capable services
     const network_services = services.filter(
       (service) =>
         service.port &&
@@ -60,150 +52,142 @@ const start_http_service_scan_batch = async (batchedArgs) => {
     );
 
     if (network_services.length > 0) {
-      console.log(
-        `[HttpX] Found ${network_services.length} TCP services to check for HTTP in project ${project}`
-      );
-
-      // Get host information for the services
-      const hosts_map = {};
-      for (const service of network_services) {
-        if (service.host && !hosts_map[service.host]) {
-          const host_data = await PenPal.API.Hosts.Get(service.host);
-          hosts_map[service.host] = host_data;
-          service.host_ip = host_data?.ip_address;
-        } else if (hosts_map[service.host]) {
-          service.host_ip = hosts_map[service.host].ip_address;
-        }
-      }
-
-      await performHttpScan({
+      // Create a job for this HTTP scan
+      const job = await PenPal.Jobs.Create({
+        name: `HTTP Discovery Scan (${network_services.length} services)`,
+        plugin: "HttpX",
+        progress: 0,
+        statusText: "Starting HTTP discovery scan...",
         project_id: project,
-        services: network_services,
-        update_job,
-        job_id: job.id,
       });
-    } else {
-      console.log(
-        `[HttpX] No suitable network services found for HTTP scanning in project ${project}`
-      );
-      await update_job(100.0, "No HTTP services found");
 
-      if (job.id) {
+      const update_job = async (progress, statusText, status = "running") => {
         await PenPal.Jobs.Update(job.id, {
-          status: PenPal.Jobs.Status.DONE,
-          progress: 100.0,
-          statusText: "No suitable services for HTTP scanning",
+          progress,
+          statusText,
+          status:
+            status === "failed"
+              ? PenPal.Jobs.Status.FAILED
+              : progress === 100
+              ? PenPal.Jobs.Status.DONE
+              : PenPal.Jobs.Status.RUNNING,
         });
+      };
+
+      try {
+        // Enrich services with host IP information
+        const hosts_map = {};
+        for (const service of network_services) {
+          if (service.host && !hosts_map[service.host]) {
+            const host_data = await PenPal.API.Hosts.Get(service.host);
+            hosts_map[service.host] = host_data;
+            service.host_ip = host_data?.ip_address;
+          } else if (hosts_map[service.host]) {
+            service.host_ip = hosts_map[service.host].ip_address;
+          }
+        }
+
+        // Perform HTTP enrichment scan with job tracking
+        await HttpX.performHttpScan({
+          project_id: project,
+          services: network_services,
+          update_job,
+        });
+      } catch (error) {
+        HttpXLogger.error("HTTP scan failed:", error);
+        await update_job(100, `HTTP scan failed: ${error.message}`, "failed");
+        throw error; // Re-throw so ScanQueue can mark its stage as failed
       }
+    } else {
+      // Create a job to explain why no scan was performed
+      const job = await PenPal.Jobs.Create({
+        name: `HTTP Discovery Scan (${services.length} services checked)`,
+        plugin: "HttpX",
+        progress: 100,
+        statusText: "HttpX Scan Skipped - No HTTP-capable services found",
+        status: PenPal.Jobs.Status.DONE,
+        project_id: project,
+      });
+
+      HttpXLogger.log(
+        `HttpX scan skipped - no HTTP-capable services found out of ${services.length} services checked`
+      );
     }
   }
+};
+
+const BatchEnqueue = (BatchArgs) => {
+  // Extract service count and project info for descriptive naming
+  const totalServices = BatchArgs.reduce(
+    (sum, [{ service_ids }]) => sum + service_ids.length,
+    0
+  );
+  const projects = [...new Set(BatchArgs.map(([{ project }]) => project))];
+  const projectCount = projects.length;
+
+  const queueName =
+    projectCount === 1
+      ? `HttpX Scan (${totalServices} services, Project: ${projects[0]})`
+      : `HttpX Scan (${totalServices} services, ${projectCount} projects)`;
+
+  PenPal.ScanQueue.Add(
+    async () => await start_http_service_scan_batch(BatchArgs),
+    queueName
+  );
 };
 
 const HttpXPlugin = {
   async loadPlugin() {
     const MQTT = await PenPal.MQTT.NewClient();
 
-    // Subscribe to new services events
-    // This will trigger when new open ports/services are discovered
-    // Use BatchFunction to batch rapid service discovery events with a 5-second timeout
+    // Define HttpX-specific MQTT topics
+    PenPal.API.MQTT.Topics.New.HTTPServices = "penpal/httpx/new/http-services";
+
+    // Subscribe to new services discovered by other plugins (Nmap, Rustscan, etc.)
     await MQTT.Subscribe(
       PenPal.API.MQTT.Topics.New.Services,
-      PenPal.Utils.BatchFunction(start_http_service_scan_batch, 5000)
+      PenPal.Utils.BatchFunction(BatchEnqueue, 1000)
     );
 
-    // Register test handlers with the Tester plugin (if available)
-    if (PenPal.Tester) {
-      // Test handler that performs an HTTP scan on provided URLs
+    // Register APIs on PenPal object
+    PenPal.HttpX = {
+      PerformScan: HttpX.performHttpScan,
+      ParseResults: HttpX.parseAndUpsertResults,
+    };
+
+    // Register test handlers if Tester plugin is available
+    if (PenPal.Tester && PenPal.Tester.RegisterHandler) {
+      // Test handler for HTTP scanning
       PenPal.Tester.RegisterHandler(
         "HttpX",
-        async (urls, project_id) => {
+        async () => {
           try {
-            // Validate project ID
-            if (!project_id || typeof project_id !== "string") {
-              throw new Error("Project ID is required and must be a string");
-            }
+            // Test basic HTTP scanning functionality
+            const testServices = [
+              {
+                host_ip: "httpbin.org",
+                port: 80,
+                ip_protocol: "TCP",
+                status: "open",
+              },
+            ];
 
-            // Parse URLs input
-            let urlList;
-            if (typeof urls === "string") {
-              urlList = urls
-                .split("\n")
-                .filter((url) => url.trim())
-                .map((url) => url.trim());
-            } else if (Array.isArray(urls)) {
-              urlList = urls;
-            } else {
-              throw new Error(
-                "URLs must be a string (newline-separated) or an array"
-              );
-            }
-
-            if (urlList.length === 0) {
-              throw new Error("No URLs provided");
-            }
-
-            // Convert URLs to mock services for testing
-            const mockServices = urlList.map((url, index) => {
-              try {
-                const urlObj = new URL(url);
-                const port =
-                  urlObj.port || (urlObj.protocol === "https:" ? 443 : 80);
-                return {
-                  id: `test_service_${index}`,
-                  host_ip: urlObj.hostname, // Direct host IP for compatibility
-                  host: {
-                    ip_address: urlObj.hostname, // Also provide host object structure for real service compatibility
-                  },
-                  port: parseInt(port),
-                  ip_protocol: "TCP",
-                  status: "open",
-                };
-              } catch (e) {
-                throw new Error(`Invalid URL: ${url} - ${e.message}`);
-              }
-            });
-
-            console.log(
-              `[HttpX Test] Testing ${mockServices.length} URLs for project ${project_id}`
-            );
-
-            // Create a test job
-            const job = await PenPal.Jobs.Create({
-              name: `HttpX Test Scan for ${mockServices.length} URLs (Project: ${project_id})`,
-              plugin: "HttpX",
-              progress: 0,
-              statusText: "Starting HTTP test scan...",
-              project_id: project_id,
-            });
-
-            const update_job = async (progress, statusText) => {
-              await PenPal.Jobs.Update(job.id, {
-                progress,
-                statusText,
-              });
-            };
-
-            // Perform the HTTP scan
-            const results = await performHttpScan({
-              project_id: project_id,
-              services: mockServices,
-              update_job,
-              job_id: job.id,
+            const result = await HttpX.performHttpScan({
+              project_id: "test",
+              services: testServices,
             });
 
             return {
               success: true,
-              project_id: project_id,
-              scanned_urls: urlList,
-              results_count: results?.length || 0,
-              job_id: job.id,
-              message: `Successfully scanned ${urlList.length} URLs for project ${project_id}`,
+              message: "HttpX scan completed successfully",
               timestamp: new Date().toISOString(),
+              services_scanned: testServices.length,
+              results_found: result?.length || 0,
             };
           } catch (error) {
             // Log full error details on server side
-            console.error("[HttpX Test] HTTP URL Scanner failed:", error);
-            console.error("[HttpX Test] Stack trace:", error.stack);
+            HttpXLogger.error("HttpX Test failed:", error);
+            HttpXLogger.error("Stack trace:", error.stack);
 
             return {
               success: false,
@@ -212,21 +196,7 @@ const HttpXPlugin = {
             };
           }
         },
-        [
-          {
-            name: "urls",
-            type: "string",
-            required: true,
-            description:
-              "URLs to scan (one per line, e.g., https://example.com\\nhttps://google.com)",
-          },
-          {
-            name: "project_id",
-            type: "string",
-            required: true,
-            description: "Project ID to associate the scanned services with",
-          },
-        ],
+        [],
         "HTTP URL Scanner"
       );
 
@@ -263,11 +233,8 @@ const HttpXPlugin = {
             };
           } catch (error) {
             // Log full error details on server side
-            console.error(
-              "[HttpX Test] Docker Image Status check failed:",
-              error
-            );
-            console.error("[HttpX Test] Stack trace:", error.stack);
+            HttpXLogger.error("Docker Image Status check failed:", error);
+            HttpXLogger.error("Stack trace:", error.stack);
 
             return {
               success: false,
@@ -280,7 +247,7 @@ const HttpXPlugin = {
         "Check Docker Image Status"
       );
 
-      console.log("[HttpX] Registered test handlers with Tester plugin");
+      HttpXLogger.log("Registered test handlers with Tester plugin");
     }
 
     const types = await loadGraphQLFiles();

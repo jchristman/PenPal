@@ -98,6 +98,117 @@ PenPal.Utils.BatchFunction = (handler, timeoutMs) => {
   };
 };
 
+// Logger utility for plugins
+PenPal.Utils.Logger = (() => {
+  // ANSI color codes for different plugins
+  const colors = [
+    "\x1b[32m", // Green
+    "\x1b[33m", // Yellow
+    "\x1b[34m", // Blue
+    "\x1b[35m", // Magenta
+    "\x1b[36m", // Cyan
+    "\x1b[92m", // Bright Green
+    "\x1b[93m", // Bright Yellow
+    "\x1b[94m", // Bright Blue
+    "\x1b[95m", // Bright Magenta
+    "\x1b[96m", // Bright Cyan
+    "\x1b[37m", // White
+    "\x1b[90m", // Bright Black (Gray)
+    "\x1b[97m", // Bright White
+    "\x1b[38;5;208m", // Orange
+    "\x1b[38;5;129m", // Purple
+    "\x1b[38;5;51m", // Light Blue
+    "\x1b[38;5;46m", // Lime Green
+    "\x1b[38;5;226m", // Bright Yellow-Green
+  ];
+
+  const reset = "\x1b[0m";
+  const bold = "\x1b[1m";
+  const dim = "\x1b[2m";
+
+  // Color assignment storage
+  const pluginColors = new Map();
+  let colorIndex = 0;
+
+  // Simple hash function for consistent color assignment
+  const hashString = (str) => {
+    let hash = 0;
+    for (let i = 0; i < str.length; i++) {
+      const char = str.charCodeAt(i);
+      hash = (hash << 5) - hash + char;
+      hash = hash & hash; // Convert to 32-bit integer
+    }
+    return Math.abs(hash);
+  };
+
+  // Get or assign color for a plugin
+  const getPluginColor = (pluginName) => {
+    if (!pluginColors.has(pluginName)) {
+      // Use hash for consistent colors, fallback to rotation for new plugins
+      const colorIdx = hashString(pluginName) % colors.length;
+      pluginColors.set(pluginName, colors[colorIdx]);
+    }
+    return pluginColors.get(pluginName);
+  };
+
+  // Format timestamp like the current console format
+  const formatTimestamp = () => {
+    return new Date().toISOString();
+  };
+
+  // Create formatted message prefix
+  const formatPrefix = (pluginName, level, color) => {
+    const timestamp = formatTimestamp();
+    const levelColors = {
+      log: "",
+      warn: "\x1b[33m", // Yellow for warnings
+      error: "\x1b[31m", // Red for errors
+    };
+
+    const levelColor = levelColors[level] || "";
+    const pluginPrefix = `${color}[${pluginName}]${reset}`;
+
+    return `${timestamp} ${pluginPrefix}${levelColor}`;
+  };
+
+  return {
+    BuildLogger: (pluginName) => {
+      const color = getPluginColor(pluginName);
+
+      return {
+        log: (...args) => {
+          const prefix = formatPrefix(pluginName, "log", color);
+          console.log(prefix, ...args, reset);
+        },
+
+        warn: (...args) => {
+          const prefix = formatPrefix(pluginName, "warn", color);
+          console.warn(prefix, ...args, reset);
+        },
+
+        error: (...args) => {
+          const prefix = formatPrefix(pluginName, "error", color);
+          console.error(prefix, ...args, reset);
+        },
+
+        info: (...args) => {
+          const prefix = formatPrefix(pluginName, "log", color);
+          console.info(prefix, ...args, reset);
+        },
+
+        debug: (...args) => {
+          const prefix = formatPrefix(pluginName, "log", color);
+          console.debug(prefix, `${dim}`, ...args, `${reset}`);
+        },
+      };
+    },
+  };
+})();
+
+// Expose BuildLogger directly on PenPal.Utils for convenience
+PenPal.Utils.BuildLogger = PenPal.Utils.Logger.BuildLogger;
+const logger = PenPal.Utils.BuildLogger("PenPal");
+
 // ----------------------------------------------------------------------------
 
 PenPal.init = async () => {
@@ -108,8 +219,8 @@ PenPal.init = async () => {
 
 PenPal.registerPlugin = (manifest, plugin) => {
   if (!check_manifest(manifest) || !check_plugin(plugin)) {
-    console.error(
-      `[!] Failed to register plugin: ${manifest?.name}@${manifest?.version}`
+    logger.error(
+      `Failed to register plugin: ${manifest?.name}@${manifest?.version}`
     );
     return;
   }
@@ -125,12 +236,13 @@ PenPal.registerPlugin = (manifest, plugin) => {
 
   const name_version = `${name}@${version}`;
   if (load === false) {
-    console.warn(
-      `[!] Manifest for ${name_version} has "load" set to false. Skipping.`
+    logger.warn(
+      `Manifest for ${name_version} has "load" set to false. Skipping.`
     );
     return;
   }
-  console.log(`[+] Registered plugin: ${name_version}`);
+
+  logger.log(`Registered plugin: ${name_version}`);
 
   PenPal.RegisteredPlugins[name_version] = {
     dependsOn,
@@ -171,9 +283,7 @@ PenPal.loadPlugins = async () => {
       true
     );
     if (!all_prereqs_available) {
-      console.error(
-        `[!] Failed to load ${plugin_name}. Not all dependencies met.`
-      );
+      logger.error(`Failed to load ${plugin_name}. Not all dependencies met.`);
       delete PenPal.RegisteredPlugins[plugin_name];
       continue;
     }
@@ -199,8 +309,8 @@ PenPal.loadPlugins = async () => {
       );
 
       if (!implementation_exists) {
-        console.error(
-          `[!] Failed to load ${plugin_name}. It requires an implementation, but none exists.`
+        logger.error(
+          `Failed to load ${plugin_name}. It requires an implementation, but none exists.`
         );
         delete PenPal.RegisteredPlugins[plugin_name];
         continue;
@@ -215,8 +325,8 @@ PenPal.loadPlugins = async () => {
 
       if (settings_hooks !== undefined) {
         if (typeof settings_hooks !== "object") {
-          console.error(
-            `[!] Failed to load ${plugin_name}. hooks.settings must be an object`
+          logger.error(
+            `Failed to load ${plugin_name}. hooks.settings must be an object`
           );
           delete PenPal.RegisteredPlugins[plugin_name];
           continue;
@@ -243,8 +353,8 @@ PenPal.loadPlugins = async () => {
             settings[settings_property]
           )
         ) {
-          console.error(
-            `[!] Failed to load ${plugin_name}. ${settings_property} config is improper`
+          logger.error(
+            `Failed to load ${plugin_name}. ${settings_property} config is improper`
           );
           delete PenPal.RegisteredPlugins[plugin_name];
           continue;
@@ -277,7 +387,7 @@ PenPal.loadPlugins = async () => {
       await postload_hook(plugin_name);
     }
 
-    console.log(`[+] Loaded ${plugin_name}`);
+    logger.log(`Loaded ${plugin_name}`);
 
     // If this plugin requires implementation, immediately prioritize loading all its implementations
     if (requiresImplementation) {
@@ -351,15 +461,13 @@ PenPal.loadPlugins = async () => {
         // Add sorted required plugins to the front of the queue, then the remaining plugins
         plugins_to_load.unshift(...sortedRequired, ...remaining_plugins);
 
-        console.log(
-          `[+] Prioritized implementations for ${plugin_name}: ${implementations.join(
+        logger.log(
+          `Prioritized implementations for ${plugin_name}: ${implementations.join(
             ", "
           )}`
         );
-        console.log(
-          `[+] Also prioritized their dependencies: ${Array.from(
-            allRequiredPlugins
-          )
+        logger.log(
+          `Also prioritized their dependencies: ${Array.from(allRequiredPlugins)
             .filter((p) => !implementations.includes(p))
             .join(", ")}`
         );

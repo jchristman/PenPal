@@ -1,273 +1,281 @@
-import PenPal from "#penpal/core";
-import path from "path";
 import fs from "fs";
+import path from "path";
+import PenPal from "#penpal/core";
 
-import { settings } from "./plugin.js";
+// File-level logger that can be imported by other files
+export const HttpXLogger = PenPal.Utils.BuildLogger("HttpX");
 
-const parseHttpXOutput = (output) => {
-  const lines = output.split("\n").filter((line) => line.trim());
-  const results = [];
-
-  for (const line of lines) {
-    try {
-      // httpx JSON output contains URL, status code, and other information
-      const result = JSON.parse(line);
-      if (result.url) {
-        results.push({
-          url: result.url,
-          status_code: result.status_code || result["status-code"],
-          content_type: result.content_type || result["content-type"],
-          content_length: result.content_length || result["content-length"],
-          title: result.title,
-          server: result.server,
-          tech: result.tech,
-          method: result.method || "GET",
-          scheme: result.scheme,
-          host: result.host,
-          port: result.port,
-          path: result.path || "/",
-        });
-      }
-    } catch (e) {
-      // Skip invalid JSON lines
-      console.log(`[HttpX] Skipping invalid JSON line: ${line}`);
-    }
-  }
-
-  return results;
-};
-
+/**
+ * Parse httpx JSON output and upsert service enrichments
+ */
 export const parseAndUpsertResults = async (
   project_id,
   services_data,
   output_data
 ) => {
-  // Parse the httpx output
-  const http_results = parseHttpXOutput(output_data);
+  try {
+    HttpXLogger.log("Parsing HttpX results for project:", project_id);
 
-  console.log(`[HttpX] Found ${http_results.length} HTTP services`);
+    if (!output_data || output_data.trim() === "") {
+      HttpXLogger.warn("No output data to parse");
+      return;
+    }
 
-  if (http_results.length > 0) {
-    console.log(`[HttpX] Discovered services:`);
-    http_results.forEach((result, i) => {
-      console.log(
-        `  ${i + 1}. ${result.url} (${result.status_code}) from ${
-          result.host
-        }:${result.port}`
-      );
-    });
-  }
+    // Parse each line as JSON (httpx outputs one JSON object per line)
+    const lines = output_data
+      .trim()
+      .split("\n")
+      .filter((line) => line.trim());
+    const http_results = [];
 
-  if (http_results.length === 0) {
-    return;
-  }
+    for (const line of lines) {
+      try {
+        const result = JSON.parse(line);
+        http_results.push(result);
+      } catch (parseError) {
+        HttpXLogger.warn(
+          "Failed to parse JSON line:",
+          line,
+          parseError.message
+        );
+      }
+    }
 
-  // Convert each HTTP result to enrichment data
-  // The CoreAPI will handle service matching internally
-  const enrichment_updates = http_results.map((result) => {
-    const enrichment = {
-      plugin_name: "HttpX",
-      url: result.url,
-      status_code: result.status_code,
-      content_type: result.content_type,
-      content_length: result.content_length,
-      title: result.title,
-      server: result.server,
-      tech: result.tech,
-      method: result.method,
-      scheme: result.scheme,
-      path: result.path,
-    };
+    HttpXLogger.log(`Parsed ${http_results.length} HTTP results`);
 
-    // Use host/port/protocol for service matching - CoreAPI handles the lookup
-    return {
-      host: result.host,
-      port: result.port,
-      ip_protocol: "TCP", // HttpX results are always TCP
-      project_id: project_id, // Required for proper service lookup across projects
-      enrichment,
-    };
-  });
+    if (http_results.length === 0) {
+      HttpXLogger.warn("No valid HTTP results found in output");
+      return;
+    }
 
-  // Add enrichments using the new CoreAPI function
-  if (enrichment_updates.length > 0) {
-    console.log(
-      `[HttpX] Adding enrichments to ${enrichment_updates.length} discovered services`
-    );
+    // Convert HttpX results to enrichment format
+    const enrichment_updates = http_results.map((result) => ({
+      // Service identification using natural identifiers
+      host:
+        result.host || result.input?.replace(/^https?:\/\//, "").split(":")[0],
+      port: result.port || (result.url?.includes("https://") ? 443 : 80),
+      ip_protocol: "TCP",
+      project_id: project_id,
+
+      // HttpX enrichment data
+      enrichment: {
+        plugin_name: "HttpX",
+        url: result.url,
+        status_code: result.status_code,
+        content_type: result.content_type,
+        content_length: result.content_length,
+        title: result.title,
+        server: result.server,
+        tech: result.tech,
+        method: result.method,
+        scheme: result.scheme,
+        path: result.path,
+      },
+    }));
+
+    // Add enrichments using CoreAPI function
     const result = await PenPal.API.Services.AddEnrichments(enrichment_updates);
+    HttpXLogger.log(`Successfully added ${result.accepted.length} enrichments`);
 
-    console.log(
-      `[HttpX] Successfully added ${
-        result.accepted?.length || 0
-      } enrichments, ${result.rejected?.length || 0} failed`
-    );
-
-    if (result.rejected && result.rejected.length > 0) {
-      console.log(
-        `[HttpX] Some enrichments were rejected (services not found):`,
+    if (result.rejected?.length > 0) {
+      HttpXLogger.warn(
+        "Some enrichments were rejected:",
         result.rejected.map(
-          (r) =>
-            `${r.selector?.host || "unknown"}:${
-              r.selector?.port || "unknown"
-            } - ${r.error || "unknown error"}`
+          (r) => `${r.selector.host}:${r.selector.port} - ${r.error}`
         )
       );
     }
+
+    // Publish MQTT event for discovered HTTP services
+    if (result.accepted?.length > 0) {
+      const http_services = result.accepted
+        .filter(
+          (accepted_result) =>
+            accepted_result.enrichment?.status_code &&
+            accepted_result.enrichment.status_code >= 200 &&
+            accepted_result.enrichment.status_code < 400
+        )
+        .map((accepted_result) => {
+          // Find the original service data to get host IP and other details
+          const service = services_data.find(
+            (s) => s.id === accepted_result.service_id
+          );
+          return {
+            service_id: accepted_result.service_id,
+            host: service?.host,
+            host_ip: service?.host_ip,
+            port: service?.port,
+            ip_protocol: service?.ip_protocol,
+            project_id: project_id,
+            url: accepted_result.enrichment.url,
+            status_code: accepted_result.enrichment.status_code,
+            title: accepted_result.enrichment.title,
+          };
+        });
+
+      if (http_services.length > 0) {
+        HttpXLogger.log(
+          `Publishing ${http_services.length} HTTP services to MQTT`
+        );
+        await PenPal.API.MQTT.Publish(PenPal.API.MQTT.Topics.New.HTTPServices, {
+          project: project_id,
+          http_services: http_services,
+        });
+      }
+    }
+  } catch (error) {
+    HttpXLogger.error("Error parsing and upserting HttpX results:", error);
+    throw error;
   }
 };
 
+/**
+ * Perform HTTP discovery scan on services
+ */
 export const performHttpScan = async ({
+  services,
   project_id,
-  services = [],
-  outdir_base = "/penpal-plugin-share",
-  outfile_prefix = "httpx-output",
-  update_job = async () => {},
-  job_id = null,
+  update_job = () => {},
 }) => {
-  const outdir = [outdir_base, "httpx", project_id].join(path.sep);
-  PenPal.Utils.MkdirP(outdir);
+  try {
+    HttpXLogger.log(`Starting HTTP scan for ${services.length} services`);
 
-  // Build list of targets from services
-  const targets = [];
-  const input_hosts = new Set();
-  for (const service of services) {
-    const host = service.host_ip || service.host?.ip_address;
-    if (host && service.port) {
-      // Add both HTTP and HTTPS variants
-      targets.push(`http://${host}:${service.port}`);
-      if (service.port !== 80) {
-        targets.push(`https://${host}:${service.port}`);
-      }
-      input_hosts.add(host);
+    if (!services || services.length === 0) {
+      HttpXLogger.warn("No services provided for HTTP scan");
+      return;
     }
-  }
 
-  console.log(`[HttpX] Input hosts: ${Array.from(input_hosts).join(", ")}`);
-  console.log(
-    `[HttpX] Input targets: ${targets.slice(0, 5).join(", ")}${
-      targets.length > 5 ? "..." : ""
-    }`
-  );
-
-  if (targets.length === 0) {
-    console.log("[HttpX] No targets to scan");
-    await update_job(100.0, "No targets found");
-    return;
-  }
-
-  // Create targets file for httpx (using volume mount like nmap)
-  let targets_file = [outdir, `targets-${PenPal.Utils.Epoch()}.txt`].join(
-    path.sep
-  );
-  fs.writeFileSync(targets_file, targets.join("\n"));
-
-  let output_file = [
-    outdir,
-    `${outfile_prefix}-${PenPal.Utils.Epoch()}.json`,
-  ].join(path.sep);
-
-  // Use paths that work with the volume mount
-  let container_targets_file = targets_file.replace(
-    outdir_base,
-    "/penpal-plugin-share"
-  );
-  let container_output_file = output_file.replace(
-    outdir_base,
-    "/penpal-plugin-share"
-  );
-
-  await PenPal.Utils.AsyncNOOP();
-
-  // Build httpx command
-  const httpx_command = [
-    `httpx`,
-    `-l ${container_targets_file}`,
-    `-o ${container_output_file}`,
-    "-json",
-    "-title",
-    "-tech-detect",
-    "-server",
-    "-method",
-    "-content-type",
-    "-content-length",
-    "-status-code",
-    "-threads 50",
-    // "-silent",
-  ].join(" ");
-
-  console.log(`[HttpX] Running httpx ${httpx_command}`);
-  console.log(`[HttpX] Scanning ${targets.length} targets`);
-
-  // Check if Docker image is ready before running
-  await PenPal.Docker.WaitForImageReady(settings.docker.name, {
-    updateCallback: update_job,
-    updateMessage: "Waiting for HttpX Docker image to build...",
-  });
-
-  // Run httpx in Docker
-  let result = await PenPal.Docker.Run({
-    image: settings.docker.name,
-    cmd: httpx_command,
-    daemonize: true,
-    volume: {
-      name: "penpal_penpal-plugin-share",
-      path: outdir_base,
-    },
-    network: "penpal_penpal",
-  });
-
-  // Parse the container ID from the result
-  const container_id = result.stdout.trim();
-  console.log(`[HttpX] Starting httpx: ${container_id}`);
-
-  // Wait for the container to finish
-  while (true) {
-    try {
-      const result = await PenPal.Utils.AwaitTimeout(
-        async () => await PenPal.Docker.Wait(container_id),
-        5000 // 5 second timeout
-      );
-      break;
-    } catch (e) {
-      // Update progress while waiting
-      await update_job(50, "Scanning HTTP services...");
-    }
-  }
-
-  console.log(`[HttpX] httpx finished: ${container_id}`);
-
-  // Mark the job as completed
-  if (job_id) {
-    await PenPal.Jobs.Update(job_id, {
-      status: PenPal.Jobs.Status.DONE,
-      progress: 100.0,
-      statusText: "HTTP scan complete",
+    // Wait for Docker image to be ready
+    await PenPal.Docker.WaitForImageReady("penpal:httpx", {
+      updateCallback: () => {},
+      updateMessage: "Waiting for HttpX Docker image to build...",
+      timeout: 120000,
     });
-  }
 
-  await update_job(100.0, "HTTP scan complete");
+    const outdir_base = "/penpal-plugin-share";
+    const outdir = [outdir_base, "httpx", project_id].join(path.sep);
 
-  console.log("[HttpX] Waiting for file write to complete...");
-  await PenPal.Utils.Sleep(1000);
+    PenPal.Utils.MkdirP(outdir);
 
-  // Read and parse the output
-  let output_data = "";
-  try {
-    output_data = fs.readFileSync(output_file, "utf8");
-  } catch (e) {
-    console.error(`[HttpX] Failed to read output file: ${e.message}`);
-    return;
-  }
+    // Create target URLs for httpx
+    const targets = services.map((service) => {
+      const protocol = [80, 8080, 8000, 3000].includes(service.port)
+        ? "http"
+        : "https";
+      return `${protocol}://${service.host_ip}:${service.port}`;
+    });
 
-  // Clean up container
-  await PenPal.Docker.RemoveContainer(container_id);
+    const targets_file = [outdir, `targets-${PenPal.Utils.Epoch()}.txt`].join(
+      path.sep
+    );
+    const output_file = [outdir, `results-${PenPal.Utils.Epoch()}.json`].join(
+      path.sep
+    );
 
-  // Parse and upsert results
-  try {
-    await parseAndUpsertResults(project_id, services, output_data);
+    // Write targets to file
+    fs.writeFileSync(targets_file, targets.join("\n"));
+    HttpXLogger.log(
+      `Created targets file with ${targets.length} URLs: ${targets_file}`
+    );
+
+    // Convert to container paths
+    let container_targets_file = targets_file.replace(
+      outdir_base,
+      "/penpal-plugin-share"
+    );
+    let container_output_file = output_file.replace(
+      outdir_base,
+      "/penpal-plugin-share"
+    );
+
+    // Build httpx command
+    const httpx_command = [
+      `-l ${container_targets_file}`,
+      `-o ${container_output_file}`,
+      "-json",
+      "-title",
+      "-tech-detect",
+      "-server",
+      "-method",
+      "-content-type",
+      "-content-length",
+      "-status-code",
+      "-threads 50",
+    ].join(" ");
+
+    HttpXLogger.log(`Running httpx command: ${httpx_command}`);
+
+    await update_job(10, "Starting HTTP discovery scan...");
+
+    // Run httpx in Docker container
+    const docker_result = await PenPal.Docker.Run({
+      image: "penpal:httpx",
+      cmd: httpx_command,
+      daemonize: true,
+      volume: {
+        name: "penpal_penpal-plugin-share",
+        path: "/penpal-plugin-share",
+      },
+      network: "penpal_penpal",
+    });
+
+    const container_id = docker_result.stdout.trim();
+    HttpXLogger.log(`Started httpx container: ${container_id}`);
+
+    await update_job(20, "HTTP discovery scan in progress...");
+
+    // Wait for container to complete with timeout
+    const wait_result = await Promise.race([
+      PenPal.Docker.Wait(container_id),
+      new Promise(
+        (_, reject) =>
+          setTimeout(() => reject(new Error("HttpX scan timeout")), 300000) // 5 minute timeout
+      ),
+    ]);
+
+    await update_job(80, "HTTP scan complete, processing results...");
+
+    await PenPal.Utils.Sleep(1000);
+
+    // Read and process results
+    let output_data = "";
+    if (fs.existsSync(output_file)) {
+      output_data = fs.readFileSync(output_file, "utf8");
+      HttpXLogger.log(`Read ${output_data.length} characters from output file`);
+    } else {
+      HttpXLogger.warn(`Output file not found: ${output_file}`);
+    }
+
+    await update_job(90, "Processing HTTP discovery results...");
+
+    // Parse and upsert results
+    if (output_data) {
+      await parseAndUpsertResults(project_id, services, output_data);
+    }
+
+    await update_job(100, "HTTP discovery scan complete");
+
+    // Clean up files
+    try {
+      if (fs.existsSync(targets_file)) fs.unlinkSync(targets_file);
+      if (fs.existsSync(output_file)) fs.unlinkSync(output_file);
+    } catch (cleanupError) {
+      HttpXLogger.warn("Error cleaning up files:", cleanupError);
+    }
+
+    return {
+      success: true,
+      message: "HTTP discovery scan completed successfully",
+      results_count: output_data ? output_data.trim().split("\n").length : 0,
+    };
   } catch (error) {
-    console.error("[HttpX] Failed to parse and upsert results:", error);
-    console.error("[HttpX] Stack trace:", error.stack);
-    // Don't throw - let the scan complete even if enrichment fails
+    HttpXLogger.error("Error in HTTP scan:", error);
+    await update_job(100, `HTTP scan failed: ${error.message}`, "failed");
+
+    return {
+      success: false,
+      error: error.message,
+      statusText: "HTTP discovery scan failed",
+    };
   }
 };

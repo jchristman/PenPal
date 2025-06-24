@@ -3,6 +3,9 @@ import FlakeId from "flake-idgen";
 import intformat from "biguint-format";
 import _ from "lodash";
 
+// Initialize logger for this module
+const logger = PenPal.Utils.BuildLogger("DataStore");
+
 const DataStore = {};
 DataStore._Adapters = []; // Meant to be internal, so don't make it obviously accessible. Maybe make this a real class at some point?
 DataStore._ID = { Generator: new FlakeId() };
@@ -61,7 +64,7 @@ DataStore._checkAdaptersReady = async () => {
       }
     }
     DataStore._AdaptersReady = true;
-    console.log(`[+] DataStore adapters are ready`);
+    logger.info(`DataStore adapters are ready`);
   } catch (error) {
     DataStore._AdaptersReady = false;
   }
@@ -76,7 +79,7 @@ DataStore.AdaptersReady = () => {
 DataStore.SetAdaptersReady = (ready = true) => {
   DataStore._AdaptersReady = ready;
   if (ready) {
-    console.log(`[+] DataStore adapters marked as ready`);
+    logger.info(`DataStore adapters marked as ready`);
   }
 };
 
@@ -96,9 +99,7 @@ DataStore.CreateStore = async (plugin_name, store_name) => {
     while (!DataStore._AdaptersReady) {
       await PenPal.Utils.Sleep(1000);
     }
-    console.log(
-      `[.] DataStore adapters are ready, creating store ${store_name}`
-    );
+    logger.info(`DataStore adapters are ready, creating store ${store_name}`);
     return DataStore.CreateStore(plugin_name, store_name);
   }
 };

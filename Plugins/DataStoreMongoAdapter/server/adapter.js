@@ -1,12 +1,16 @@
 import { check } from "#penpal/common";
 import { MongoClient } from "mongodb";
+import PenPal from "#penpal/core";
+
+// Initialize logger for this module
+const logger = PenPal.Utils.BuildLogger("DataStoreMongoAdapter");
 
 const MongoAdapter = {};
 MongoAdapter.MongoCollections = {};
 MongoAdapter.client = null;
 
 MongoAdapter.connect = async () => {
-  console.log("[.] Connecting to mongo database");
+  logger.info("Connecting to mongo database");
   MongoAdapter.client = await MongoClient.connect(
     "mongodb://penpal-mongo:27017",
     {
@@ -16,7 +20,7 @@ MongoAdapter.connect = async () => {
   );
 
   MongoAdapter.db = MongoAdapter.client.db("PenPal");
-  console.log("[+] Connected to DB");
+  logger.info("Connected to DB");
 };
 
 // -----------------------------------------------------------------------
@@ -82,7 +86,7 @@ MongoAdapter.fetch = async (
 
   let cursor = get_collection(plugin_name, store_name);
   if (cursor === undefined) {
-    console.error(`[!] No collection found for ${plugin_name}.${store_name}`);
+    logger.error(`No collection found for ${plugin_name}.${store_name}`);
     return [];
   }
 
@@ -352,7 +356,7 @@ MongoAdapter.isReady = async () => {
     await MongoAdapter.client.db("admin").command({ ping: 1 });
     return true;
   } catch (error) {
-    console.error("[!] MongoDB adapter not ready:", error.message);
+    logger.error("MongoDB adapter not ready:", error.message);
     return false;
   }
 };

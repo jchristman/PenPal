@@ -1,5 +1,9 @@
 import PenPal from "#penpal/core";
+import { check } from "#penpal/common";
 import _ from "lodash";
+
+// Import the shared logger from plugin.js
+import { CoreAPILogger as logger } from "../plugin.js";
 
 import { required_field, isTestData } from "./common.js";
 //import { networks as mockNetworks } from "../test/mock-networks.json" with { type: "json" };
@@ -118,7 +122,7 @@ export const updateNetworks = async (networks) => {
 
   if (matched_networks.length !== _accepted.length) {
     // Find the unknown IDs
-    console.error('Implement updateNetworks "network not found" functionality');
+    logger.error('Implement updateNetworks "network not found" functionality');
   }
 
   for (let { id, ...network } of _accepted) {

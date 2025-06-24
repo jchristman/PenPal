@@ -6,6 +6,7 @@ extend type Mutation {
     stageIndex: Int!
     input: JobStageUpdateInput!
   ): Job!
+  addJobStage(jobId: ID!, input: JobStageInput!): Job!
   deleteJob(id: ID!): Boolean!
   deleteJobs(ids: [ID!]!): Boolean!
   cleanupStaleJobs(timeoutMinutes: Int): CleanupResult!

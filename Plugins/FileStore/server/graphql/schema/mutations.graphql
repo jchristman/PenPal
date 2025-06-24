@@ -1,0 +1,11 @@
+extend type Mutation {
+  createBucket(name: String!): Boolean!
+  deleteBucket(name: String!): Boolean!
+  deleteFile(bucket: String!, fileName: String!): Boolean!
+  uploadFile(
+    bucket: String!
+    fileName: String!
+    file: Upload!
+    metadata: JSON
+  ): FileUploadResponse!
+}

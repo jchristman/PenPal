@@ -1,9 +1,9 @@
 import PenPal from "#penpal/core";
 import { loadGraphQLFiles, resolvers } from "./graphql/index.js";
 import * as url from "url";
-const __dirname = url.fileURLToPath(new URL(".", import.meta.url));
+import * as Nmap from "./nmap.js";
 
-import { performScan } from "./nmap.js";
+const __dirname = url.fileURLToPath(new URL(".", import.meta.url));
 
 export const settings = {
   docker: {
@@ -29,6 +29,9 @@ export const settings = {
 
 // push and pop out of this work queue for if a job is running. To be implemented
 export const work_queue = [];
+
+// File-level logger that can be imported by other files
+export const NmapLogger = PenPal.Utils.BuildLogger("Nmap");
 
 const start_detailed_hosts_scan = async ({ project, host_ids }) => {
   // Create job using the centralized Jobs API
@@ -76,7 +79,7 @@ const start_detailed_hosts_scan = async ({ project, host_ids }) => {
   const hosts = (await PenPal.API.Hosts.GetMany(host_ids)) ?? [];
   const ips = hosts.map((host) => host.ip_address);
   if (ips.length > 0) {
-    await performScan({
+    await Nmap.performScan({
       project_id: project,
       ips,
       update_job,
@@ -112,7 +115,7 @@ const start_initial_networks_scan = async ({ project, network_ids }) => {
 
   if (networks.length > 0) {
     for (let network of networks) {
-      await performScan({
+      await Nmap.performScan({
         project_id: project,
         networks: [network],
         update_job,
@@ -126,15 +129,36 @@ const start_initial_networks_scan = async ({ project, network_ids }) => {
 const NmapPlugin = {
   async loadPlugin() {
     const MQTT = await PenPal.MQTT.NewClient();
-    
+
+    // Wrap scan functions in ScanQueue
+    const queueHostsScan = async (args) => {
+      const { project, host_ids } = args;
+      const queueName = `Nmap Detailed Host Scan (${host_ids.length} hosts), Project: ${project}`;
+
+      // Be polite and wait 10 seconds before adding to the queue
+      await PenPal.Utils.Sleep(10000);
+
+      PenPal.ScanQueue.Add(
+        async () => await start_detailed_hosts_scan(args),
+        queueName
+      );
+    };
+
+    const queueNetworksScan = async (args) => {
+      const { project, network_ids } = args;
+      const queueName = `Nmap Quick Network Scan (${network_ids.length} networks), Project: ${project}`;
+
+      PenPal.ScanQueue.Add(
+        async () => await start_initial_networks_scan(args),
+        queueName
+      );
+    };
+
     await MQTT.Subscribe(
       PenPal.API.MQTT.Topics.New.Networks,
-      start_initial_networks_scan
+      queueNetworksScan
     );
-    await MQTT.Subscribe(
-      PenPal.API.MQTT.Topics.New.Hosts,
-      start_detailed_hosts_scan
-    );
+    await MQTT.Subscribe(PenPal.API.MQTT.Topics.New.Hosts, queueHostsScan);
 
     const types = await loadGraphQLFiles();
 

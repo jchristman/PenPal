@@ -8,6 +8,9 @@ import {
   validateStatus,
 } from "../common/job-constants.js";
 
+// File-level logger that can be imported by other files
+export const JobsTrackerLogger = PenPal.Utils.BuildLogger("JobsTracker");
+
 const settings = {
   datastores: [
     {
@@ -36,6 +39,7 @@ const JobsTrackerPlugin = {
       Insert: API.insertJob,
       InsertMany: API.insertJobs,
       UpdateStage: API.updateJobStage,
+      AddStage: API.addJobStage,
       Remove: API.removeJob,
       RemoveMany: API.removeJobs,
       Upsert: API.upsertJobs,
@@ -43,13 +47,13 @@ const JobsTrackerPlugin = {
 
       // Manual cleanup trigger for debugging
       TriggerCleanup: async (timeoutMinutes = 5) => {
-        console.log("[JobsTracker] Manual cleanup triggered");
+        JobsTrackerLogger.log("Manual cleanup triggered");
         return await API.cleanupStaleJobs(timeoutMinutes);
       },
 
       // Clear all jobs for debugging
       ClearAll: async () => {
-        console.log("[JobsTracker] Manual clear all jobs triggered");
+        JobsTrackerLogger.log("Manual clear all jobs triggered");
         return await API.clearAllJobs();
       },
     };
@@ -194,47 +198,45 @@ const JobsTrackerPlugin = {
     // Set up periodeic cleanup every 5 minutes
     const cleanupIntervalMs = 5 * 60 * 1000; // 5 minutes
 
-    console.log(
-      "[JobsTracker] Starting automatic job cleanup (every 5 minutes)"
-    );
+    JobsTrackerLogger.log("Starting automatic job cleanup (every 5 minutes)");
 
     this.cleanupInterval = setInterval(async () => {
       try {
         // Check if DataStore adapters are ready before attempting cleanup
         if (!PenPal.DataStore || !PenPal.DataStore.AdaptersReady()) {
-          console.log(
-            "[JobsTracker] DataStore adapters not ready, skipping cleanup cycle"
+          JobsTrackerLogger.log(
+            "DataStore adapters not ready, skipping cleanup cycle"
           );
           return;
         }
 
         const result = await API.cleanupStaleJobs(5); // Clean up jobs older than 5 minutes
         if (result.cancelledCount > 0) {
-          console.log(
-            `[JobsTracker] Cleanup cycle completed: ${result.cancelledCount} stale jobs cancelled`
+          JobsTrackerLogger.log(
+            `Cleanup cycle completed: ${result.cancelledCount} stale jobs cancelled`
           );
         }
       } catch (error) {
-        console.error("[JobsTracker] Error during automatic cleanup:", error);
+        JobsTrackerLogger.error("Error during automatic cleanup:", error);
       }
     }, cleanupIntervalMs);
 
     // Also run cleanup once immediately (with delay to allow adapters to be ready)
     setTimeout(async () => {
       try {
-        console.log("[JobsTracker] Running initial cleanup check");
+        JobsTrackerLogger.log("Running initial cleanup check");
         if (PenPal.DataStore && PenPal.DataStore.AdaptersReady()) {
           const result = await API.cleanupStaleJobs(5);
           if (result.cancelledCount > 0) {
-            console.log(
-              `[JobsTracker] Initial cleanup: ${result.cancelledCount} stale jobs cancelled`
+            JobsTrackerLogger.log(
+              `Initial cleanup: ${result.cancelledCount} stale jobs cancelled`
             );
           }
         } else {
-          console.log("[JobsTracker] DataStore not ready for initial cleanup");
+          JobsTrackerLogger.log("DataStore not ready for initial cleanup");
         }
       } catch (error) {
-        console.error("[JobsTracker] Error during initial cleanup:", error);
+        JobsTrackerLogger.error("Error during initial cleanup:", error);
       }
     }, 10000); // Wait 10 seconds for adapters to be ready
   },
@@ -243,7 +245,7 @@ const JobsTrackerPlugin = {
     if (this.cleanupInterval) {
       clearInterval(this.cleanupInterval);
       this.cleanupInterval = null;
-      console.log("[JobsTracker] Stopped automatic job cleanup");
+      JobsTrackerLogger.log("Stopped automatic job cleanup");
     }
   },
 };

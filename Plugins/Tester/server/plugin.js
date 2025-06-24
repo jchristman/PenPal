@@ -2,6 +2,9 @@ import PenPal from "#penpal/core";
 import { loadGraphQLFiles, resolvers } from "./graphql/index.js";
 import * as API from "./api/index.js";
 
+// File-level logger that can be imported by other files
+export const TesterLogger = PenPal.Utils.BuildLogger("Tester");
+
 const TesterPlugin = {
   async loadPlugin() {
     // Register the Tester API on the PenPal object
@@ -17,9 +20,9 @@ const TesterPlugin = {
       ClearPluginHandlers: API.clearPluginHandlers,
     };
 
-    console.log("[Tester] Plugin loaded and API registered");
-    console.log(
-      "[Tester] Use PenPal.Tester.RegisterHandler(plugin_name, function_handler, args_schema) to register test handlers"
+    TesterLogger.info("Plugin loaded and API registered");
+    TesterLogger.info(
+      "Use PenPal.Tester.RegisterHandler(plugin_name, function_handler, args_schema) to register test handlers"
     );
 
     const types = await loadGraphQLFiles();

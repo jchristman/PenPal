@@ -421,6 +421,20 @@ const useStyles = makeStyles((theme) => ({
   progressFillRunning: {
     background: "linear-gradient(90deg, #3498db, #2980b9)",
   },
+  progressFillBusy: {
+    background:
+      "linear-gradient(45deg, #ff9800 25%, transparent 25%, transparent 50%, #ff9800 50%, #ff9800 75%, transparent 75%, transparent)",
+    backgroundSize: "15px 15px",
+    animation: "$busyProgressStripes 1s linear infinite",
+  },
+  "@keyframes busyProgressStripes": {
+    "0%": {
+      backgroundPosition: "0 0",
+    },
+    "100%": {
+      backgroundPosition: "15px 0",
+    },
+  },
   progressFillComplete: {
     background: "linear-gradient(90deg, #27ae60, #229954)",
   },
@@ -601,7 +615,15 @@ const useStyles = makeStyles((theme) => ({
 const findActiveStageIndex = (stages) => {
   if (!stages || stages.length === 0) return -1;
 
-  // Find the first stage that's not complete (progress < 100) but has some progress (progress > 0)
+  // First, find any stage that's explicitly marked as "running" (this handles busy progress cases)
+  for (let i = 0; i < stages.length; i++) {
+    const stage = stages[i];
+    if (stage.status === "running") {
+      return i;
+    }
+  }
+
+  // If no running stage, find the first stage that's not complete (progress < 100) but has some progress (progress > 0)
   for (let i = 0; i < stages.length; i++) {
     const stage = stages[i];
     const progress = Math.round(stage.progress);
@@ -642,8 +664,19 @@ const StageCard = ({ stage, index, isActive, jobStatus }) => {
   // Determine the progress fill style
   const getProgressFillClass = () => {
     if (isCancelled) return classes.stageProgressFillCancelled;
-    if (isComplete) return classes.stageProgressFillComplete;
-    if (isActive && !isCancelled) return classes.stageProgressFillActive;
+    if (isComplete && stage.status !== "running")
+      return classes.stageProgressFillComplete;
+
+    // Show busy stripes only for running stages at 100% progress (busy waiting)
+    if (stage.status === "running" && progressPercentage === 100) {
+      return classes.progressFillBusy; // Orange stripes for busy waiting
+    }
+
+    // Show blue progress for active stages with real progress (0-99%)
+    if (isActive && !isCancelled) {
+      return classes.stageProgressFillActive; // Blue progress bar
+    }
+
     return classes.stageProgressFillRunning;
   };
 
@@ -663,7 +696,9 @@ const StageCard = ({ stage, index, isActive, jobStatus }) => {
         <span className={classes.stageNumber}>{index + 1}</span>
         <h5 className={classes.stageName}>{stage.name}</h5>
         <span className={`${classes.stageStatus} ${getStatusClass()}`}>
-          {progressPercentage}%
+          {stage.status === "running" && progressPercentage === 100
+            ? "Busy"
+            : `${progressPercentage}%`}
         </span>
       </div>
 

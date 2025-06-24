@@ -1,0 +1,81 @@
+# File attachment types for enrichment file management
+
+enum FileAttachmentType {
+  SCREENSHOT
+  IMAGE
+  PDF
+  TEXT
+  LOG
+  JSON
+  XML
+  HTML
+  CSV
+  CERTIFICATE
+  KEY
+  REPORT
+  OTHER
+}
+
+enum FileAttachmentCategory {
+  EVIDENCE
+  DOCUMENTATION
+  DATA
+  SECURITY
+  OTHER
+}
+
+type EnrichmentFileAttachment {
+  id: ID!
+  filename: String!
+  stored_filename: String!
+  bucket_name: String!
+  file_type: FileAttachmentType!
+  category: FileAttachmentCategory!
+  size: Int!
+  mime_type: String
+  uploaded_at: String!
+  metadata: JSON
+}
+
+type FileAttachmentResult {
+  success: Boolean!
+  file_attachment: EnrichmentFileAttachment
+  upload_result: JSON
+  error: String
+}
+
+type FileAttachmentListResult {
+  files: [EnrichmentFileAttachment!]!
+  error: String
+}
+
+type FileDownloadUrlResult {
+  success: Boolean!
+  download_url: String
+  expiry: String
+  error: String
+}
+
+type FileRemovalResult {
+  success: Boolean!
+  removed_file_id: ID
+  error: String
+}
+
+input FileAttachmentMetadataInput {
+  type: FileAttachmentType
+  category: FileAttachmentCategory
+  description: String
+  url: String
+  status_code: Int
+  captured_at: String
+  title: String
+}
+
+input ServiceSelectorInput {
+  service_id: ID
+  host: String
+  port: Int
+  ip_protocol: String
+  project_id: ID
+}

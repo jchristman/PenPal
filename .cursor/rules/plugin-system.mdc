@@ -18,6 +18,7 @@ PenPal uses a sophisticated plugin architecture that allows dynamic loading of c
 - **DataStore Plugin**: [Plugins/DataStore/server/plugin.js](mdc:Plugins/DataStore/server/plugin.js) - Data abstraction layer
 - **MongoDB Adapter**: [Plugins/DataStoreMongoAdapter/server/plugin.js](mdc:Plugins/DataStoreMongoAdapter/server/plugin.js)
 - **JobsTracker Plugin**: [Plugins/JobsTracker/server/plugin.js](mdc:Plugins/JobsTracker/server/plugin.js) - Centralized job management
+- **ScanQueue Plugin**: [Plugins/ScanQueue/server/plugin.js](mdc:Plugins/ScanQueue/server/plugin.js) - Bandwidth management and scan serialization
 - **Docker Plugin**: [Plugins/Docker/server/plugin.js](mdc:Plugins/Docker/server/plugin.js) - Container orchestration
 
 ## Plugin Structure Requirements
@@ -32,6 +33,338 @@ Each plugin must have:
 - **Nmap**: [Plugins/Nmap/server/plugin.js](mdc:Plugins/Nmap/server/plugin.js) - Network scanning
 - **Rustscan**: [Plugins/Rustscan/server/plugin.js](mdc:Plugins/Rustscan/server/plugin.js) - Fast port scanning
 - **HttpX**: [Plugins/HttpX/server/plugin.js](mdc:Plugins/HttpX/server/plugin.js) - HTTP service discovery
+
+## ScanQueue Plugin - Bandwidth Management & Scan Serialization
+
+**✅ CRITICAL: Bandwidth Bottleneck Solution**
+The ScanQueue plugin solves bandwidth conflicts where multiple security tools try to scan simultaneously, causing false negative timeouts and network congestion. It provides a queue-based serialization system that ensures scan operations run sequentially rather than concurrently.
+
+### Problem Statement
+
+**Bandwidth Bottleneck Issues:**
+- **Multiple MQTT Subscribers**: Different plugins (HttpX, Nmap, etc.) trigger scans simultaneously
+- **Network Congestion**: Concurrent scans overwhelm network capacity
+- **False Negative Timeouts**: Legitimate services appear unreachable due to network saturation
+- **Resource Competition**: Docker containers compete for limited bandwidth
+- **Unpredictable Results**: Same targets produce different results depending on concurrency
+
+### ScanQueue Architecture
+
+**Core Components:**
+- **Sequential Processing**: Ensures only one scan operation runs at a time
+- **FIFO Queue**: First-in-first-out operation ordering
+- **Job Integration**: Creates JobsTracker jobs for queue visibility
+- **Keep-Alive System**: Prevents job timeouts during long operations
+- **Error Handling**: Graceful failure handling with proper job status updates
+
+**Dependencies:**
+- **Base Plugin**: Foundation functionality
+- **JobsTracker**: Job creation and progress tracking
+
+### ScanQueue API Usage
+
+**✅ CRITICAL: PenPal.ScanQueue.Add() API**
+The ScanQueue provides a simple API for plugins to queue scan operations:
+
+```javascript
+// ✅ CORRECT: Basic usage without custom naming
+PenPal.ScanQueue.Add(async () => {
+  await performScanOperation(args);
+});
+
+// ✅ CORRECT: Usage with descriptive queue names
+PenPal.ScanQueue.Add(
+  async () => await performScanOperation(args),
+  "Descriptive Operation Name"
+);
+```
+
+**API Signature:**
+```javascript
+PenPal.ScanQueue.Add(asyncFunction, queueName?)
+```
+
+**Parameters:**
+- `asyncFunction` - Async function to execute sequentially
+- `queueName` - Optional descriptive name for the operation (recommended)
+
+**Return Value:**
+- No return value (fire-and-forget operation)
+
+### Plugin Integration Patterns
+
+**✅ MQTT-Triggered Scan Integration**
+Standard pattern for integrating ScanQueue with MQTT-driven security tools:
+
+```javascript
+// ✅ CORRECT: HttpX Plugin Integration
+const BatchEnqueue = (BatchArgs) => {
+  // Extract service count and project info for descriptive naming
+  const totalServices = BatchArgs.reduce(
+    (sum, [{ service_ids }]) => sum + service_ids.length,
+    0
+  );
+  const projects = [...new Set(BatchArgs.map(([{ project }]) => project))];
+  const projectCount = projects.length;
+
+  const queueName =
+    projectCount === 1
+      ? `HttpX Scan (${totalServices} services, Project: ${projects[0]})`
+      : `HttpX Scan (${totalServices} services, ${projectCount} projects)`;
+
+  PenPal.ScanQueue.Add(
+    async () => await start_http_service_scan_batch(BatchArgs),
+    queueName
+  );
+};
+
+await MQTT.Subscribe(
+  PenPal.API.MQTT.Topics.New.Services,
+  PenPal.Utils.BatchFunction(BatchEnqueue, 1000)
+);
+```
+
+**✅ Nmap Plugin Integration:**
+```javascript
+// ✅ CORRECT: Nmap Plugin Integration
+const queueHostsScan = (args) => {
+  const { project, host_ids } = args;
+  const queueName = `Nmap Detailed Host Scan (${host_ids.length} hosts), Project: ${project}`;
+  PenPal.ScanQueue.Add(
+    async () => await start_detailed_hosts_scan(args),
+    queueName
+  );
+};
+
+const queueNetworksScan = (args) => {
+  const { project, network_ids } = args;
+  const queueName = `Nmap Quick Network Scan (${network_ids.length} networks), Project: ${project}`;
+  PenPal.ScanQueue.Add(
+    async () => await start_initial_networks_scan(args),
+    queueName
+  );
+};
+```
+
+### Job Creation and Tracking
+
+**✅ Smart Job Creation Logic**
+ScanQueue creates jobs only when there's actual queuing happening to avoid unnecessary job overhead:
+
+**Job Creation Rules:**
+- **Single Operation**: No job created (executes immediately)
+- **Queuing Detected**: Job created when processing is active and new items are added
+- **Dynamic Stages**: New stages added to existing jobs as more operations are queued
+
+**Job Progress Tracking:**
+- **Current Stage**: Shows "Busy" with animated stripes (100% progress)
+- **Pending Stages**: Show 0% progress with "Pending" status
+- **Completed Stages**: Show 100% progress with "Completed" status
+- **Overall Progress**: Calculated as `(completed operations / total operations) * 100`
+
+### Progress Visualization
+
+**✅ JobsTracker UI Integration**
+ScanQueue jobs appear in the JobsTracker UI with rich progress visualization:
+
+**Progress Bar Types:**
+- **Blue Progress Bar**: Real progress with actual percentage (0-99%)
+- **Orange Striped Bar**: Busy waiting (100% with animated stripes)
+- **Green Progress Bar**: Completed operations (100% solid)
+
+**Status Text:**
+- **"Processing..."**: Currently executing operation
+- **"Pending"**: Waiting in queue
+- **"Busy"**: Busy waiting without detailed progress
+- **"Completed"**: Successfully finished
+
+### ScanQueue Implementation Details
+
+**Queue Processing Logic:**
+```javascript
+class ScanQueue {
+  constructor() {
+    this.queue = [];
+    this.isProcessing = false;
+    this.currentJob = null;
+    this.currentlyProcessingOperation = null;
+    this.totalOperationsInCurrentJob = 0;
+    this.completedOperationsInCurrentJob = 0;
+  }
+
+  async add(asyncFunction, queueName = null) {
+    const scanName = queueName || `Scan Operation ${Date.now()}`;
+    
+    this.queue.push({
+      function: asyncFunction,
+      name: scanName,
+      addedAt: new Date().toISOString(),
+    });
+
+    // Create job only when there's actual queuing
+    if (this.isProcessing && !this.currentJob) {
+      await this.createQueueJob();
+    } else if (this.isProcessing && this.currentJob) {
+      await this.addStageToJob();
+    }
+
+    if (!this.isProcessing) {
+      this.processQueue();
+    }
+  }
+}
+```
+
+**Keep-Alive Mechanism:**
+```javascript
+// Prevent job timeout during long operations
+this.keepAliveInterval = setInterval(async () => {
+  if (this.currentJob) {
+    const currentProgress = Math.round(
+      (this.completedOperationsInCurrentJob / this.totalOperationsInCurrentJob) * 100
+    );
+    
+    await PenPal.Jobs.Update(this.currentJob.id, {
+      progress: currentProgress,
+      statusText: `Processing scan operations sequentially... (${this.completedOperationsInCurrentJob}/${this.totalOperationsInCurrentJob} completed)`,
+    });
+  }
+}, 5000); // Update every 5 seconds
+```
+
+### Benefits and Use Cases
+
+**Bandwidth Management:**
+- **Eliminates Conflicts**: No more concurrent scan competition
+- **Consistent Results**: Repeatable scan outcomes
+- **Network Stability**: Prevents network saturation
+- **Resource Optimization**: Efficient use of Docker containers
+
+**Operational Benefits:**
+- **User Visibility**: Clear queue progress in JobsTracker UI
+- **Error Isolation**: Failed operations don't affect queued items
+- **Graceful Degradation**: System remains responsive during heavy scanning
+- **Queue Transparency**: Users see exactly what's running and what's pending
+
+**Use Cases:**
+- **MQTT Event Bursts**: Service discovery triggering multiple scans
+- **Batch Operations**: Large-scale network assessments
+- **Multi-Tool Workflows**: Sequential tool execution (Nmap → HttpX → others)
+- **Resource-Limited Environments**: VMs or containers with bandwidth constraints
+
+### Migration Guide
+
+**✅ Converting Existing Plugins**
+To migrate existing plugins to use ScanQueue:
+
+**Step 1: Add ScanQueue Dependency**
+```json
+{
+  "name": "YourPlugin",
+  "version": "0.1.0",
+  "dependsOn": ["CoreAPI@0.1.0", "ScanQueue@0.1.0"]
+}
+```
+
+**Step 2: Wrap Scan Functions**
+```javascript
+// ❌ OLD: Direct scan execution
+await MQTT.Subscribe(
+  PenPal.API.MQTT.Topics.New.Services,
+  async ({ project, service_ids }) => {
+    await performScan(project, service_ids);
+  }
+);
+
+// ✅ NEW: Queue-based execution
+const BatchEnqueue = (BatchArgs) => {
+  const queueName = generateDescriptiveName(BatchArgs);
+  PenPal.ScanQueue.Add(
+    async () => await performScanBatch(BatchArgs),
+    queueName
+  );
+};
+
+await MQTT.Subscribe(
+  PenPal.API.MQTT.Topics.New.Services,
+  PenPal.Utils.BatchFunction(BatchEnqueue, 1000)
+);
+```
+
+**Step 3: Add Descriptive Names**
+```javascript
+// Generate meaningful queue names
+const generateQueueName = (args) => {
+  const { project, host_ids, network_ids, service_ids } = args;
+  
+  if (host_ids) {
+    return `${pluginName} Host Scan (${host_ids.length} hosts), Project: ${project}`;
+  } else if (network_ids) {
+    return `${pluginName} Network Scan (${network_ids.length} networks), Project: ${project}`;
+  } else if (service_ids) {
+    return `${pluginName} Service Scan (${service_ids.length} services), Project: ${project}`;
+  }
+  
+  return `${pluginName} Scan, Project: ${project}`;
+};
+```
+
+### Error Handling
+
+**✅ Proper Error Handling Pattern**
+```javascript
+PenPal.ScanQueue.Add(async () => {
+  try {
+    await performScanOperation(args);
+    logger.log("Scan operation completed successfully");
+  } catch (error) {
+    logger.error("Scan operation failed:", error.message);
+    throw error; // Re-throw so ScanQueue can mark stage as failed
+  }
+}, "Descriptive Operation Name");
+```
+
+**Error Behavior:**
+- **Failed Operations**: Marked as failed in job stages
+- **Queue Continuation**: Failures don't stop subsequent operations
+- **Error Propagation**: Original errors are preserved and logged
+- **Job Status**: Overall job marked as partially failed if any stage fails
+
+### Performance Considerations
+
+**Queue Efficiency:**
+- **Minimal Overhead**: Queue operations are lightweight
+- **No Blocking**: Adding to queue never blocks calling code
+- **Background Processing**: Queue processing happens asynchronously
+- **Memory Management**: Completed operations are removed from memory
+
+**Scalability:**
+- **Linear Performance**: Processing time scales linearly with queue size
+- **No Limits**: Queue can handle hundreds of operations
+- **Resource Aware**: Respects system bandwidth and container limits
+
+### Monitoring and Debugging
+
+**Logging Output:**
+```
+[ScanQueue] Adding function to scan queue. Queue length: 1
+[ScanQueue] Creating scan queue job with stages
+[ScanQueue] Created job 65e896306c000000 for scan queue
+[ScanQueue] Processing: HttpX Scan (3 services, Project: 65e8963002c00000)
+[ScanQueue] Completed: HttpX Scan (3 services, Project: 65e8963002c00000)
+[ScanQueue] Processing: Nmap Host Scan (1 hosts), Project: 65e8963002c00000
+[ScanQueue] Completed: Nmap Host Scan (1 hosts), Project: 65e8963002c00000
+[ScanQueue] Completed scan queue job 65e896306c000000
+[ScanQueue] Queue processing completed
+```
+
+**JobsTracker Integration:**
+- **Real-time Updates**: Live progress tracking in web UI
+- **Stage Details**: Detailed view of each queued operation
+- **Time Tracking**: Start time, duration, completion time
+- **Status History**: Complete operation timeline
+
+The ScanQueue plugin is essential for any deployment where multiple security tools run concurrently, providing bandwidth management and operation visibility that ensures reliable, repeatable scanning results.
 
 ## Service Enrichment System
 
@@ -718,6 +1051,207 @@ The Service Enrichment system enables plugins to build comprehensive service int
 
 ## Plugin Development Template
 Use [PluginTemplate/](mdc:PluginTemplate) as a starting point for new plugins.
+
+## Centralized Logger System
+
+**✅ CRITICAL: PenPal.Utils.BuildLogger for Consistent Plugin Logging**
+PenPal provides a centralized logger system that automatically assigns unique colors to each plugin and provides consistent formatting across the entire system.
+
+### Logger Features
+
+**Automatic Color Assignment:**
+- Each plugin gets a unique color based on a hash of the plugin name
+- 12 ANSI colors available: cyan, green, yellow, blue, magenta, red, white, gray, bright versions
+- Colors are consistent across server restarts for the same plugin name
+
+**Plugin Name Prefixing:**
+- Automatically adds colored `[PluginName]` prefix to all log messages
+- Replaces manual console.log formatting with standardized approach
+- Maintains existing timestamp format for compatibility
+
+**Multiple Log Levels:**
+- `logger.log()` - General information (white/default color)
+- `logger.info()` - Informational messages (cyan)
+- `logger.warn()` - Warning messages (yellow)
+- `logger.error()` - Error messages (red)
+- `logger.debug()` - Debug information (gray)
+
+### Logger Implementation Pattern
+
+**✅ CORRECT: File-Level Logger Export**
+Create a shared logger that can be imported by any file within the plugin:
+
+```javascript
+// plugin.js - Main plugin file
+import PenPal from "#penpal/core";
+
+// File-level logger that can be imported by other files
+export const YourPluginLogger = PenPal.Utils.BuildLogger("YourPlugin");
+
+const YourPlugin = {
+  async loadPlugin() {
+    YourPluginLogger.log("Plugin loading started");
+    
+    // Plugin initialization code
+    
+    YourPluginLogger.log("Plugin loaded successfully");
+    return { settings };
+  },
+};
+
+export default YourPlugin;
+```
+
+**Using Logger in Other Plugin Files:**
+```javascript
+// other-file.js - API, utilities, etc.
+import PenPal from "#penpal/core";
+
+// Import the shared logger from plugin.js
+import { YourPluginLogger as logger } from "./plugin.js";
+
+export const performOperation = async () => {
+  logger.log("Starting operation");
+  
+  try {
+    // Operation logic
+    logger.log("Operation completed successfully");
+  } catch (error) {
+    logger.error("Operation failed:", error.message);
+    throw error;
+  }
+};
+```
+
+### Logger Migration Process
+
+**Step 1: Create File-Level Logger Export**
+```javascript
+// Add to top of plugin.js after imports
+export const YourPluginLogger = PenPal.Utils.BuildLogger("YourPlugin");
+```
+
+**Step 2: Replace Console Statements**
+```javascript
+// ❌ OLD: Manual console.log with prefixes
+console.log("[YourPlugin] Starting scan");
+console.error("[YourPlugin] Scan failed:", error);
+
+// ✅ NEW: Use logger methods
+logger.log("Starting scan");
+logger.error("Scan failed:", error);
+```
+
+**Step 3: Remove Manual Prefixes**
+Use sed or find-replace to remove plugin name prefixes since the logger handles them:
+```bash
+# Remove plugin name prefixes from all files
+sed -i '' 's/\[YourPlugin\] //g' Plugins/YourPlugin/server/**/*.js
+```
+
+**Step 4: Import Logger in Other Files**
+```javascript
+// Import shared logger in API files, utilities, etc.
+import { YourPluginLogger as logger } from "../plugin.js";
+```
+
+### Logger Output Examples
+
+**Color-Coded Output:**
+```
+2024-01-15T10:30:45.123Z [Docker] Building image: penpal:httpx
+2024-01-15T10:30:46.456Z [HttpX] Starting HTTP service scan
+2024-01-15T10:30:47.789Z [JobsTracker] Created job: HTTP-SCAN-123
+2024-01-15T10:30:48.012Z [CoreAPI] Added 15 service enrichments
+```
+
+**Different Log Levels:**
+```javascript
+logger.info("Configuration loaded");    // Cyan [PluginName]
+logger.log("Processing started");       // White [PluginName]  
+logger.warn("Deprecated API used");     // Yellow [PluginName]
+logger.error("Connection failed");      // Red [PluginName]
+logger.debug("Variable state:", obj);   // Gray [PluginName]
+```
+
+### Logger Best Practices
+
+**Use Appropriate Log Levels:**
+- `logger.log()` for general operational messages
+- `logger.info()` for configuration and startup information
+- `logger.warn()` for non-critical issues and deprecation notices
+- `logger.error()` for failures and exceptions
+- `logger.debug()` for detailed troubleshooting information
+
+**Message Content Guidelines:**
+- Remove plugin name prefixes (logger handles them automatically)
+- Use clear, descriptive messages without redundant information
+- Include relevant context like counts, IDs, or status
+- For errors, include the error message or relevant details
+
+**Performance Considerations:**
+- Logger calls are synchronous and fast
+- No need to conditionally disable logging in production
+- Debug level can be controlled via environment variables if needed
+
+**File Organization:**
+- Always export logger from main plugin.js file
+- Import logger consistently as `logger` or `YourPluginLogger as logger`
+- Use the same logger instance across all files in a plugin
+
+### Logger Implementation Details
+
+**Color Assignment Algorithm:**
+```javascript
+// Simplified version of the color assignment
+const colors = [
+  '\x1b[36m', // cyan
+  '\x1b[32m', // green  
+  '\x1b[33m', // yellow
+  '\x1b[34m', // blue
+  '\x1b[35m', // magenta
+  '\x1b[31m', // red
+  // ... more colors
+];
+
+const hash = plugin_name.split('').reduce((a, b) => {
+  a = ((a << 5) - a) + b.charCodeAt(0);
+  return a & a;
+}, 0);
+
+const color = colors[Math.abs(hash) % colors.length];
+```
+
+**Message Format:**
+```
+{timestamp} {colored_plugin_prefix} {message}
+2024-01-15T10:30:45.123Z [PluginName] Your log message here
+```
+
+### Migration Examples
+
+**Before (Manual Console Logging):**
+```javascript
+// ❌ OLD: Inconsistent manual logging
+console.log("[HttpX] Starting HTTP scan for", targets.length, "targets");
+console.error("[HttpX] Scan failed:", error);
+console.log("[+] HttpX scan completed successfully");
+```
+
+**After (Centralized Logger):**
+```javascript
+// ✅ NEW: Consistent logger usage
+logger.log("Starting HTTP scan for", targets.length, "targets");
+logger.error("Scan failed:", error);
+logger.log("Scan completed successfully");
+```
+
+**Benefits of Migration:**
+- **Consistent Formatting**: All plugins use the same timestamp and prefix format
+- **Unique Colors**: Easy visual identification of different plugins in logs
+- **Reduced Maintenance**: No manual prefix management or formatting
+- **Better Debugging**: Clear plugin attribution for all log messages
+- **Professional Output**: Clean, consistent logging across the entire system
 
 ## Plugin Communication
 - **MQTT Plugin**: [Plugins/MQTT/server/plugin.js](mdc:Plugins/MQTT/server/plugin.js) - Inter-plugin messaging
@@ -1915,6 +2449,12 @@ PenPal.YourAPI = {
 - Use consistent naming between client queries and server resolvers
 - Implement proper loading states and error handling in React components
 - Consider real-time updates with polling or subscriptions
+
+**Logger Integration:**
+- Always use the centralized logger system for consistent, colored output
+- Create file-level logger exports that can be imported across plugin files
+- Replace all console.log statements with appropriate logger methods
+- Remove manual plugin name prefixes since the logger handles them automatically
 
 ## Lessons Learned from Plugin Development
 

@@ -18,6 +18,8 @@ type HttpXPluginEnrichment implements PluginEnrichment {
   plugin_name: String!
   "Generic data field that holds all plugin-specific enrichment data"
   data: JSON
+  "File attachments associated with this enrichment"
+  files: [EnrichmentFileAttachment]
   "The discovered URL"
   url: String
   "HTTP status code"

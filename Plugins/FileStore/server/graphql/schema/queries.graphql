@@ -1,0 +1,17 @@
+extend type Query {
+  getBuckets: [Bucket!]!
+  getFiles(bucket: String!, limit: Int, offset: Int): [FileInfo!]!
+  getFileInfo(bucket: String!, fileName: String!): FileInfo
+  generateUploadUrl(
+    bucket: String!
+    fileName: String!
+    contentType: String
+  ): String!
+  generateDownloadUrl(
+    bucket: String!
+    fileName: String!
+    expirySeconds: Int
+  ): String!
+  downloadFile(bucket: String!, fileName: String!): String
+  getFileStoreAnalytics: FileStoreAnalytics
+}

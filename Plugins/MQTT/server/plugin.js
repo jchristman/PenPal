@@ -1,6 +1,11 @@
 import PenPal from "#penpal/core";
 import MQTT from "async-mqtt";
 import * as url from "url";
+import mqtt from "mqtt";
+
+// Initialize logger for this plugin
+const logger = PenPal.Utils.BuildLogger("MQTT");
+
 const __dirname = url.fileURLToPath(new URL(".", import.meta.url));
 
 class MQTTClient {
@@ -15,7 +20,7 @@ class MQTTClient {
       try {
         this.client = await MQTT.connectAsync("mqtt://penpal-mqtt");
       } catch (e) {
-        console.error("MQTT: Failed to connect, trying again in 5 seconds");
+        logger.error("MQTT: Failed to connect, trying again in 5 seconds");
         retries++;
         await PenPal.Utils.Sleep(5000);
       }
@@ -25,7 +30,7 @@ class MQTTClient {
     }
 
     if (!this.client) {
-      console.error("Giving up on MQTT: Failed to connect");
+      logger.error("Giving up on MQTT: Failed to connect");
       throw new Error("MQTT: Failed to connect");
     }
 
@@ -47,7 +52,7 @@ class MQTTClient {
     try {
       await this.client.publish(topic_name, serialized_data);
     } catch (e) {
-      console.error("Publish", e.stack);
+      logger.error("Publish", e.stack);
     }
   }
 
@@ -64,13 +69,13 @@ class MQTTClient {
       try {
         await this.subscriptions[topic](data, topic);
       } catch (error) {
-        console.error(
-          `[MQTT] Plugin error handling message on topic "${topic}":`,
+        logger.error(
+          `Plugin error handling message on topic "${topic}":`,
           error.message
         );
-        console.error(`[MQTT] Stack trace:`, error.stack);
-        console.error(`[MQTT] Message data:`, JSON.stringify(data, null, 2));
-        console.error(`[MQTT] Continuing to process other messages...`);
+        logger.error(`Stack trace:`, error.stack);
+        logger.error(`Message data:`, JSON.stringify(data, null, 2));
+        logger.error(`Continuing to process other messages...`);
         // Don't re-throw the error - isolate plugin failures from MQTT system
       }
     }
@@ -78,7 +83,7 @@ class MQTTClient {
 }
 
 const MetricsLog = (message, topic) => {
-  console.log(`[.] ${topic}: ${message}`);
+  logger.info(`${topic}: ${message}`);
 };
 
 const MosquittoPlugin = {

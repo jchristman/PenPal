@@ -22,6 +22,11 @@ PenPal is an automation and reporting all-in-one tool that is meant to enable Cy
   - [x] Web UI for job visualization and filtering
   - [x] Plugin integration via Jobs API
   - [x] Live navbar job counter with spinning icon for active jobs
+- [x] ScanQueue Plugin - Bandwidth Management
+  - [x] Sequential scan execution to prevent bandwidth conflicts
+  - [x] Smart job creation with multi-stage progress tracking
+  - [x] MQTT-triggered scan serialization for network stability
+  - [x] Eliminates false negatives from concurrent scanning
 - [ ] User Interface
   - [ ] Pluggable Dashboard
   - [x] Projects Summary Page
@@ -35,17 +40,12 @@ PenPal is an automation and reporting all-in-one tool that is meant to enable Cy
   - [x] Mongo Adapter
   - [ ] Postgres Adapter (Plugin)
   - [ ] Grepable Filesystem Adapter (Plugin)
-  - [ ] S3 Adapter
-    - [ ] [MinIO](https://min.io) (Plugin)
+  - [x] S3 Adapter
+    - [x] [MinIO](https://min.io) (Plugin)
     - [ ] Amazon S3 (Plugin)
 - [x] Docker support for plugins
 - [ ] Report generation
   - [ ] [Ghostwriter](https://github.com/GhostManager/Ghostwriter) (Plugin)
-- [ ] Plugin agents system for distributing the various plugins for internal/external combo scans
-  - [ ] Tunneling
-  - [ ] Cross platform agent
-  - [ ] Data flow
-  - [ ] Agent selection based on nearby networks (for automations)
 
 ## Service Enrichment System
 
@@ -53,7 +53,7 @@ PenPal features an **extensible service enrichment architecture** that allows pl
 
 ### How It Works
 
-1. **Service Discovery**: Tools like Nmap and Rustscan discover services (IP:port combinations)
+1. **Service Discovery**: Tools like Nmap discover services (IP:port combinations)
 2. **Enrichment Plugins**: Additional tools (HttpX, etc.) analyze services and add metadata
 3. **Unified View**: All enrichment data is displayed in a rich, extensible UI
 4. **Plugin Extensibility**: New plugins can register custom display components
@@ -151,7 +151,7 @@ This creates an intelligent **service discovery chain** where each plugin builds
 
 - [ ] Really anything from the core
 - [ ] Ping sweep for IP range (host discovery -> add hosts via API)
-- [ ] Nmap for service discovery for hosts or networks (host/service discovery -> add hosts/services via API)
+- [x] Nmap for service discovery for hosts or networks (host/service discovery -> add hosts/services via API)
 - [x] Rustscan for service discovery for hosts or networks (host/service discovery -> add hosts/services via API)
 - [x] [httpx](https://github.com/projectdiscovery/httpx) for HTTP service discovery and enrichment (service enrichment -> add HTTP metadata via API)
 - [ ] Burpsuite for vulnerability scanning
@@ -318,6 +318,147 @@ export const start_detailed_hosts_scan = async (hosts) => {
   return job.id;
 };
 ```
+
+## ScanQueue Plugin - Bandwidth Management
+
+**✅ CRITICAL: Preventing Bandwidth Conflicts and Scan Serialization**
+The **ScanQueue plugin** solves a critical infrastructure problem where multiple security tools try to scan simultaneously, causing bandwidth conflicts, false negative timeouts, and network congestion.
+
+### The Problem
+
+During large network assessments, multiple plugins can trigger scans simultaneously:
+
+- **Nmap** discovers services via MQTT events
+- **HttpX** immediately tries to scan discovered HTTP services
+- **Other tools** respond to the same discovery events
+- **Network bottleneck** occurs when all tools scan concurrently
+- **False negatives** appear as legitimate services timeout due to network saturation
+
+### The Solution
+
+ScanQueue provides **sequential scan execution** with comprehensive job tracking:
+
+```javascript
+// ✅ CORRECT: Queue scan operations with descriptive names
+PenPal.ScanQueue.Add(
+  async () => await performScanOperation(args),
+  "HttpX Scan (15 services, Project: abc123)"
+);
+
+// Operations run sequentially, not concurrently
+PenPal.ScanQueue.Add(
+  async () => await performNmapScan(hosts),
+  "Nmap Host Scan (3 hosts), Project: abc123"
+);
+```
+
+### Key Features
+
+**Sequential Execution**: Only one scan operation runs at a time, eliminating bandwidth conflicts
+
+**Smart Job Creation**: Creates JobsTracker jobs only when queuing occurs (2+ operations), avoiding unnecessary overhead
+
+**Descriptive Progress**: Rich job names show exactly what's being scanned and for which project
+
+**Multi-stage Tracking**: Each queued operation becomes a job stage with individual progress tracking
+
+**Busy Progress Indication**: Uses animated stripe progress bars for operations without detailed progress
+
+**Keep-alive System**: Prevents job timeout cancellation with periodic 5-second updates
+
+### Plugin Integration
+
+**HttpX Integration Example:**
+
+```javascript
+const BatchEnqueue = (BatchArgs) => {
+  const totalServices = BatchArgs.reduce(
+    (sum, [{ service_ids }]) => sum + service_ids.length,
+    0
+  );
+  const queueName = `HttpX Scan (${totalServices} services, Project: ${project})`;
+
+  PenPal.ScanQueue.Add(
+    async () => await start_http_service_scan_batch(BatchArgs),
+    queueName
+  );
+};
+
+// Works with BatchFunction for efficient event processing
+await MQTT.Subscribe(
+  PenPal.API.MQTT.Topics.New.Services,
+  PenPal.Utils.BatchFunction(BatchEnqueue, 1000)
+);
+```
+
+**Nmap Integration Example:**
+
+```javascript
+const queueHostsScan = (args) => {
+  const { project, host_ids } = args;
+  const queueName = `Nmap Detailed Host Scan (${host_ids.length} hosts), Project: ${project}`;
+  PenPal.ScanQueue.Add(
+    async () => await start_detailed_hosts_scan(args),
+    queueName
+  );
+};
+```
+
+### Job Progress Visualization
+
+ScanQueue jobs appear in the JobsTracker UI with rich visual feedback:
+
+**Progress Bar Types:**
+
+- **Orange Striped Bars**: "Busy" operations (100% with animated stripes)
+- **Blue Progress Bars**: Real progress with actual percentages
+- **Green Progress Bars**: Completed operations
+
+**Stage Status:**
+
+- **"Processing..."**: Currently executing with busy stripes
+- **"Pending"**: Waiting in queue with 0% progress
+- **"Completed"**: Finished successfully with green bar
+
+### Benefits
+
+**Reliability**: Eliminates false negatives caused by bandwidth saturation
+
+**Consistency**: Same scan targets produce repeatable results
+
+**Visibility**: Clear queue progress and operation tracking in web UI
+
+**Performance**: Optimal network utilization without overwhelming infrastructure
+
+**Error Isolation**: Failed operations don't affect subsequent queued items
+
+### Migration Guide
+
+To migrate existing plugins to use ScanQueue:
+
+**Step 1: Add Dependency**
+
+```json
+{
+  "name": "YourPlugin",
+  "dependsOn": ["CoreAPI@0.1.0", "ScanQueue@0.1.0"]
+}
+```
+
+**Step 2: Wrap Scan Functions**
+
+```javascript
+// ❌ OLD: Direct execution
+await performScan(args);
+
+// ✅ NEW: Queue execution
+PenPal.ScanQueue.Add(
+  async () => await performScan(args),
+  "Descriptive Operation Name"
+);
+```
+
+The ScanQueue plugin is essential for any PenPal deployment where multiple security tools run concurrently, ensuring reliable, repeatable scanning results without bandwidth conflicts.
 
 ## BatchFunction Utility - Event Batching
 
@@ -825,6 +966,92 @@ try {
 ```
 
 The Docker plugin is essential for PenPal's microservices architecture, enabling secure, isolated execution of cybersecurity tools while maintaining seamless integration with the broader platform.
+
+## Centralized Logger System
+
+PenPal provides a **sophisticated centralized logging system** that automatically assigns unique colors to each plugin and ensures consistent formatting across the entire platform. This replaces manual console.log statements with a professional, maintainable logging solution.
+
+### Key Features
+
+- **🎨 Automatic Color Assignment**: Each plugin gets a unique, consistent color based on plugin name hash
+- **📝 Consistent Formatting**: ISO 8601 timestamps and automatic `[PluginName]` prefixes in assigned colors
+- **🔧 Easy Integration**: File-level logger exports that can be imported anywhere within a plugin
+- **🚀 Multiple Log Levels**: `log`, `info`, `warn`, `error`, `debug` with appropriate colors
+- **⚡ Drop-in Replacement**: Simple migration from existing console.log statements
+
+### Quick Example
+
+**Before (Manual Console Logging):**
+
+```javascript
+console.log("[HttpX] Starting HTTP scan for 25 targets");
+console.error("[HttpX] Scan failed: Connection timeout");
+console.log("[+] HttpX scan completed successfully");
+```
+
+**After (Centralized Logger):**
+
+```javascript
+logger.log("Starting HTTP scan for 25 targets");
+logger.error("Scan failed: Connection timeout");
+logger.log("Scan completed successfully");
+```
+
+**Output:**
+
+```
+2024-01-15T10:30:45.123Z [HttpX] Starting HTTP scan for 25 targets
+2024-01-15T10:30:46.456Z [HttpX] Scan failed: Connection timeout
+2024-01-15T10:30:47.789Z [HttpX] Scan completed successfully
+```
+
+### Implementation Pattern
+
+**1. Create File-Level Logger Export** (in `plugin.js`):
+
+```javascript
+import PenPal from "#penpal/core";
+
+// File-level logger that can be imported by other files
+export const YourPluginLogger = PenPal.Utils.BuildLogger("YourPlugin");
+
+const YourPlugin = {
+  async loadPlugin() {
+    YourPluginLogger.log("Plugin loading started");
+    // ... plugin code
+    return { settings };
+  },
+};
+
+export default YourPlugin;
+```
+
+**2. Import in Other Plugin Files**:
+
+```javascript
+import { YourPluginLogger as logger } from "./plugin.js";
+
+export const performOperation = async () => {
+  logger.log("Starting operation");
+
+  try {
+    // Operation logic
+    logger.info("Operation completed successfully");
+  } catch (error) {
+    logger.error("Operation failed:", error.message);
+  }
+};
+```
+
+### Migration Benefits
+
+- **Consistent Formatting**: All plugins use the same timestamp and prefix format
+- **Unique Colors**: Easy visual identification of different plugins in logs
+- **Reduced Maintenance**: No manual prefix management or formatting
+- **Better Debugging**: Clear plugin attribution for all log messages
+- **Professional Output**: Clean, consistent logging across the entire system
+
+**📖 Complete Documentation**: See [docs/LOGGER.md](docs/LOGGER.md) for full implementation guide, migration steps, API reference, and best practices.
 
 ## Plugin Development
 

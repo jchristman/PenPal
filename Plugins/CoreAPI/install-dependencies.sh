@@ -1,6 +1,6 @@
 #!/bin/bash
 
-PACKAGES="fast-json-stable-stringify ip"
+PACKAGES="fast-json-stable-stringify ip graphql-upload-ts"
 
 echo "Installing CoreAPI dependencies"
 if [ "$OFFLINE" = "true" ]; then

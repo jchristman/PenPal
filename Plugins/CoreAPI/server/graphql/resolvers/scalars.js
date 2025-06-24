@@ -1,10 +1,13 @@
 import { Kind, GraphQLError, GraphQLScalarType } from "graphql";
+import { GraphQLUpload } from "graphql-upload-ts";
 
 const REGEX = {};
-REGEX.ip_address = /^(?:(?:25[0-5]|2[0-4][0-9]|[01]?[0-9][0-9]?)\.){3}(?:25[0-5]|2[0-4][0-9]|[01]?[0-9][0-9]?)$/;
-REGEX.subnet = /^(?:(?:25[0-5]|2[0-4][0-9]|[01]?[0-9][0-9]?)\.){3}(?:25[0-5]|2[0-4][0-9]|[01]?[0-9][0-9]?)\/(?:3[0-2]|[12][0-9]|[0-9])$/;
+REGEX.ip_address =
+  /^(?:(?:25[0-5]|2[0-4][0-9]|[01]?[0-9][0-9]?)\.){3}(?:25[0-5]|2[0-4][0-9]|[01]?[0-9][0-9]?)$/;
+REGEX.subnet =
+  /^(?:(?:25[0-5]|2[0-4][0-9]|[01]?[0-9][0-9]?)\.){3}(?:25[0-5]|2[0-4][0-9]|[01]?[0-9][0-9]?)\/(?:3[0-2]|[12][0-9]|[0-9])$/;
 
-const parseIPAddress = value => {
+const parseIPAddress = (value) => {
   if (!REGEX.ip_address.test(value)) {
     throw new TypeError(`${value} is not a properly formed IP Address`);
   }
@@ -19,7 +22,7 @@ const GraphQLIPAddress = new GraphQLScalarType({
 
   serialize: parseIPAddress,
   parseValue: parseIPAddress,
-  parseLiteral: ast => {
+  parseLiteral: (ast) => {
     if (ast.kind !== Kind.STRING) {
       throw new GraphQLError(
         `Can only validate strings as an IP Address but got a: ${ast.kind}`
@@ -27,12 +30,12 @@ const GraphQLIPAddress = new GraphQLScalarType({
     }
 
     return parseIPAddress(ast.value);
-  }
+  },
 });
 
 // ---------------------------------------------------------------------------------
 
-const parseIPSubnet = value => {
+const parseIPSubnet = (value) => {
   if (!REGEX.subnet.test(value)) {
     throw new TypeError(
       `${value} is not a properly formed IP Address subnet (e.g. 192.168.0.0/24)`
@@ -54,7 +57,7 @@ const GraphQLIPSubnet = new GraphQLScalarType({
 
   serialize: serializeIPSubnet,
   parseValue: parseIPSubnet,
-  parseLiteral: ast => {
+  parseLiteral: (ast) => {
     if (ast.kind !== Kind.STRING) {
       throw new GraphQLError(
         `Can only validate strings as an IP Subnet but got a: ${ast.kind}`
@@ -62,7 +65,10 @@ const GraphQLIPSubnet = new GraphQLScalarType({
     }
 
     return parseIPSubnet(ast.value);
-  }
+  },
 });
 
-export default [{ IPAddress: GraphQLIPAddress, IPSubnet: GraphQLIPSubnet }];
+export default [
+  { IPAddress: GraphQLIPAddress, IPSubnet: GraphQLIPSubnet },
+  { Upload: GraphQLUpload },
+];
