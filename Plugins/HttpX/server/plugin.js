@@ -140,6 +140,9 @@ const HttpXPlugin = {
   async loadPlugin() {
     const MQTT = await PenPal.MQTT.NewClient();
 
+    // Define HttpX-specific MQTT topics
+    PenPal.API.MQTT.Topics.New.HTTPServices = "penpal/httpx/new/http-services";
+
     // Subscribe to new services discovered by other plugins (Nmap, Rustscan, etc.)
     await MQTT.Subscribe(
       PenPal.API.MQTT.Topics.New.Services,

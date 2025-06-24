@@ -1,0 +1,13 @@
+# Gowitness Plugin Enrichment Type
+type GowitnessPluginEnrichment implements PluginEnrichment {
+  plugin_name: String!
+  data: JSON
+  files: [EnrichmentFileAttachment]
+  screenshot_url: String
+  screenshot_bucket: String
+  screenshot_key: String
+  captured_at: String
+  url: String
+  title: String
+  status_code: Int
+}

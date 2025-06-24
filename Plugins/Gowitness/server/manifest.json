@@ -1,0 +1,13 @@
+{
+  "name": "Gowitness",
+  "version": "0.1.0",
+  "dependsOn": [
+    "CoreAPI@0.1.0",
+    "HttpX@0.1.0",
+    "JobsTracker@0.1.0",
+    "ScanQueue@0.1.0",
+    "FileStore@0.1.0",
+    "Docker@0.1.0"
+  ],
+  "load": true
+}

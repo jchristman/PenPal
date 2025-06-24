@@ -12,5 +12,6 @@ extend type Query {
     fileName: String!
     expirySeconds: Int
   ): String!
+  downloadFile(bucket: String!, fileName: String!): String
   getFileStoreAnalytics: FileStoreAnalytics
 }

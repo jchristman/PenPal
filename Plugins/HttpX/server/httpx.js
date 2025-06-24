@@ -85,6 +85,44 @@ export const parseAndUpsertResults = async (
         )
       );
     }
+
+    // Publish MQTT event for discovered HTTP services
+    if (result.accepted?.length > 0) {
+      const http_services = result.accepted
+        .filter(
+          (accepted_result) =>
+            accepted_result.enrichment?.status_code &&
+            accepted_result.enrichment.status_code >= 200 &&
+            accepted_result.enrichment.status_code < 400
+        )
+        .map((accepted_result) => {
+          // Find the original service data to get host IP and other details
+          const service = services_data.find(
+            (s) => s.id === accepted_result.service_id
+          );
+          return {
+            service_id: accepted_result.service_id,
+            host: service?.host,
+            host_ip: service?.host_ip,
+            port: service?.port,
+            ip_protocol: service?.ip_protocol,
+            project_id: project_id,
+            url: accepted_result.enrichment.url,
+            status_code: accepted_result.enrichment.status_code,
+            title: accepted_result.enrichment.title,
+          };
+        });
+
+      if (http_services.length > 0) {
+        HttpXLogger.log(
+          `Publishing ${http_services.length} HTTP services to MQTT`
+        );
+        await PenPal.API.MQTT.Publish(PenPal.API.MQTT.Topics.New.HTTPServices, {
+          project: project_id,
+          http_services: http_services,
+        });
+      }
+    }
   } catch (error) {
     HttpXLogger.error("Error parsing and upserting HttpX results:", error);
     throw error;

@@ -68,6 +68,22 @@ export default {
     }
   },
 
+  downloadFile: async (parent, { bucket, fileName }, context) => {
+    try {
+      const fileBuffer = await PenPal.FileStore.DownloadFile(bucket, fileName);
+
+      // Convert buffer to base64 data URL
+      const fileInfo = await PenPal.FileStore.GetFileInfo(bucket, fileName);
+      const contentType = fileInfo?.contentType || "application/octet-stream";
+      const base64Data = fileBuffer.toString("base64");
+
+      return `data:${contentType};base64,${base64Data}`;
+    } catch (error) {
+      logger.error("Error downloading file:", error);
+      throw new Error("Failed to download file");
+    }
+  },
+
   getFileStoreAnalytics: async (parent, args, context) => {
     return PenPal.FileStore._Analytics;
   },

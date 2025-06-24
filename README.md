@@ -22,6 +22,11 @@ PenPal is an automation and reporting all-in-one tool that is meant to enable Cy
   - [x] Web UI for job visualization and filtering
   - [x] Plugin integration via Jobs API
   - [x] Live navbar job counter with spinning icon for active jobs
+- [x] ScanQueue Plugin - Bandwidth Management
+  - [x] Sequential scan execution to prevent bandwidth conflicts
+  - [x] Smart job creation with multi-stage progress tracking
+  - [x] MQTT-triggered scan serialization for network stability
+  - [x] Eliminates false negatives from concurrent scanning
 - [ ] User Interface
   - [ ] Pluggable Dashboard
   - [x] Projects Summary Page
@@ -313,6 +318,147 @@ export const start_detailed_hosts_scan = async (hosts) => {
   return job.id;
 };
 ```
+
+## ScanQueue Plugin - Bandwidth Management
+
+**✅ CRITICAL: Preventing Bandwidth Conflicts and Scan Serialization**
+The **ScanQueue plugin** solves a critical infrastructure problem where multiple security tools try to scan simultaneously, causing bandwidth conflicts, false negative timeouts, and network congestion.
+
+### The Problem
+
+During large network assessments, multiple plugins can trigger scans simultaneously:
+
+- **Nmap** discovers services via MQTT events
+- **HttpX** immediately tries to scan discovered HTTP services
+- **Other tools** respond to the same discovery events
+- **Network bottleneck** occurs when all tools scan concurrently
+- **False negatives** appear as legitimate services timeout due to network saturation
+
+### The Solution
+
+ScanQueue provides **sequential scan execution** with comprehensive job tracking:
+
+```javascript
+// ✅ CORRECT: Queue scan operations with descriptive names
+PenPal.ScanQueue.Add(
+  async () => await performScanOperation(args),
+  "HttpX Scan (15 services, Project: abc123)"
+);
+
+// Operations run sequentially, not concurrently
+PenPal.ScanQueue.Add(
+  async () => await performNmapScan(hosts),
+  "Nmap Host Scan (3 hosts), Project: abc123"
+);
+```
+
+### Key Features
+
+**Sequential Execution**: Only one scan operation runs at a time, eliminating bandwidth conflicts
+
+**Smart Job Creation**: Creates JobsTracker jobs only when queuing occurs (2+ operations), avoiding unnecessary overhead
+
+**Descriptive Progress**: Rich job names show exactly what's being scanned and for which project
+
+**Multi-stage Tracking**: Each queued operation becomes a job stage with individual progress tracking
+
+**Busy Progress Indication**: Uses animated stripe progress bars for operations without detailed progress
+
+**Keep-alive System**: Prevents job timeout cancellation with periodic 5-second updates
+
+### Plugin Integration
+
+**HttpX Integration Example:**
+
+```javascript
+const BatchEnqueue = (BatchArgs) => {
+  const totalServices = BatchArgs.reduce(
+    (sum, [{ service_ids }]) => sum + service_ids.length,
+    0
+  );
+  const queueName = `HttpX Scan (${totalServices} services, Project: ${project})`;
+
+  PenPal.ScanQueue.Add(
+    async () => await start_http_service_scan_batch(BatchArgs),
+    queueName
+  );
+};
+
+// Works with BatchFunction for efficient event processing
+await MQTT.Subscribe(
+  PenPal.API.MQTT.Topics.New.Services,
+  PenPal.Utils.BatchFunction(BatchEnqueue, 1000)
+);
+```
+
+**Nmap Integration Example:**
+
+```javascript
+const queueHostsScan = (args) => {
+  const { project, host_ids } = args;
+  const queueName = `Nmap Detailed Host Scan (${host_ids.length} hosts), Project: ${project}`;
+  PenPal.ScanQueue.Add(
+    async () => await start_detailed_hosts_scan(args),
+    queueName
+  );
+};
+```
+
+### Job Progress Visualization
+
+ScanQueue jobs appear in the JobsTracker UI with rich visual feedback:
+
+**Progress Bar Types:**
+
+- **Orange Striped Bars**: "Busy" operations (100% with animated stripes)
+- **Blue Progress Bars**: Real progress with actual percentages
+- **Green Progress Bars**: Completed operations
+
+**Stage Status:**
+
+- **"Processing..."**: Currently executing with busy stripes
+- **"Pending"**: Waiting in queue with 0% progress
+- **"Completed"**: Finished successfully with green bar
+
+### Benefits
+
+**Reliability**: Eliminates false negatives caused by bandwidth saturation
+
+**Consistency**: Same scan targets produce repeatable results
+
+**Visibility**: Clear queue progress and operation tracking in web UI
+
+**Performance**: Optimal network utilization without overwhelming infrastructure
+
+**Error Isolation**: Failed operations don't affect subsequent queued items
+
+### Migration Guide
+
+To migrate existing plugins to use ScanQueue:
+
+**Step 1: Add Dependency**
+
+```json
+{
+  "name": "YourPlugin",
+  "dependsOn": ["CoreAPI@0.1.0", "ScanQueue@0.1.0"]
+}
+```
+
+**Step 2: Wrap Scan Functions**
+
+```javascript
+// ❌ OLD: Direct execution
+await performScan(args);
+
+// ✅ NEW: Queue execution
+PenPal.ScanQueue.Add(
+  async () => await performScan(args),
+  "Descriptive Operation Name"
+);
+```
+
+The ScanQueue plugin is essential for any PenPal deployment where multiple security tools run concurrently, ensuring reliable, repeatable scanning results without bandwidth conflicts.
 
 ## BatchFunction Utility - Event Batching
 

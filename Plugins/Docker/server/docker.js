@@ -2,6 +2,7 @@ import PenPal from "#penpal/core";
 import path from "path";
 import util from "util";
 import fs from "fs";
+import crypto from "crypto";
 import pty from "node-pty";
 import { v4 as uuid } from "uuid";
 import { exec as _exec } from "child_process";
@@ -16,6 +17,181 @@ const docker_host = "-H penpal-docker-api:2376";
 
 // Store pull timestamps to track when we last attempted pulls
 const pullTrackingFile = "/penpal-plugin-share/docker-pull-tracking.json";
+
+// -----------------------------------------------------------------------
+// Build Tracking System
+
+// Store build timestamps and context hashes to track when we last built with specific contexts
+const buildTrackingFile = "/penpal-plugin-share/docker-build-tracking.json";
+
+const loadBuildTracking = () => {
+  try {
+    if (fs.existsSync(buildTrackingFile)) {
+      const data = fs.readFileSync(buildTrackingFile, "utf8");
+      return JSON.parse(data);
+    }
+  } catch (error) {
+    logger.info(`Failed to load build tracking: ${error.message}`);
+  }
+  return {};
+};
+
+const saveBuildTracking = (tracking) => {
+  try {
+    // Ensure directory exists
+    const dir = path.dirname(buildTrackingFile);
+    if (!fs.existsSync(dir)) {
+      fs.mkdirSync(dir, { recursive: true });
+    }
+
+    fs.writeFileSync(buildTrackingFile, JSON.stringify(tracking, null, 2));
+  } catch (error) {
+    logger.error(`Failed to save build tracking: ${error.message}`);
+  }
+};
+
+const generateBuildContextHash = (args) => {
+  const hash = crypto.createHash("sha256");
+
+  try {
+    // Hash the build arguments structure
+    hash.update(
+      JSON.stringify({
+        name: args.name,
+        dockercontext: args.dockercontext,
+        dockerfile: args.dockerfile,
+      })
+    );
+
+    // Hash Dockerfile content if it exists
+    if (args.dockerfile && fs.existsSync(args.dockerfile)) {
+      const dockerfileContent = fs.readFileSync(args.dockerfile, "utf8");
+      hash.update(`dockerfile:${dockerfileContent}`);
+    }
+
+    // Hash docker context directory if it exists
+    if (args.dockercontext && fs.existsSync(args.dockercontext)) {
+      // Look for Dockerfile in the context directory
+      const contextDockerfile = path.join(args.dockercontext, "Dockerfile");
+      if (fs.existsSync(contextDockerfile)) {
+        const dockerfileContent = fs.readFileSync(contextDockerfile, "utf8");
+        hash.update(`context_dockerfile:${dockerfileContent}`);
+      }
+
+      // Also hash any package.json, requirements.txt, etc. for dependency changes
+      const importantFiles = [
+        "package.json",
+        "requirements.txt",
+        "go.mod",
+        "Cargo.toml",
+      ];
+      for (const file of importantFiles) {
+        const filePath = path.join(args.dockercontext, file);
+        if (fs.existsSync(filePath)) {
+          const content = fs.readFileSync(filePath, "utf8");
+          hash.update(`${file}:${content}`);
+        }
+      }
+    }
+
+    return hash.digest("hex");
+  } catch (error) {
+    logger.warn(`Failed to generate build context hash: ${error.message}`);
+    // Fallback to a simple hash based on args
+    hash.update(JSON.stringify(args));
+    return hash.digest("hex");
+  }
+};
+
+const recordBuildAttempt = (args) => {
+  const tracking = loadBuildTracking();
+  const contextHash = generateBuildContextHash(args);
+
+  tracking[args.name] = {
+    timestamp: new Date().toISOString(),
+    contextHash: contextHash,
+  };
+
+  saveBuildTracking(tracking);
+  // logger.info(
+  //   `Recorded build attempt for ${
+  //     args.name
+  //   } with context hash ${contextHash.substring(0, 8)}...`
+  // );
+};
+
+const getLastBuildAttempt = (args) => {
+  const tracking = loadBuildTracking();
+  const buildRecord = tracking[args.name];
+
+  if (!buildRecord) {
+    return null;
+  }
+
+  return {
+    timestamp: new Date(buildRecord.timestamp),
+    contextHash: buildRecord.contextHash,
+  };
+};
+
+// Check if an image was built recently with the same context
+const IsImageRecentlyBuilt = async (args) => {
+  await PenPal.Utils.AsyncNOOP();
+
+  // Generate current context hash
+  const currentContextHash = generateBuildContextHash(args);
+
+  // Check our build tracking
+  const lastBuildAttempt = getLastBuildAttempt(args);
+  if (lastBuildAttempt) {
+    const now = new Date();
+    const twentyFourHoursAgo = new Date(now.getTime() - 24 * 60 * 60 * 1000);
+
+    // Check if build was recent AND context hasn't changed
+    if (lastBuildAttempt.timestamp > twentyFourHoursAgo) {
+      if (lastBuildAttempt.contextHash === currentContextHash) {
+        const hoursAgo = Math.floor(
+          (now - lastBuildAttempt.timestamp) / (1000 * 60 * 60)
+        );
+        const minutesAgo = Math.floor(
+          (now - lastBuildAttempt.timestamp) / (1000 * 60)
+        );
+
+        let timeText;
+        if (hoursAgo > 0) {
+          timeText = `${hoursAgo} hour${hoursAgo > 1 ? "s" : ""} ago`;
+        } else {
+          timeText = `${minutesAgo} minute${minutesAgo > 1 ? "s" : ""} ago`;
+        }
+
+        logger.info(
+          `Image ${args.name} was built recently (${timeText}) with same context, skipping build`
+        );
+        return true;
+      } else {
+        logger.info(
+          `Image ${
+            args.name
+          } was built recently but context changed (${lastBuildAttempt.contextHash.substring(
+            0,
+            8
+          )}... -> ${currentContextHash.substring(0, 8)}...), rebuild needed`
+        );
+      }
+    } else {
+      const hoursAgo = Math.floor(
+        (now - lastBuildAttempt.timestamp) / (1000 * 60 * 60)
+      );
+      logger.info(
+        `Image ${args.name} last built ${hoursAgo} hours ago, rebuild needed`
+      );
+    }
+  } else {
+    logger.info(`No previous build record for ${args.name}, build needed`);
+  }
+
+  return false;
+};
 
 const loadPullTracking = () => {
   try {
@@ -784,6 +960,18 @@ export const Build = async (args) => {
     return;
   }
 
+  // Check if image was built recently with the same context
+  const isRecentlyBuilt = await IsImageRecentlyBuilt(args);
+  if (isRecentlyBuilt) {
+    logger.info(
+      `Skipping build for ${args.name} - image was built recently with same context`
+    );
+    return {
+      stdout: `Skipped: ${args.name} was built recently with same context`,
+      stderr: "",
+    };
+  }
+
   // Create a job to track the build operation
   const job = await safeJobOperation(PenPal.Jobs?.Create, {
     name: `Building Docker Image: ${args.name}`,
@@ -887,6 +1075,10 @@ export const Build = async (args) => {
       });
 
       logger.info(`Built image: ${args.name}`);
+
+      // Record that we successfully built this image with its context
+      recordBuildAttempt(args);
+
       return res;
     }
   } catch (e) {
