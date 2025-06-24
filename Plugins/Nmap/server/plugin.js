@@ -130,14 +130,35 @@ const NmapPlugin = {
   async loadPlugin() {
     const MQTT = await PenPal.MQTT.NewClient();
 
+    // Wrap scan functions in ScanQueue
+    const queueHostsScan = async (args) => {
+      const { project, host_ids } = args;
+      const queueName = `Nmap Detailed Host Scan (${host_ids.length} hosts), Project: ${project}`;
+
+      // Be polite and wait 3 seconds before adding to the queue
+      await PenPal.Utils.Sleep(3000);
+
+      PenPal.ScanQueue.Add(
+        async () => await start_detailed_hosts_scan(args),
+        queueName
+      );
+    };
+
+    const queueNetworksScan = async (args) => {
+      const { project, network_ids } = args;
+      const queueName = `Nmap Quick Network Scan (${network_ids.length} networks), Project: ${project}`;
+
+      PenPal.ScanQueue.Add(
+        async () => await start_initial_networks_scan(args),
+        queueName
+      );
+    };
+
     await MQTT.Subscribe(
       PenPal.API.MQTT.Topics.New.Networks,
-      start_initial_networks_scan
+      queueNetworksScan
     );
-    await MQTT.Subscribe(
-      PenPal.API.MQTT.Topics.New.Hosts,
-      start_detailed_hosts_scan
-    );
+    await MQTT.Subscribe(PenPal.API.MQTT.Topics.New.Hosts, queueHostsScan);
 
     const types = await loadGraphQLFiles();
 

@@ -44,10 +44,31 @@ const startGraphQLServer = async (
     allowBatchedHttpRequests: true,
     introspection: true,
     formatError: (err) => {
-      logger.error(
-        `${err.extensions?.code ?? "Unknown Error"} ::: ${err.message}`
-      );
-      logger.error(err.extensions?.stacktrace.join("\n"));
+      const errorCode = err.extensions?.code ?? "Unknown Error";
+      logger.error(`${errorCode} ::: ${err.message}`);
+
+      // Log path information for subscription errors
+      if (err.path) {
+        logger.error(`Error path: ${err.path.join(" -> ")}`);
+      }
+
+      // Log stack trace if available
+      if (err.extensions?.stacktrace) {
+        logger.error("Stack trace:");
+        logger.error(err.extensions.stacktrace.join("\n"));
+      } else if (err.stack) {
+        logger.error("Stack trace:");
+        logger.error(err.stack);
+      }
+
+      // Log additional context for subscription errors
+      if (err.source && err.source.body) {
+        logger.error(
+          "GraphQL query/subscription:",
+          err.source.body.substring(0, 200) + "..."
+        );
+      }
+
       return err;
     },
   });
@@ -150,7 +171,22 @@ const startGraphQLServer = async (
         logger.error("❌ GraphQL WebSocket Error:", {
           id: msg.id,
           operationName: msg.payload?.operationName,
-          errors: errors.map((e) => e.message),
+          errors: errors.map((e) => ({
+            message: e.message,
+            path: e.path,
+            extensions: e.extensions,
+          })),
+        });
+
+        // Log the full error details for debugging
+        errors.forEach((error, index) => {
+          logger.error(`WebSocket Error ${index + 1}:`, {
+            message: error.message,
+            path: error.path,
+            locations: error.locations,
+            extensions: error.extensions,
+            stack: error.stack,
+          });
         });
       },
     },

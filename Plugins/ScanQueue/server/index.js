@@ -6,4 +6,4 @@ import Plugin from "./plugin.js";
 import Manifest from "./manifest.json" with { type: "json" };
 
 // Register the plugin
-PenPal.registerPlugin(Manifest, Plugin);
+PenPal.registerPlugin(Manifest, Plugin); 

@@ -35,17 +35,12 @@ PenPal is an automation and reporting all-in-one tool that is meant to enable Cy
   - [x] Mongo Adapter
   - [ ] Postgres Adapter (Plugin)
   - [ ] Grepable Filesystem Adapter (Plugin)
-  - [ ] S3 Adapter
-    - [ ] [MinIO](https://min.io) (Plugin)
+  - [x] S3 Adapter
+    - [x] [MinIO](https://min.io) (Plugin)
     - [ ] Amazon S3 (Plugin)
 - [x] Docker support for plugins
 - [ ] Report generation
   - [ ] [Ghostwriter](https://github.com/GhostManager/Ghostwriter) (Plugin)
-- [ ] Plugin agents system for distributing the various plugins for internal/external combo scans
-  - [ ] Tunneling
-  - [ ] Cross platform agent
-  - [ ] Data flow
-  - [ ] Agent selection based on nearby networks (for automations)
 
 ## Service Enrichment System
 
@@ -53,7 +48,7 @@ PenPal features an **extensible service enrichment architecture** that allows pl
 
 ### How It Works
 
-1. **Service Discovery**: Tools like Nmap and Rustscan discover services (IP:port combinations)
+1. **Service Discovery**: Tools like Nmap discover services (IP:port combinations)
 2. **Enrichment Plugins**: Additional tools (HttpX, etc.) analyze services and add metadata
 3. **Unified View**: All enrichment data is displayed in a rich, extensible UI
 4. **Plugin Extensibility**: New plugins can register custom display components
@@ -151,7 +146,7 @@ This creates an intelligent **service discovery chain** where each plugin builds
 
 - [ ] Really anything from the core
 - [ ] Ping sweep for IP range (host discovery -> add hosts via API)
-- [ ] Nmap for service discovery for hosts or networks (host/service discovery -> add hosts/services via API)
+- [x] Nmap for service discovery for hosts or networks (host/service discovery -> add hosts/services via API)
 - [x] Rustscan for service discovery for hosts or networks (host/service discovery -> add hosts/services via API)
 - [x] [httpx](https://github.com/projectdiscovery/httpx) for HTTP service discovery and enrichment (service enrichment -> add HTTP metadata via API)
 - [ ] Burpsuite for vulnerability scanning

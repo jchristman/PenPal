@@ -109,7 +109,7 @@ export const performHttpScan = async ({
 
     // Wait for Docker image to be ready
     await PenPal.Docker.WaitForImageReady("penpal:httpx", {
-      updateCallback: update_job,
+      updateCallback: () => {},
       updateMessage: "Waiting for HttpX Docker image to build...",
       timeout: 120000,
     });
@@ -218,12 +218,12 @@ export const performHttpScan = async ({
     await update_job(100, "HTTP discovery scan complete");
 
     // Clean up files
-    // try {
-    //   if (fs.existsSync(targets_file)) fs.unlinkSync(targets_file);
-    //   if (fs.existsSync(output_file)) fs.unlinkSync(output_file);
-    // } catch (cleanupError) {
-    //   HttpXLogger.warn("Error cleaning up files:", cleanupError);
-    // }
+    try {
+      if (fs.existsSync(targets_file)) fs.unlinkSync(targets_file);
+      if (fs.existsSync(output_file)) fs.unlinkSync(output_file);
+    } catch (cleanupError) {
+      HttpXLogger.warn("Error cleaning up files:", cleanupError);
+    }
 
     return {
       success: true,

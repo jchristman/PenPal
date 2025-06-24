@@ -30,6 +30,11 @@ export default {
     return await API.getJob(jobId);
   },
 
+  async addJobStage(parent, { jobId, input }, context) {
+    await API.addJobStage(jobId, input);
+    return await API.getJob(jobId);
+  },
+
   async deleteJob(parent, { id }, context) {
     await API.removeJob(id);
     return true;

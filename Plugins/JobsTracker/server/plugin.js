@@ -39,6 +39,7 @@ const JobsTrackerPlugin = {
       Insert: API.insertJob,
       InsertMany: API.insertJobs,
       UpdateStage: API.updateJobStage,
+      AddStage: API.addJobStage,
       Remove: API.removeJob,
       RemoveMany: API.removeJobs,
       Upsert: API.upsertJobs,

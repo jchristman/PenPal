@@ -41,6 +41,8 @@ const start_http_service_scan_batch = async (batchedArgs) => {
     // Get the service details
     const services = await PenPal.API.Services.GetMany(service_ids);
 
+    HttpXLogger.log(`Retrieved ${services.length} services for analysis`);
+
     // Filter for HTTP-capable services
     const network_services = services.filter(
       (service) =>
@@ -50,25 +52,88 @@ const start_http_service_scan_batch = async (batchedArgs) => {
     );
 
     if (network_services.length > 0) {
-      // Enrich services with host IP information
-      const hosts_map = {};
-      for (const service of network_services) {
-        if (service.host && !hosts_map[service.host]) {
-          const host_data = await PenPal.API.Hosts.Get(service.host);
-          hosts_map[service.host] = host_data;
-          service.host_ip = host_data?.ip_address;
-        } else if (hosts_map[service.host]) {
-          service.host_ip = hosts_map[service.host].ip_address;
-        }
-      }
-
-      // Perform HTTP enrichment scan
-      await HttpX.performHttpScan({
+      // Create a job for this HTTP scan
+      const job = await PenPal.Jobs.Create({
+        name: `HTTP Discovery Scan (${network_services.length} services)`,
+        plugin: "HttpX",
+        progress: 0,
+        statusText: "Starting HTTP discovery scan...",
         project_id: project,
-        services: network_services,
       });
+
+      const update_job = async (progress, statusText, status = "running") => {
+        await PenPal.Jobs.Update(job.id, {
+          progress,
+          statusText,
+          status:
+            status === "failed"
+              ? PenPal.Jobs.Status.FAILED
+              : progress === 100
+              ? PenPal.Jobs.Status.DONE
+              : PenPal.Jobs.Status.RUNNING,
+        });
+      };
+
+      try {
+        // Enrich services with host IP information
+        const hosts_map = {};
+        for (const service of network_services) {
+          if (service.host && !hosts_map[service.host]) {
+            const host_data = await PenPal.API.Hosts.Get(service.host);
+            hosts_map[service.host] = host_data;
+            service.host_ip = host_data?.ip_address;
+          } else if (hosts_map[service.host]) {
+            service.host_ip = hosts_map[service.host].ip_address;
+          }
+        }
+
+        // Perform HTTP enrichment scan with job tracking
+        await HttpX.performHttpScan({
+          project_id: project,
+          services: network_services,
+          update_job,
+        });
+      } catch (error) {
+        HttpXLogger.error("HTTP scan failed:", error);
+        await update_job(100, `HTTP scan failed: ${error.message}`, "failed");
+        throw error; // Re-throw so ScanQueue can mark its stage as failed
+      }
+    } else {
+      // Create a job to explain why no scan was performed
+      const job = await PenPal.Jobs.Create({
+        name: `HTTP Discovery Scan (${services.length} services checked)`,
+        plugin: "HttpX",
+        progress: 100,
+        statusText: "HttpX Scan Skipped - No HTTP-capable services found",
+        status: PenPal.Jobs.Status.DONE,
+        project_id: project,
+      });
+
+      HttpXLogger.log(
+        `HttpX scan skipped - no HTTP-capable services found out of ${services.length} services checked`
+      );
     }
   }
+};
+
+const BatchEnqueue = (BatchArgs) => {
+  // Extract service count and project info for descriptive naming
+  const totalServices = BatchArgs.reduce(
+    (sum, [{ service_ids }]) => sum + service_ids.length,
+    0
+  );
+  const projects = [...new Set(BatchArgs.map(([{ project }]) => project))];
+  const projectCount = projects.length;
+
+  const queueName =
+    projectCount === 1
+      ? `HttpX Scan (${totalServices} services, Project: ${projects[0]})`
+      : `HttpX Scan (${totalServices} services, ${projectCount} projects)`;
+
+  PenPal.ScanQueue.Add(
+    async () => await start_http_service_scan_batch(BatchArgs),
+    queueName
+  );
 };
 
 const HttpXPlugin = {
@@ -78,7 +143,7 @@ const HttpXPlugin = {
     // Subscribe to new services discovered by other plugins (Nmap, Rustscan, etc.)
     await MQTT.Subscribe(
       PenPal.API.MQTT.Topics.New.Services,
-      PenPal.Utils.BatchFunction(start_http_service_scan_batch, 5000)
+      PenPal.Utils.BatchFunction(BatchEnqueue, 1000)
     );
 
     // Register APIs on PenPal object
