@@ -1,0 +1,6 @@
+{
+  "name": "FileStoreMinIOAdapter",
+  "version": "0.1.0",
+  "dependsOn": ["FileStore@0.1.0", "Docker@0.1.0"],
+  "implements": "FileStore@0.1.0"
+}

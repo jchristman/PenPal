@@ -1,0 +1,23 @@
+services:
+  penpal-minio:
+    image: quay.io/minio/minio:latest
+    container_name: penpal-minio
+    hostname: penpal-minio
+    ports:
+      - "9000:9000"
+      - "9001:9001"
+    volumes:
+      - penpal_minio_data:/data
+    environment:
+      MINIO_ROOT_USER: penpal
+      MINIO_ROOT_PASSWORD: penpalpassword
+    command: server /data --console-address ":9001"
+    networks:
+      - penpal_penpal
+
+volumes:
+  penpal_minio_data:
+
+networks:
+  penpal_penpal:
+    external: true

@@ -1,0 +1,12 @@
+# File Attachment Queries
+extend type Query {
+  getEnrichmentFiles(
+    service_selector: ServiceSelectorInput!
+    plugin_name: String!
+  ): FileAttachmentListResult!
+
+  generateEnrichmentFileDownloadUrl(
+    file_id: ID!
+    expiry_seconds: Int = 3600
+  ): FileDownloadUrlResult!
+}

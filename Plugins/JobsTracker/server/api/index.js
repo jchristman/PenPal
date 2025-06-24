@@ -1,5 +1,12 @@
 import PenPal from "#penpal/core";
-import { JobStatus, COMPLETED_STATUSES } from "../../common/job-constants.js";
+import {
+  JobStatus,
+  COMPLETED_STATUSES,
+  ACTIVE_STATUSES,
+} from "../../common/job-constants.js";
+
+// Import the shared logger from plugin.js
+import { JobsTrackerLogger as logger } from "../plugin.js";
 
 // Job CRUD operations
 export const getJob = async (job_id) => {
@@ -258,13 +265,13 @@ export const getJobsFiltered = async (filterMode = "active") => {
 
 // Cleanup stale jobs
 export const cleanupStaleJobs = async (timeoutMinutes = 5) => {
-  console.log(
-    `[JobsTracker] Starting cleanup of stale jobs (timeout: ${timeoutMinutes} minutes)`
+  logger.log(
+    `Starting cleanup of stale jobs (timeout: ${timeoutMinutes} minutes)`
   );
 
   // Check if DataStore adapters are ready
   if (!PenPal.DataStore || !PenPal.DataStore.AdaptersReady()) {
-    console.log("[JobsTracker] DataStore adapters not ready, skipping cleanup");
+    logger.log("DataStore adapters not ready, skipping cleanup");
     return { cancelledCount: 0, jobs: [], error: "DataStore not ready" };
   }
 
@@ -290,14 +297,14 @@ export const cleanupStaleJobs = async (timeoutMinutes = 5) => {
     });
 
     if (staleJobs.length === 0) {
-      console.log("[JobsTracker] No stale jobs found");
+      logger.log("No stale jobs found");
       return { cancelledCount: 0, jobs: [] };
     }
 
     // Update stale jobs to cancelled status
     const cancelledStatus = JobStatus.CANCELLED;
-    console.log(
-      `[JobsTracker] Marking ${staleJobs.length} jobs as cancelled with status: ${cancelledStatus}`
+    logger.log(
+      `Marking ${staleJobs.length} jobs as cancelled with status: ${cancelledStatus}`
     );
 
     const updates = staleJobs.map((job) => ({
@@ -319,20 +326,18 @@ export const cleanupStaleJobs = async (timeoutMinutes = 5) => {
       })),
     };
   } catch (error) {
-    console.error(`[JobsTracker] Error during cleanup:`, error);
+    logger.error(`Error during cleanup:`, error);
     return { cancelledCount: 0, jobs: [], error: error.message };
   }
 };
 
 // Clear all jobs
 export const clearAllJobs = async () => {
-  console.log("[JobsTracker] Starting to clear all jobs from datastore");
+  logger.log("Starting to clear all jobs from datastore");
 
   // Check if DataStore adapters are ready
   if (!PenPal.DataStore || !PenPal.DataStore.AdaptersReady()) {
-    console.log(
-      "[JobsTracker] DataStore adapters not ready, cannot clear jobs"
-    );
+    logger.log("DataStore adapters not ready, cannot clear jobs");
     return { deletedCount: 0, error: "DataStore not ready" };
   }
 
@@ -341,12 +346,12 @@ export const clearAllJobs = async () => {
     const allJobs = await PenPal.DataStore.fetch("JobsTracker", "Jobs", {});
     const totalCount = allJobs.length;
 
-    console.log(`[JobsTracker] Found ${totalCount} jobs to clear`);
+    logger.log(`Found ${totalCount} jobs to clear`);
 
     // Delete all jobs
     const result = await PenPal.DataStore.delete("JobsTracker", "Jobs", {});
 
-    console.log(`[JobsTracker] DataStore delete result:`, result);
+    logger.log(`DataStore delete result:`, result);
 
     // Publish events for real-time updates
     if (PenPal.PubSub) {
@@ -361,16 +366,14 @@ export const clearAllJobs = async () => {
       });
     }
 
-    console.log(
-      `[JobsTracker] Successfully cleared ${totalCount} jobs from datastore`
-    );
+    logger.log(`Successfully cleared ${totalCount} jobs from datastore`);
 
     return {
       deletedCount: totalCount,
       error: null,
     };
   } catch (error) {
-    console.error("[JobsTracker] Error clearing all jobs:", error);
+    logger.error("Error clearing all jobs:", error);
     return {
       deletedCount: 0,
       error: error.message,

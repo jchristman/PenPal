@@ -70,7 +70,7 @@ PenPal.LoadedPlugins = {};
 PenPal.registerPlugin = (manifest, plugin) => {
   if (!check_manifest(manifest) || !check_plugin(plugin)) {
     console.error(
-      `[!] Failed to register plugin: ${manifest?.name}@${manifest?.version}`
+      `Failed to register plugin: ${manifest?.name}@${manifest?.version}`
     );
     return;
   }
@@ -78,7 +78,7 @@ PenPal.registerPlugin = (manifest, plugin) => {
   const { name, version, dependsOn } = manifest;
 
   const name_version = `${name}@${version}`;
-  console.log(`[+] Registered plugin: ${name_version}`);
+  console.log(`Registered plugin: ${name_version}`);
 
   PenPal.RegisteredPlugins[name_version] = {
     name,
@@ -108,9 +108,7 @@ PenPal.loadPlugins = async () => {
       true
     );
     if (!all_prereqs_available) {
-      console.error(
-        `[!] Failed to load ${plugin_name}. Not all dependencies met.`
-      );
+      console.error(`Failed to load ${plugin_name}. Not all dependencies met.`);
       delete PenPal.RegisteredPlugins[plugin_name];
       continue;
     }
@@ -135,13 +133,13 @@ PenPal.loadPlugins = async () => {
         continue;
       }
 
-      console.log(`[.] Registering routes for ${plugin_name}`);
+      console.log(`Registering routes for ${plugin_name}`);
       registerRoutes();
     }
 
     PenPal.LoadedPlugins[plugin_name].loaded = true;
 
-    console.log(`[+] Loaded ${plugin_name}`);
+    console.log(`Loaded ${plugin_name}`);
   }
 
   for (let plugin_name of Object.keys(PenPal.LoadedPlugins)) {

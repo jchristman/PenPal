@@ -1,4 +1,8 @@
 import _ from "lodash";
+import PenPal from "#penpal/core";
+
+// Import the shared logger from plugin.js
+import { CoreAPILogger as logger } from "../plugin.js";
 
 // Hooks for getting IDs
 
@@ -22,7 +26,7 @@ export function registerHook(target, trigger, id, func) {
   let hook_location = null;
 
   if (_.includes(non_implemented_hooks, target)) {
-    console.log(`${target} hooks not yet implemented`);
+    logger.log(`${target} hooks not yet implemented`);
   } else if (_.includes(implemented_hooks, target)) {
     hook_location = hooks[target]?.[trigger];
   }

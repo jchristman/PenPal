@@ -3,8 +3,11 @@ import path from "path";
 import fs from "fs";
 import _ from "lodash";
 
+// Import the shared logger from plugin.js
+import { RustscanLogger as logger } from "./plugin.js";
+
 export const parseResults = async (project_id, data) => {
-  console.log("[.] Parsing rustscan results");
+  logger.info("Parsing rustscan results");
 
   const ips = Object.keys(data);
   let hosts = _.map(ips, (ip) => {
@@ -55,8 +58,8 @@ export const parseResults = async (project_id, data) => {
     updated_services = updated_services.concat(tmp_updated.accepted);
   }
 
-  console.log(
-    `[+] Rustscan inserted ${inserted.accepted.length} hosts, updated ${updated.accepted.length} hosts, inserted ${inserted_services.length} services, updated ${updated_services.length} services`
+  logger.info(
+    `Rustscan inserted ${inserted.accepted.length} hosts, updated ${updated.accepted.length} hosts, inserted ${inserted_services.length} services, updated ${updated_services.length} services`
   );
 
   // TODO: Check out updated and rejected
@@ -67,8 +70,8 @@ export const parseResults = async (project_id, data) => {
 export const performDiscoveryScan = async (args) => {
   const targets = (args.ips?.length ?? 0) > 0 ? args.ips : args.networks;
 
-  console.log(
-    `[.] Starting Discovery rustscan for ${targets.length} ${
+  logger.info(
+    `Starting Discovery rustscan for ${targets.length} ${
       (args.ips?.length ?? 0) > 0 ? "IPs" : "Networks"
     } in ${args.project_id}`
   );
@@ -79,8 +82,8 @@ export const performDiscoveryScan = async (args) => {
 export const performDetailedScan = async (args) => {
   const targets = (args.ips?.length ?? 0) > 0 ? args.ips : args.networks;
 
-  console.log(
-    `[.] Starting Detailed rustscan for ${targets.length} ${
+  logger.info(
+    `Starting Detailed rustscan for ${targets.length} ${
       (args.ips?.length ?? 0) > 0 ? "IPs" : "Networks"
     } in ${args.project_id}`
   );
@@ -126,11 +129,11 @@ export const performScan = async ({
 
   // Parse the container ID from the result of the command
   let container_id = result.stdout.trim();
-  console.log(`[+] Starting Rustscan: ${container_id}`);
+  logger.info(`Starting Rustscan: ${container_id}`);
 
   // Wait for the container to finish
   await PenPal.Docker.Wait(container_id);
-  console.log(`[+] Rustscan finished: ${container_id}`);
+  logger.info(`Rustscan finished: ${container_id}`);
 
   // Re-start the container to copy files out
   await PenPal.Docker.Start(container_id);
@@ -144,8 +147,8 @@ export const performScan = async ({
   // Set up an object to hold all the data
   let merged_data = {};
   if (result.stdout.length !== 0) {
-    console.log(
-      `[.] Copying JSON files from Rustscan container: ${container_id}`
+    logger.info(
+      `Copying JSON files from Rustscan container: ${container_id}`
     );
     const files = result.stdout.split("\n");
     const outdir = [PenPal.Constants.TMP_DIR, container_id].join(path.sep);
@@ -169,17 +172,17 @@ export const performScan = async ({
         const data = JSON.parse(fs.readFileSync(outfile, "utf8"));
         merged_data = { ...merged_data, ...data };
       } catch (e) {
-        console.log(`[!] failed to read data from ${outfile}`);
-        console.error(e.message);
-        console.error(e.stack);
+        logger.error(`failed to read data from ${outfile}`);
+        logger.error(e.message);
+        logger.error(e.stack);
       }
     }
 
-    console.log(
-      `[.] Copied results for ${Object.keys(merged_data).length} IP addresses`
+    logger.info(
+      `Copied results for ${Object.keys(merged_data).length} IP addresses`
     );
   } else {
-    console.log(`[.] No results for Rustscan: ${container_id}`);
+    logger.info(`No results for Rustscan: ${container_id}`);
   }
   await PenPal.Docker.Stop(container_id);
   await PenPal.Docker.RemoveContainer(container_id);

@@ -826,6 +826,92 @@ try {
 
 The Docker plugin is essential for PenPal's microservices architecture, enabling secure, isolated execution of cybersecurity tools while maintaining seamless integration with the broader platform.
 
+## Centralized Logger System
+
+PenPal provides a **sophisticated centralized logging system** that automatically assigns unique colors to each plugin and ensures consistent formatting across the entire platform. This replaces manual console.log statements with a professional, maintainable logging solution.
+
+### Key Features
+
+- **🎨 Automatic Color Assignment**: Each plugin gets a unique, consistent color based on plugin name hash
+- **📝 Consistent Formatting**: ISO 8601 timestamps and automatic `[PluginName]` prefixes in assigned colors
+- **🔧 Easy Integration**: File-level logger exports that can be imported anywhere within a plugin
+- **🚀 Multiple Log Levels**: `log`, `info`, `warn`, `error`, `debug` with appropriate colors
+- **⚡ Drop-in Replacement**: Simple migration from existing console.log statements
+
+### Quick Example
+
+**Before (Manual Console Logging):**
+
+```javascript
+console.log("[HttpX] Starting HTTP scan for 25 targets");
+console.error("[HttpX] Scan failed: Connection timeout");
+console.log("[+] HttpX scan completed successfully");
+```
+
+**After (Centralized Logger):**
+
+```javascript
+logger.log("Starting HTTP scan for 25 targets");
+logger.error("Scan failed: Connection timeout");
+logger.log("Scan completed successfully");
+```
+
+**Output:**
+
+```
+2024-01-15T10:30:45.123Z [HttpX] Starting HTTP scan for 25 targets
+2024-01-15T10:30:46.456Z [HttpX] Scan failed: Connection timeout
+2024-01-15T10:30:47.789Z [HttpX] Scan completed successfully
+```
+
+### Implementation Pattern
+
+**1. Create File-Level Logger Export** (in `plugin.js`):
+
+```javascript
+import PenPal from "#penpal/core";
+
+// File-level logger that can be imported by other files
+export const YourPluginLogger = PenPal.Utils.BuildLogger("YourPlugin");
+
+const YourPlugin = {
+  async loadPlugin() {
+    YourPluginLogger.log("Plugin loading started");
+    // ... plugin code
+    return { settings };
+  },
+};
+
+export default YourPlugin;
+```
+
+**2. Import in Other Plugin Files**:
+
+```javascript
+import { YourPluginLogger as logger } from "./plugin.js";
+
+export const performOperation = async () => {
+  logger.log("Starting operation");
+
+  try {
+    // Operation logic
+    logger.info("Operation completed successfully");
+  } catch (error) {
+    logger.error("Operation failed:", error.message);
+  }
+};
+```
+
+### Migration Benefits
+
+- **Consistent Formatting**: All plugins use the same timestamp and prefix format
+- **Unique Colors**: Easy visual identification of different plugins in logs
+- **Reduced Maintenance**: No manual prefix management or formatting
+- **Better Debugging**: Clear plugin attribution for all log messages
+- **Professional Output**: Clean, consistent logging across the entire system
+
+**📖 Complete Documentation**: See [docs/LOGGER.md](docs/LOGGER.md) for full implementation guide, migration steps, API reference, and best practices.
+
 ## Plugin Development
 
 Below is documentation describing how plugins should be structured and what is required. Plugins are loaded live by the Vite (client) and Node (server) dynamically, so simply placing the plugin in the `plugins/` folder will let you get started. Use the `penpal-plugin-develop.py` python script to get a Template with a name put into the right place.

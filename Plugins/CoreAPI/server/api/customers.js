@@ -2,6 +2,9 @@ import PenPal from "#penpal/core";
 import _ from "lodash";
 import { required_field } from "./common.js";
 
+// Import the shared logger from plugin.js
+import { CoreAPILogger as logger } from "../plugin.js";
+
 // -----------------------------------------------------------
 
 export const getCustomer = async (customer_id) => {
@@ -88,7 +91,7 @@ export const updateCustomers = async (customers) => {
 
   if (matched_customers.length !== _accepted.length) {
     // Find the unknown IDs
-    console.error(
+    logger.error(
       'Implement updateCustomers "customer not found" functionality'
     );
   }

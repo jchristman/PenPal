@@ -1,4 +1,5 @@
 import PenPal from "#penpal/core";
+import { check } from "#penpal/common";
 import _ from "lodash";
 import ip from "ip";
 
@@ -7,6 +8,9 @@ import { required_field, isTestData } from "./common.js";
 import { getNetworksByProject, addHostsToNetwork } from "./networks.js";
 //import { hosts as mockHosts } from "../test/mock-hosts.json" with { type: "json" };
 const mockHosts = [];
+
+// Import the shared logger from plugin.js
+import { CoreAPILogger as logger } from "../plugin.js";
 
 // -----------------------------------------------------------
 
@@ -184,7 +188,7 @@ export const insertHosts = async (hosts) => {
       // Accept the successful insertions
       accepted.push(...new_hosts);
     } else {
-      console.log("Rejected", rejected);
+      logger.error("Rejected", rejected);
     }
   }
 
@@ -232,7 +236,7 @@ export const updateHosts = async (hosts) => {
 
   if (matched_hosts.length !== _accepted.length) {
     // Find the unknown IDs
-    console.error('Implement updateHosts "host not found" functionality');
+    logger.error('Implement updateHosts "host not found" functionality');
   }
 
   for (let { id, ...host } of _accepted) {

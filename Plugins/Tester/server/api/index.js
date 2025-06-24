@@ -1,5 +1,8 @@
 import PenPal from "#penpal/core";
 
+// Import the shared logger from plugin.js
+import { TesterLogger as logger } from "../plugin.js";
+
 // In-memory storage for registered handlers (could be moved to DataStore if persistence is needed)
 const registeredHandlers = new Map();
 let handlerIdCounter = 1;
@@ -32,7 +35,7 @@ export const registerHandler = (
 
   registeredHandlers.set(handler_id, handler_info);
 
-  console.log(`[Tester] Registered handler: ${plugin_name}.${name}`);
+  logger.info(`Registered handler: ${plugin_name}.${name}`);
   return handler_id;
 };
 
@@ -70,16 +73,16 @@ export const invokeHandler = async (handler_id, args = []) => {
   }
 
   try {
-    console.log(
-      `[Tester] Invoking handler: ${handler_info.plugin_name}.${handler_info.handler_name}`
+    logger.info(
+      `Invoking handler: ${handler_info.plugin_name}.${handler_info.handler_name}`
     );
-    console.log(`[Tester] Arguments:`, args);
+    logger.info(`Arguments:`, args);
 
     const start_time = Date.now();
     const result = await handler_info.function_handler(...args);
     const execution_time = Date.now() - start_time;
 
-    console.log(`[Tester] Handler completed in ${execution_time}ms`);
+    logger.info(`Handler completed in ${execution_time}ms`);
 
     return {
       success: true,
@@ -88,7 +91,7 @@ export const invokeHandler = async (handler_id, args = []) => {
       invoked_at: new Date().toISOString(),
     };
   } catch (error) {
-    console.error(`[Tester] Handler execution failed:`, error);
+    logger.error(`Handler execution failed:`, error);
 
     return {
       success: false,
@@ -106,8 +109,8 @@ export const unregisterHandler = (handler_id) => {
   const handler_info = registeredHandlers.get(handler_id);
   if (handler_info) {
     registeredHandlers.delete(handler_id);
-    console.log(
-      `[Tester] Unregistered handler: ${handler_info.plugin_name}.${handler_info.handler_name}`
+    logger.info(
+      `Unregistered handler: ${handler_info.plugin_name}.${handler_info.handler_name}`
     );
     return true;
   }
@@ -125,8 +128,8 @@ export const clearPluginHandlers = (plugin_name) => {
       cleared.push(handler_info);
     }
   }
-  console.log(
-    `[Tester] Cleared ${cleared.length} handlers for plugin: ${plugin_name}`
+  logger.info(
+    `Cleared ${cleared.length} handlers for plugin: ${plugin_name}`
   );
   return cleared;
 };

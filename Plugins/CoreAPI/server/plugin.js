@@ -6,6 +6,17 @@ import stable_stringify from "fast-json-stable-stringify";
 import { loadGraphQLFiles, resolvers } from "./graphql/index.js";
 import * as API from "./api/index.js";
 import { mocks } from "./test/index.js";
+import {
+  FileAttachmentType,
+  FileAttachmentCategory,
+  detectFileType,
+  getFileCategory,
+  validateFileType,
+  getEnrichmentFileBucket,
+} from "../common/file-attachment-constants.js";
+
+// File-level logger that can be imported by other files
+export const CoreAPILogger = PenPal.Utils.BuildLogger("CoreAPI");
 
 const settings = {
   configuration: {
@@ -117,6 +128,20 @@ const CoreAPIPlugin = {
       UpdateEnrichment: API.updateEnrichment,
       UpsertEnrichment: API.upsertEnrichment,
       RemoveEnrichment: API.removeEnrichment,
+      // File Attachment Functions
+      AttachFileToEnrichment: API.attachFileToEnrichment,
+      GetEnrichmentFiles: API.getEnrichmentFiles,
+      RemoveFileFromEnrichment: API.removeFileFromEnrichment,
+      GenerateEnrichmentFileDownloadUrl: API.generateEnrichmentFileDownloadUrl,
+      // File Attachment Helper Functions
+      AttachScreenshotToHttpXEnrichment: API.attachScreenshotToHttpXEnrichment,
+      AttachCertificateToEnrichment: API.attachCertificateToEnrichment,
+      AttachLogToEnrichment: API.attachLogToEnrichment,
+      AttachJsonReportToEnrichment: API.attachJsonReportToEnrichment,
+      GetEnrichmentFilesByType: API.getEnrichmentFilesByType,
+      GetEnrichmentScreenshots: API.getEnrichmentScreenshots,
+      GetEnrichmentCertificates: API.getEnrichmentCertificates,
+      GetEnrichmentLogs: API.getEnrichmentLogs,
     };
 
     // This builds a unique set of wrapped functions that can utilize the dataloader utility in
@@ -277,6 +302,16 @@ const CoreAPIPlugin = {
       },
     };
 
+    // File Attachment Constants and Utilities
+    PenPal.API.FileAttachment = {
+      Type: FileAttachmentType,
+      Category: FileAttachmentCategory,
+      DetectFileType: detectFileType,
+      GetFileCategory: getFileCategory,
+      ValidateFileType: validateFileType,
+      GetEnrichmentFileBucket: getEnrichmentFileBucket,
+    };
+
     PenPal.Test.CoreAPI = { ...mocks };
 
     // Register test handlers with the Tester plugin (if available)
@@ -372,7 +407,7 @@ const CoreAPIPlugin = {
         "Database Connectivity Test"
       );
 
-      console.log("[CoreAPI] Registered test handlers with Tester plugin");
+      CoreAPILogger.info("Registered test handlers with Tester plugin");
     }
 
     const types = await loadGraphQLFiles();

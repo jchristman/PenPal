@@ -3,8 +3,11 @@ import path from "path";
 import fs from "fs";
 import xml2js from "xml2js";
 import _ from "lodash";
+import * as url from "url";
+const __dirname = url.fileURLToPath(new URL(".", import.meta.url));
 
 import { settings } from "./plugin.js";
+import { NmapLogger as logger } from "./plugin.js";
 
 const extractNmapStats = (output) => {
   const statsRegex =
@@ -68,9 +71,9 @@ export const parseAndUpsertResults = async (project_id, xml_data) => {
   const no_ports_hosts = {};
 
   // Process each host
-  console.log(`[+] Found ${hosts.length} hosts`);
+  logger.info(`Found ${hosts.length} hosts`);
   for (let host of hosts) {
-    console.log(`[+] Processing host: ${host.address[0].$.addr}`);
+    logger.info(`Processing host: ${host.address[0].$.addr}`);
     //console.log(JSON.stringify(host, null, 2));
     const ip = host.address[0].$.addr;
     const hostname = host.hostnames?.[0]?.hostname?.[0]?.$?.name ?? null;
@@ -168,8 +171,8 @@ export const parseAndUpsertResults = async (project_id, xml_data) => {
     updated_services = updated_services.concat(tmp_updated.accepted);
   }
 
-  console.log(
-    `[+] Upserted ${inserted.accepted.length} hosts, updated ${updated.accepted.length} hosts, inserted ${inserted_services.length} services, updated ${updated_services.length} services`
+  logger.info(
+    `Upserted ${inserted.accepted.length} hosts, updated ${updated.accepted.length} hosts, inserted ${inserted_services.length} services, updated ${updated_services.length} services`
   );
 };
 
@@ -215,7 +218,7 @@ export const performScan = async ({
     ? `-T4 --stats-every 1 -v --max-retries=1 --min-rate 150 --max-scan-delay 5 -n -sS -Pn ${ports} ${output} ${targets}`
     : `--stats-every 1 -v --max-retries=2 --initial-rtt-timeout=50ms --max-rtt-timeout=200ms --max-scan-delay=5s -Pn -sS -sV -sU ${ports} ${output} ${targets}`;
 
-  console.log(`[+] Running nmap ${nmap_command}`);
+  logger.info(`Running nmap ${nmap_command}`);
 
   // Check if Docker image is ready before running
   await PenPal.Docker.WaitForImageReady(settings.docker.name, {
@@ -237,7 +240,7 @@ export const performScan = async ({
 
   // Parse the container ID from the result of the command
   let container_id = result.stdout.trim();
-  console.log(`[+] Starting nmap: ${container_id}`);
+  logger.info(`Starting nmap: ${container_id}`);
 
   // Wait for the container to finish
   while (true) {
@@ -323,7 +326,7 @@ export const performScan = async ({
     });
   }
 
-  console.log(`[+] nmap finished: ${container_id}`);
+  logger.info(`nmap finished: ${container_id}`);
 
   // Read the file at ${output}.xml
   const xml_file = `${output_file}.xml`;

@@ -75,4 +75,21 @@ export {
   updateEnrichment,
   upsertEnrichment,
   removeEnrichment,
+  // File Attachment Functions
+  attachFileToEnrichment,
+  getEnrichmentFiles,
+  removeFileFromEnrichment,
+  generateEnrichmentFileDownloadUrl,
 } from "./services.js";
+
+// Enrichment File Helper Functions
+export {
+  attachScreenshotToHttpXEnrichment,
+  attachCertificateToEnrichment,
+  attachLogToEnrichment,
+  attachJsonReportToEnrichment,
+  getEnrichmentFilesByType,
+  getEnrichmentScreenshots,
+  getEnrichmentCertificates,
+  getEnrichmentLogs,
+} from "./enrichment-file-helpers.js";

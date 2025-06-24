@@ -1,0 +1,40 @@
+type FileStoreAnalytics {
+  RegisterAdapter: Int
+  GetAdapter: Int
+  CreateBucket: Int
+  DeleteBucket: Int
+  ListBuckets: Int
+  UploadFile: Int
+  DownloadFile: Int
+  DeleteFile: Int
+  ListFiles: Int
+  GetFileInfo: Int
+  GetUploadStream: Int
+  GetDownloadStream: Int
+}
+
+type FileInfo {
+  id: ID!
+  bucket: String!
+  name: String!
+  size: Int!
+  contentType: String
+  lastModified: String
+  uploadedAt: String
+  metadata: JSON
+  downloadUrl: String
+}
+
+type Bucket {
+  name: String!
+  createdAt: String
+  fileCount: Int
+}
+
+type FileUploadResponse {
+  success: Boolean!
+  fileId: ID
+  uploadUrl: String
+  downloadUrl: String
+  error: String
+}

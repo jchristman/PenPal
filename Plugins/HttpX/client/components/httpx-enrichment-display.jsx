@@ -1,201 +1,272 @@
 import React from "react";
-import { registerComponent } from "@penpal/core";
+import {
+  Box,
+  Typography,
+  Chip,
+  Link,
+  Card,
+  CardContent,
+  CardHeader,
+  Stack,
+} from "@mui/material";
+import {
+  OpenInNew,
+  CheckCircle,
+  Error,
+  Security,
+  Speed,
+} from "@mui/icons-material";
 import { makeStyles } from "@mui/styles";
-import Box from "@mui/material/Box";
-import Typography from "@mui/material/Typography";
-import Chip from "@mui/material/Chip";
-import Link from "@mui/material/Link";
-import CheckCircleIcon from "@mui/icons-material/CheckCircle";
-import ErrorIcon from "@mui/icons-material/Error";
-import WarningIcon from "@mui/icons-material/Warning";
+import { registerComponent } from "@penpal/core";
 
 const useStyles = makeStyles((theme) => ({
-  container: {
-    display: "flex",
-    flexDirection: "column",
-    gap: theme.spacing(2),
+  enrichmentCard: {
+    marginBottom: theme.spacing(1),
+    border: `1px solid ${theme.palette.divider}`,
   },
   urlSection: {
-    padding: theme.spacing(1),
-    backgroundColor: theme.palette.grey[50],
-    borderRadius: theme.shape.borderRadius,
+    marginBottom: theme.spacing(2),
   },
   statusSection: {
-    display: "flex",
-    flexWrap: "wrap",
-    gap: theme.spacing(1),
-    alignItems: "center",
+    marginBottom: theme.spacing(2),
   },
-  infoGrid: {
-    display: "grid",
-    gridTemplateColumns: "1fr 2fr",
-    gap: theme.spacing(1),
-    alignItems: "center",
+  techSection: {
+    marginBottom: theme.spacing(2),
   },
-  techChips: {
+  metadataSection: {
+    marginBottom: theme.spacing(1),
+  },
+  sectionTitle: {
+    fontWeight: 600,
+    marginBottom: theme.spacing(1),
+    color: theme.palette.text.secondary,
+  },
+  techChip: {
+    margin: theme.spacing(0.25),
+  },
+  metadataItem: {
     display: "flex",
-    flexWrap: "wrap",
-    gap: theme.spacing(0.5),
+    justifyContent: "space-between",
+    alignItems: "center",
+    marginBottom: theme.spacing(0.5),
+  },
+  metadataLabel: {
+    color: theme.palette.text.secondary,
+    fontWeight: 500,
+  },
+  metadataValue: {
+    fontFamily: "monospace",
   },
 }));
 
 const HttpXEnrichmentDisplay = ({ enrichment }) => {
   const classes = useStyles();
 
-  // Extract data from the enrichment.data field
-  const data = enrichment.data || {};
-
-  const getStatusIcon = (statusCode) => {
-    if (statusCode >= 200 && statusCode < 300) {
-      return <CheckCircleIcon color="success" />;
-    } else if (statusCode >= 400 && statusCode < 500) {
-      return <ErrorIcon color="error" />;
-    } else if (statusCode >= 500) {
-      return <ErrorIcon color="error" />;
-    } else {
-      return <WarningIcon color="warning" />;
-    }
+  const getStatusColor = (status_code) => {
+    if (status_code >= 200 && status_code < 300) return "success";
+    if (status_code >= 300 && status_code < 400) return "warning";
+    if (status_code >= 400) return "error";
+    return "default";
   };
 
-  const getStatusColor = (statusCode) => {
-    if (statusCode >= 200 && statusCode < 300) {
-      return "success";
-    } else if (statusCode >= 400 && statusCode < 500) {
-      return "error";
-    } else if (statusCode >= 500) {
-      return "error";
-    } else {
-      return "warning";
-    }
+  const getStatusIcon = (status_code) => {
+    if (status_code >= 200 && status_code < 300) return <CheckCircle />;
+    if (status_code >= 400) return <Error />;
+    return <Security />;
   };
 
   const formatBytes = (bytes) => {
-    if (!bytes) return "N/A";
-    const sizes = ["Bytes", "KB", "MB", "GB"];
-    if (bytes === 0) return "0 Bytes";
-    const i = Math.floor(Math.log(bytes) / Math.log(1024));
-    return Math.round((bytes / Math.pow(1024, i)) * 100) / 100 + " " + sizes[i];
+    if (!bytes) return "Unknown";
+    if (bytes < 1024) return `${bytes} B`;
+    if (bytes < 1024 * 1024) return `${(bytes / 1024).toFixed(1)} KB`;
+    return `${(bytes / (1024 * 1024)).toFixed(1)} MB`;
+  };
+
+  const formatDuration = (ms) => {
+    if (!ms) return "Unknown";
+    if (ms < 1000) return `${ms}ms`;
+    return `${(ms / 1000).toFixed(2)}s`;
   };
 
   return (
-    <Box className={classes.container}>
-      {/* URL Section */}
-      {data.url && (
-        <Box className={classes.urlSection}>
-          <Typography variant="body2" color="textSecondary" gutterBottom>
-            Discovered URL:
-          </Typography>
-          <Link
-            href={data.url}
-            target="_blank"
-            rel="noopener noreferrer"
-            variant="body1"
-          >
-            {data.url}
-          </Link>
-        </Box>
-      )}
+    <Card className={classes.enrichmentCard}>
+      <CardHeader
+        title="HTTP Service Information"
+        titleTypographyProps={{ variant: "h6" }}
+        avatar={<Speed color="primary" />}
+      />
+      <CardContent>
+        <Stack spacing={2}>
+          {/* URL Section */}
+          {enrichment.url && (
+            <Box className={classes.urlSection}>
+              <Typography variant="body2" className={classes.sectionTitle}>
+                URL:
+              </Typography>
+              <Box display="flex" alignItems="center">
+                <Link
+                  href={enrichment.url}
+                  target="_blank"
+                  rel="noopener noreferrer"
+                  variant="body1"
+                  sx={{ wordBreak: "break-all" }}
+                >
+                  {enrichment.url}
+                </Link>
+                <OpenInNew fontSize="small" sx={{ ml: 1 }} />
+              </Box>
+            </Box>
+          )}
 
-      {/* Status Section */}
-      <Box className={classes.statusSection}>
-        {data.status_code && (
-          <>
-            {getStatusIcon(data.status_code)}
-            <Chip
-              label={`HTTP ${data.status_code}`}
-              color={getStatusColor(data.status_code)}
-              size="small"
-            />
-          </>
-        )}
-
-        {data.method && (
-          <Chip label={data.method} variant="outlined" size="small" />
-        )}
-
-        {data.scheme && (
-          <Chip
-            label={data.scheme.toUpperCase()}
-            color={data.scheme === "https" ? "success" : "default"}
-            variant="outlined"
-            size="small"
-          />
-        )}
-      </Box>
-
-      {/* Information Grid */}
-      <Box className={classes.infoGrid}>
-        {data.title && (
-          <>
-            <Typography variant="body2" color="textSecondary">
-              Page Title:
-            </Typography>
-            <Typography variant="body2">{data.title}</Typography>
-          </>
-        )}
-
-        {data.server && (
-          <>
-            <Typography variant="body2" color="textSecondary">
-              Server:
-            </Typography>
-            <Typography variant="body2">{data.server}</Typography>
-          </>
-        )}
-
-        {data.content_type && (
-          <>
-            <Typography variant="body2" color="textSecondary">
-              Content Type:
-            </Typography>
-            <Typography variant="body2">{data.content_type}</Typography>
-          </>
-        )}
-
-        {data.content_length && (
-          <>
-            <Typography variant="body2" color="textSecondary">
-              Content Length:
-            </Typography>
-            <Typography variant="body2">
-              {formatBytes(data.content_length)}
-            </Typography>
-          </>
-        )}
-
-        {data.path && data.path !== "/" && (
-          <>
-            <Typography variant="body2" color="textSecondary">
-              Path:
-            </Typography>
-            <Typography variant="body2">{data.path}</Typography>
-          </>
-        )}
-      </Box>
-
-      {/* Technology Stack */}
-      {data.tech && data.tech.length > 0 && (
-        <Box>
-          <Typography variant="body2" color="textSecondary" gutterBottom>
-            Detected Technologies:
-          </Typography>
-          <Box className={classes.techChips}>
-            {data.tech.map((technology, index) => (
+          {/* Status Section */}
+          {enrichment.status_code && (
+            <Box className={classes.statusSection}>
+              <Typography variant="body2" className={classes.sectionTitle}>
+                HTTP Response:
+              </Typography>
               <Chip
-                key={index}
-                label={technology}
-                color="primary"
-                variant="outlined"
+                icon={getStatusIcon(enrichment.status_code)}
+                label={`${enrichment.status_code} ${
+                  enrichment.status_code >= 200 && enrichment.status_code < 300
+                    ? "OK"
+                    : enrichment.status_code >= 300 &&
+                      enrichment.status_code < 400
+                    ? "Redirect"
+                    : enrichment.status_code >= 400 &&
+                      enrichment.status_code < 500
+                    ? "Client Error"
+                    : enrichment.status_code >= 500
+                    ? "Server Error"
+                    : "Unknown"
+                }`}
+                color={getStatusColor(enrichment.status_code)}
                 size="small"
               />
-            ))}
+            </Box>
+          )}
+
+          {/* Technology Stack */}
+          {enrichment.tech && enrichment.tech.length > 0 && (
+            <Box className={classes.techSection}>
+              <Typography variant="body2" className={classes.sectionTitle}>
+                Technology Stack:
+              </Typography>
+              <Box display="flex" flexWrap="wrap">
+                {enrichment.tech.map((tech, index) => (
+                  <Chip
+                    key={index}
+                    label={tech}
+                    size="small"
+                    variant="outlined"
+                    className={classes.techChip}
+                  />
+                ))}
+              </Box>
+            </Box>
+          )}
+
+          {/* Metadata Section */}
+          <Box className={classes.metadataSection}>
+            <Typography variant="body2" className={classes.sectionTitle}>
+              Response Details:
+            </Typography>
+            <Stack spacing={0.5}>
+              {enrichment.content_type && (
+                <Box className={classes.metadataItem}>
+                  <Typography variant="body2" className={classes.metadataLabel}>
+                    Content Type:
+                  </Typography>
+                  <Typography variant="body2" className={classes.metadataValue}>
+                    {enrichment.content_type}
+                  </Typography>
+                </Box>
+              )}
+
+              {enrichment.content_length && (
+                <Box className={classes.metadataItem}>
+                  <Typography variant="body2" className={classes.metadataLabel}>
+                    Content Length:
+                  </Typography>
+                  <Typography variant="body2" className={classes.metadataValue}>
+                    {formatBytes(enrichment.content_length)}
+                  </Typography>
+                </Box>
+              )}
+
+              {enrichment.title && (
+                <Box className={classes.metadataItem}>
+                  <Typography variant="body2" className={classes.metadataLabel}>
+                    Page Title:
+                  </Typography>
+                  <Typography variant="body2" className={classes.metadataValue}>
+                    {enrichment.title}
+                  </Typography>
+                </Box>
+              )}
+
+              {enrichment.server && (
+                <Box className={classes.metadataItem}>
+                  <Typography variant="body2" className={classes.metadataLabel}>
+                    Server:
+                  </Typography>
+                  <Typography variant="body2" className={classes.metadataValue}>
+                    {enrichment.server}
+                  </Typography>
+                </Box>
+              )}
+
+              {enrichment.method && (
+                <Box className={classes.metadataItem}>
+                  <Typography variant="body2" className={classes.metadataLabel}>
+                    Method:
+                  </Typography>
+                  <Typography variant="body2" className={classes.metadataValue}>
+                    {enrichment.method}
+                  </Typography>
+                </Box>
+              )}
+
+              {enrichment.scheme && (
+                <Box className={classes.metadataItem}>
+                  <Typography variant="body2" className={classes.metadataLabel}>
+                    Scheme:
+                  </Typography>
+                  <Typography variant="body2" className={classes.metadataValue}>
+                    {enrichment.scheme}
+                  </Typography>
+                </Box>
+              )}
+
+              {enrichment.path && (
+                <Box className={classes.metadataItem}>
+                  <Typography variant="body2" className={classes.metadataLabel}>
+                    Path:
+                  </Typography>
+                  <Typography variant="body2" className={classes.metadataValue}>
+                    {enrichment.path}
+                  </Typography>
+                </Box>
+              )}
+
+              {enrichment.response_time && (
+                <Box className={classes.metadataItem}>
+                  <Typography variant="body2" className={classes.metadataLabel}>
+                    Response Time:
+                  </Typography>
+                  <Typography variant="body2" className={classes.metadataValue}>
+                    {formatDuration(enrichment.response_time)}
+                  </Typography>
+                </Box>
+              )}
+            </Stack>
           </Box>
-        </Box>
-      )}
-    </Box>
+        </Stack>
+      </CardContent>
+    </Card>
   );
 };
 
 registerComponent("HttpXEnrichmentDisplay", HttpXEnrichmentDisplay);
 
+// This is only needed for the fast refresh plugin, the registerComponent above is needed for the plugin system
 export default HttpXEnrichmentDisplay;

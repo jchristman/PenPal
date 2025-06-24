@@ -1,0 +1,11 @@
+# File Attachment Mutations
+extend type Mutation {
+  attachFileToEnrichment(
+    service_selector: ServiceSelectorInput!
+    plugin_name: String!
+    file_data: Upload!
+    metadata: FileAttachmentMetadataInput
+  ): FileAttachmentResult!
+
+  removeFileFromEnrichment(file_id: ID!): FileRemovalResult!
+}

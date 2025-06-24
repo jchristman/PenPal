@@ -719,6 +719,207 @@ The Service Enrichment system enables plugins to build comprehensive service int
 ## Plugin Development Template
 Use [PluginTemplate/](mdc:PluginTemplate) as a starting point for new plugins.
 
+## Centralized Logger System
+
+**✅ CRITICAL: PenPal.Utils.BuildLogger for Consistent Plugin Logging**
+PenPal provides a centralized logger system that automatically assigns unique colors to each plugin and provides consistent formatting across the entire system.
+
+### Logger Features
+
+**Automatic Color Assignment:**
+- Each plugin gets a unique color based on a hash of the plugin name
+- 12 ANSI colors available: cyan, green, yellow, blue, magenta, red, white, gray, bright versions
+- Colors are consistent across server restarts for the same plugin name
+
+**Plugin Name Prefixing:**
+- Automatically adds colored `[PluginName]` prefix to all log messages
+- Replaces manual console.log formatting with standardized approach
+- Maintains existing timestamp format for compatibility
+
+**Multiple Log Levels:**
+- `logger.log()` - General information (white/default color)
+- `logger.info()` - Informational messages (cyan)
+- `logger.warn()` - Warning messages (yellow)
+- `logger.error()` - Error messages (red)
+- `logger.debug()` - Debug information (gray)
+
+### Logger Implementation Pattern
+
+**✅ CORRECT: File-Level Logger Export**
+Create a shared logger that can be imported by any file within the plugin:
+
+```javascript
+// plugin.js - Main plugin file
+import PenPal from "#penpal/core";
+
+// File-level logger that can be imported by other files
+export const YourPluginLogger = PenPal.Utils.BuildLogger("YourPlugin");
+
+const YourPlugin = {
+  async loadPlugin() {
+    YourPluginLogger.log("Plugin loading started");
+    
+    // Plugin initialization code
+    
+    YourPluginLogger.log("Plugin loaded successfully");
+    return { settings };
+  },
+};
+
+export default YourPlugin;
+```
+
+**Using Logger in Other Plugin Files:**
+```javascript
+// other-file.js - API, utilities, etc.
+import PenPal from "#penpal/core";
+
+// Import the shared logger from plugin.js
+import { YourPluginLogger as logger } from "./plugin.js";
+
+export const performOperation = async () => {
+  logger.log("Starting operation");
+  
+  try {
+    // Operation logic
+    logger.log("Operation completed successfully");
+  } catch (error) {
+    logger.error("Operation failed:", error.message);
+    throw error;
+  }
+};
+```
+
+### Logger Migration Process
+
+**Step 1: Create File-Level Logger Export**
+```javascript
+// Add to top of plugin.js after imports
+export const YourPluginLogger = PenPal.Utils.BuildLogger("YourPlugin");
+```
+
+**Step 2: Replace Console Statements**
+```javascript
+// ❌ OLD: Manual console.log with prefixes
+console.log("[YourPlugin] Starting scan");
+console.error("[YourPlugin] Scan failed:", error);
+
+// ✅ NEW: Use logger methods
+logger.log("Starting scan");
+logger.error("Scan failed:", error);
+```
+
+**Step 3: Remove Manual Prefixes**
+Use sed or find-replace to remove plugin name prefixes since the logger handles them:
+```bash
+# Remove plugin name prefixes from all files
+sed -i '' 's/\[YourPlugin\] //g' Plugins/YourPlugin/server/**/*.js
+```
+
+**Step 4: Import Logger in Other Files**
+```javascript
+// Import shared logger in API files, utilities, etc.
+import { YourPluginLogger as logger } from "../plugin.js";
+```
+
+### Logger Output Examples
+
+**Color-Coded Output:**
+```
+2024-01-15T10:30:45.123Z [Docker] Building image: penpal:httpx
+2024-01-15T10:30:46.456Z [HttpX] Starting HTTP service scan
+2024-01-15T10:30:47.789Z [JobsTracker] Created job: HTTP-SCAN-123
+2024-01-15T10:30:48.012Z [CoreAPI] Added 15 service enrichments
+```
+
+**Different Log Levels:**
+```javascript
+logger.info("Configuration loaded");    // Cyan [PluginName]
+logger.log("Processing started");       // White [PluginName]  
+logger.warn("Deprecated API used");     // Yellow [PluginName]
+logger.error("Connection failed");      // Red [PluginName]
+logger.debug("Variable state:", obj);   // Gray [PluginName]
+```
+
+### Logger Best Practices
+
+**Use Appropriate Log Levels:**
+- `logger.log()` for general operational messages
+- `logger.info()` for configuration and startup information
+- `logger.warn()` for non-critical issues and deprecation notices
+- `logger.error()` for failures and exceptions
+- `logger.debug()` for detailed troubleshooting information
+
+**Message Content Guidelines:**
+- Remove plugin name prefixes (logger handles them automatically)
+- Use clear, descriptive messages without redundant information
+- Include relevant context like counts, IDs, or status
+- For errors, include the error message or relevant details
+
+**Performance Considerations:**
+- Logger calls are synchronous and fast
+- No need to conditionally disable logging in production
+- Debug level can be controlled via environment variables if needed
+
+**File Organization:**
+- Always export logger from main plugin.js file
+- Import logger consistently as `logger` or `YourPluginLogger as logger`
+- Use the same logger instance across all files in a plugin
+
+### Logger Implementation Details
+
+**Color Assignment Algorithm:**
+```javascript
+// Simplified version of the color assignment
+const colors = [
+  '\x1b[36m', // cyan
+  '\x1b[32m', // green  
+  '\x1b[33m', // yellow
+  '\x1b[34m', // blue
+  '\x1b[35m', // magenta
+  '\x1b[31m', // red
+  // ... more colors
+];
+
+const hash = plugin_name.split('').reduce((a, b) => {
+  a = ((a << 5) - a) + b.charCodeAt(0);
+  return a & a;
+}, 0);
+
+const color = colors[Math.abs(hash) % colors.length];
+```
+
+**Message Format:**
+```
+{timestamp} {colored_plugin_prefix} {message}
+2024-01-15T10:30:45.123Z [PluginName] Your log message here
+```
+
+### Migration Examples
+
+**Before (Manual Console Logging):**
+```javascript
+// ❌ OLD: Inconsistent manual logging
+console.log("[HttpX] Starting HTTP scan for", targets.length, "targets");
+console.error("[HttpX] Scan failed:", error);
+console.log("[+] HttpX scan completed successfully");
+```
+
+**After (Centralized Logger):**
+```javascript
+// ✅ NEW: Consistent logger usage
+logger.log("Starting HTTP scan for", targets.length, "targets");
+logger.error("Scan failed:", error);
+logger.log("Scan completed successfully");
+```
+
+**Benefits of Migration:**
+- **Consistent Formatting**: All plugins use the same timestamp and prefix format
+- **Unique Colors**: Easy visual identification of different plugins in logs
+- **Reduced Maintenance**: No manual prefix management or formatting
+- **Better Debugging**: Clear plugin attribution for all log messages
+- **Professional Output**: Clean, consistent logging across the entire system
+
 ## Plugin Communication
 - **MQTT Plugin**: [Plugins/MQTT/server/plugin.js](mdc:Plugins/MQTT/server/plugin.js) - Inter-plugin messaging
 - Plugins can subscribe to events like new hosts/networks discovery
@@ -1915,6 +2116,12 @@ PenPal.YourAPI = {
 - Use consistent naming between client queries and server resolvers
 - Implement proper loading states and error handling in React components
 - Consider real-time updates with polling or subscriptions
+
+**Logger Integration:**
+- Always use the centralized logger system for consistent, colored output
+- Create file-level logger exports that can be imported across plugin files
+- Replace all console.log statements with appropriate logger methods
+- Remove manual plugin name prefixes since the logger handles them automatically
 
 ## Lessons Learned from Plugin Development
 

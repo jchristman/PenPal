@@ -1,7 +1,10 @@
+import DataStore from "./datastore.js";
 import PenPal from "#penpal/core";
 
 import { loadGraphQLFiles, resolvers } from "./graphql/index.js";
-import DataStore from "./datastore.js";
+
+// Initialize logger for this plugin
+const logger = PenPal.Utils.BuildLogger("DataStore");
 
 const check_datastores = (datastores) => {
   let datastores_accept = true;
@@ -10,7 +13,7 @@ const check_datastores = (datastores) => {
 
 const create_datastores = (plugin_name) => {
   if (PenPal.LoadedPlugins[plugin_name].settings?.datastores !== undefined) {
-    console.log(`[.] Creating datastores for ${plugin_name}`);
+    logger.log("Creating datastores for " + plugin_name);
     PenPal.DataStore.CreateStores(
       PenPal.LoadedPlugins[plugin_name].name,
       PenPal.LoadedPlugins[plugin_name].settings?.datastores?.map(
@@ -22,6 +25,7 @@ const create_datastores = (plugin_name) => {
 
 const DataStorePlugin = {
   async loadPlugin() {
+    // Register DataStore API on PenPal object
     PenPal.DataStore = DataStore;
     const types = await loadGraphQLFiles();
 

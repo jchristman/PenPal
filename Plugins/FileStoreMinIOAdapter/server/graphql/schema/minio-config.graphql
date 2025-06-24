@@ -1,0 +1,25 @@
+type MinIOFileStoreConfiguration {
+  endPoint: String
+  port: Int
+  accessKey: String
+  secretKey: String
+  useSSL: Boolean
+}
+
+extend type Query {
+  getMinIOFileStoreConfiguration: MinIOFileStoreConfiguration
+}
+
+extend type Mutation {
+  setMinIOFileStoreConfiguration(
+    config: MinIOFileStoreConfigurationInput!
+  ): Boolean
+}
+
+input MinIOFileStoreConfigurationInput {
+  endPoint: String
+  port: Int
+  accessKey: String
+  secretKey: String
+  useSSL: Boolean
+}

@@ -1,8 +1,13 @@
 import PenPal from "#penpal/core";
 import * as url from "url";
+import * as Rustscan from "./rustscan.js";
+
 const __dirname = url.fileURLToPath(new URL(".", import.meta.url));
 
 import { performDetailedScan, performDiscoveryScan } from "./rustscan.js";
+
+// File-level logger that can be imported by other files
+export const RustscanLogger = PenPal.Utils.BuildLogger("Rustscan");
 
 const settings = {
   docker: {
