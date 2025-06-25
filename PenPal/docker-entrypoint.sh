@@ -8,7 +8,6 @@ if [[ $USER_ID -eq 0 ]]; then
 	echo Sleeping 10 seconds before continuing...
 	sleep 10
 
-    cp -p package-tmp.json package.json
     install-dependencies.sh
 
 	exec "$@"
@@ -30,8 +29,6 @@ else
 fi
 
 chown node:node /home/node/.npm
-cp -p package-tmp.json package.json
-chown -R node:node package*.json
 /usr/local/bin/gosu node install-dependencies.sh
 
 exec /usr/local/bin/gosu node "$@"

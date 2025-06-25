@@ -1,20 +1,24 @@
 services:
   penpal-frontend:
     volumes:
-      - ./PenPal/app/src/:/penpal/app/src
-      - ./PenPal/app/static/:/penpal/app/static
-      - ./PenPal/app/package-frontend.json:/penpal/app/package-tmp.json
-      - ./PenPal/app/vite.config.js:/penpal/app/vite.config.js
-      - ./plugins/:/penpal/app/plugins
+      # Mount package.json read-only to prevent npm changes from propagating
+      - ./PenPal/app/client/package.json:/penpal/package-tmp.json:ro
+      - ./PenPal/app/client/vite.config.js:/penpal/vite.config.js:ro
+      - ./PenPal/app/client/tailwind.config.ts:/penpal/tailwind.config.ts:ro
+      - ./PenPal/app/client/src:/penpal/src
+      - ./Plugins:/penpal/plugins
     environment:
       - LOCAL_USER_ID=${LOCAL_USER_ID}
+      - CONTAINER_TYPE=frontend
 
   penpal-server:
     volumes:
-      - ./PenPal/app/src/:/penpal/app/src
-      - ./PenPal/app/nodemon.config.json:/penpal/app/nodemon.config.json
-      - ./PenPal/app/package-server.json:/penpal/app/package-tmp.json
-      - ./plugins/:/penpal/app/plugins:consistent
+      # Mount package.json read-only to prevent npm changes from propagating
+      - ./PenPal/app/server/package.json:/penpal/package-tmp.json:ro
+      - ./PenPal/app/server/nodemon.config.json:/penpal/nodemon.config.json:ro
+      - ./PenPal/app/server/src:/penpal/src
+      - ./Plugins:/penpal/plugins
     environment:
       - LOCAL_USER_ID=${LOCAL_USER_ID}
       - FORCE_COLOR=1
+      - CONTAINER_TYPE=server

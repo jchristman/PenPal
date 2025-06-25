@@ -49,13 +49,12 @@ RUN chown -R node:node /home/node
 RUN echo 'node ALL=(ALL) NOPASSWD: ALL' >> /etc/sudoers
 
 # Make our source directory and chown it to the new user
-RUN mkdir -p /penpal/app
+RUN mkdir -p /penpal/
 RUN mkdir -p /penpal/plugins
 RUN chown -R node:node /penpal
 
-# Install npm-recursive-install for merging of package.json dependencies
-RUN npm install -g recursive-install
-RUN npm install -g npm@9.6.4
+# Update npm to latest version
+RUN npm install -g npm@latest
 
 # For `docker run CONTAINER_ID`
 COPY ./docker-entrypoint.sh /usr/bin/docker-entrypoint.sh

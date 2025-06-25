@@ -136,7 +136,7 @@ const NmapPlugin = {
       const queueName = `Nmap Detailed Host Scan (${host_ids.length} hosts), Project: ${project}`;
 
       // Be polite and wait 10 seconds before adding to the queue
-      await PenPal.Utils.Sleep(10000);
+      await PenPal.Utils.Sleep(30000);
 
       PenPal.ScanQueue.Add(
         async () => await start_detailed_hosts_scan(args),

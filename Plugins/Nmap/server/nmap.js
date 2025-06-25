@@ -222,7 +222,8 @@ export const performScan = async ({
 
   // Check if Docker image is ready before running
   await PenPal.Docker.WaitForImageReady(settings.docker.name, {
-    updateCallback: (progress, message) => update_job(progress, message, null),
+    // updateCallback: (progress, message) => update_job(progress, message, null),
+    updateCallback: () => {},
     updateMessage: "Waiting for Nmap Docker image to build...",
   });
 

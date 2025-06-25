@@ -1,0 +1,1 @@
+shell-quote stream-to-string node-pty

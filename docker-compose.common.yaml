@@ -15,9 +15,10 @@ services:
 
   penpal-frontend:
     build:
-      context: ./PenPal
-      dockerfile: ./Dockerfile-frontend
+      context: .
+      dockerfile: ./PenPal/Dockerfile-frontend
     pull_policy: never
+    working_dir: /penpal
     volumes:
       - penpal-frontend-npm-cache:/home/node/.npm
     ports:
@@ -28,13 +29,12 @@ services:
 
   penpal-server:
     build:
-      context: ./PenPal
-      dockerfile: ./Dockerfile-server
+      context: .
+      dockerfile: ./PenPal/Dockerfile-server
     pull_policy: never
+    working_dir: /penpal
     volumes:
       - penpal-server-npm-cache:/home/node/.npm
-      - ./docker-compose.common.yaml:/penpal/app/docker-compose.common.yaml
-      - /tmp:/tmp
       - penpal-plugin-share:/penpal-plugin-share
     ports:
       - "3001:3001"
