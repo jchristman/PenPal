@@ -4,7 +4,6 @@ services:
       # Mount package.json read-only to prevent npm changes from propagating
       - ./PenPal/app/client/package.json:/penpal/package-tmp.json:ro
       - ./PenPal/app/client/vite.config.js:/penpal/vite.config.js:ro
-      - ./PenPal/app/client/tailwind.config.ts:/penpal/tailwind.config.ts:ro
       - ./PenPal/app/client/src:/penpal/src
       - ./Plugins:/penpal/plugins
     environment:

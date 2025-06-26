@@ -6,7 +6,7 @@ const ProjectsViewTimelineView = ({ projects }) => {
   return null;
 };
 
-export const Icon = <CalendarDaysIcon />;
+export const Icon = <CalendarDaysIcon className="h-4 w-4" />;
 export const Name = "Timeline View";
 
 registerComponent("ProjectsViewTimelineView", ProjectsViewTimelineView);

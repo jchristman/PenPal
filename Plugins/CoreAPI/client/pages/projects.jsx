@@ -21,7 +21,17 @@ import {
   Name as TimelineViewName,
 } from "./projects/views-timeline-view.jsx";
 
-const { Button, ToggleGroup, ToggleGroupItem, Separator } = Components;
+const {
+  Button,
+  ToggleGroup,
+  ToggleGroupItem,
+  Separator,
+  DropdownMenu,
+  DropdownMenuTrigger,
+  DropdownMenuContent,
+  DropdownMenuItem,
+  DropdownMenuSeparator,
+} = Components;
 
 const _actions = [
   { icon: TableViewIcon, name: TableViewName },
@@ -30,7 +40,8 @@ const _actions = [
 ];
 
 const Projects = () => {
-  const [fabVisible, setFabVisible] = useState(false);
+  const [fabVisible, setFabVisible] = useState(true);
+  const [fabExpanded, setFabExpanded] = useState(false);
   const [newProjectOpen, setNewProjectOpen] = useState(false);
   const [view, setView] = useState(_actions[0].name);
 
@@ -151,21 +162,38 @@ const Projects = () => {
 
         {/* Mobile FAB for when toolbar is hidden */}
         {fabVisible && (
-          <div className="fixed bottom-4 right-4 z-10">
-            <div className="bg-white rounded-lg shadow-lg border border-gray-200 p-2 space-y-2">
-              {actions.map((action, index) => (
-                <Button
-                  key={index}
-                  variant="ghost"
-                  size="sm"
-                  onClick={action.onClick}
-                  className="w-full justify-start gap-2"
-                >
-                  <action.icon className="size-6 text-black-500" />
-                  {action.name}
-                </Button>
-              ))}
-            </div>
+          <div className="fixed bottom-4 right-4 z-10 flex flex-col items-end gap-2">
+            {fabExpanded && (
+              <div className="bg-white rounded-lg shadow-lg border border-gray-200 p-2 space-y-2">
+                {actions.map((action, index) => (
+                  <Button
+                    key={index}
+                    variant="ghost"
+                    size="sm"
+                    onClick={() => {
+                      action.onClick();
+                      setFabExpanded(false);
+                    }}
+                    className="w-full justify-start gap-2"
+                  >
+                    {action.icon}
+                    {action.name}
+                  </Button>
+                ))}
+              </div>
+            )}
+            <Button
+              size="lg"
+              isIconOnly
+              onClick={() => setFabExpanded(!fabExpanded)}
+              className="rounded-full shadow-lg"
+            >
+              {fabExpanded ? (
+                <XMarkIcon className="h-6 w-6" />
+              ) : (
+                <WrenchScrewdriverIcon className="h-6 w-6" />
+              )}
+            </Button>
           </div>
         )}
       </div>

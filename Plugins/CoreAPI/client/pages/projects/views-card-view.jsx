@@ -6,7 +6,7 @@ const ProjectsViewCardView = ({ projects }) => {
   return null;
 };
 
-export const Icon = <Squares2X2Icon />;
+export const Icon = <Squares2X2Icon className="h-4 w-4" />;
 export const Name = "Card View";
 
 registerComponent("ProjectsViewCardView", ProjectsViewCardView);

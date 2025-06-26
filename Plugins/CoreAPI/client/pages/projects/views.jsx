@@ -11,10 +11,6 @@ import { Name as TimelineViewName } from "./views-timeline-view.jsx";
 const ProjectsView = ({ view }) => {
   const [page, setPage] = useState(0);
   const [pageSize, setPageSize] = useState(10);
-  const [projectSummaries, setProjectSummaries] = useState({
-    projects: [],
-    totalCount: 0,
-  });
   const pageSizeOptions = [5, 10, 20, { label: "All", value: -1 }];
 
   const {
@@ -29,12 +25,7 @@ const ProjectsView = ({ view }) => {
     },
   });
 
-  // This is a way to essentially buffer the changes from the GraphQL query so that it looks smoother in the UI
-  useEffect(() => {
-    if (getProjects !== undefined) {
-      setProjectSummaries(getProjects);
-    }
-  }, [getProjects]);
+  useEffect(() => {}, [getProjects]);
 
   return view === TableViewName ? (
     <Components.ProjectsViewTableView
@@ -43,7 +34,7 @@ const ProjectsView = ({ view }) => {
       pageSize={pageSize}
       setPageSize={setPageSize}
       pageSizeOptions={pageSizeOptions}
-      projectSummaries={projectSummaries}
+      projects={getProjects?.projects}
     />
   ) : view === TimelineViewName ? (
     <Components.ProjectsViewTimelineView
@@ -52,7 +43,7 @@ const ProjectsView = ({ view }) => {
       pageSize={pageSize}
       setPageSize={setPageSize}
       pageSizeOptions={pageSizeOptions}
-      projectSummaries={projectSummaries}
+      projects={getProjects?.projects}
     />
   ) : (
     <Components.ProjectsViewCardView
@@ -61,7 +52,7 @@ const ProjectsView = ({ view }) => {
       pageSize={pageSize}
       setPageSize={setPageSize}
       pageSizeOptions={pageSizeOptions}
-      projectSummaries={projectSummaries}
+      projects={getProjects?.projects}
     />
   );
 };
