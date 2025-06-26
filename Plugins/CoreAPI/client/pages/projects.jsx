@@ -1,22 +1,12 @@
 import React, { useState, useEffect } from "react";
-import { Components, registerComponent } from "@penpal/core";
-
-import { makeStyles } from "@mui/styles";
-import Button from "@mui/material/Button";
-import Backdrop from "@mui/material/Backdrop";
-import Container from "@mui/material/Container";
-import SpeedDial from "@mui/lab/SpeedDial";
-import SpeedDialIcon from "@mui/lab/SpeedDialIcon";
-import SpeedDialAction from "@mui/lab/SpeedDialAction";
-import ToggleButton from "@mui/material/ToggleButton";
-import ToggleButtonGroup from "@mui/material/ToggleButtonGroup";
-import Divider from "@mui/material/Divider";
-import Paper from "@mui/material/Paper";
-import EditIcon from "@mui/icons-material/Edit";
-import CloseIcon from "@mui/icons-material/Close";
-import AddIcon from "@mui/icons-material/Add";
-import BuildIcon from "@mui/icons-material/Build";
-import ClearIcon from "@mui/icons-material/Clear";
+import { Components, registerComponent, Hooks } from "@penpal/core";
+import {
+  PencilIcon,
+  XMarkIcon,
+  PlusIcon,
+  WrenchScrewdriverIcon,
+  TrashIcon,
+} from "@heroicons/react/24/outline";
 
 import {
   Icon as CardViewIcon,
@@ -31,58 +21,7 @@ import {
   Name as TimelineViewName,
 } from "./projects/views-timeline-view.jsx";
 
-const useStyles = makeStyles((theme) => ({
-  root: {
-    height: "100%",
-    width: "100%",
-    flexGrow: 1,
-    zIndex: 1,
-  },
-  speedDial: {
-    position: "absolute",
-    bottom: theme.spacing(2),
-    right: theme.spacing(2),
-    zIndex: 2,
-  },
-  action_tooltip: {
-    width: "max-content",
-  },
-  container: {
-    height: "100%",
-    display: "flex",
-    flexDirection: "column",
-  },
-  toolbar: {
-    flexShrink: 0,
-    width: "100%",
-    marginBottom: theme.spacing(2),
-  },
-  paper: {
-    width: "auto",
-    float: "right",
-    display: "flex",
-    border: `1px solid ${theme.palette.divider}`,
-    flexWrap: "wrap",
-    padding: theme.spacing(0.5),
-  },
-  projects_container: {
-    flex: 1,
-    width: "100%",
-  },
-  divider: {
-    margin: theme.spacing(1),
-  },
-  grouped: {
-    margin: theme.spacing(0.5),
-    border: "none",
-    "&:not(:first-child)": {
-      borderRadius: theme.shape.borderRadius,
-    },
-    "&:first-child": {
-      borderRadius: theme.shape.borderRadius,
-    },
-  },
-}));
+const { Button, ToggleGroup, ToggleGroupItem, Separator } = Components;
 
 const _actions = [
   { icon: TableViewIcon, name: TableViewName },
@@ -91,25 +30,19 @@ const _actions = [
 ];
 
 const Projects = () => {
-  const classes = useStyles();
   const [fabVisible, setFabVisible] = useState(false);
   const [newProjectOpen, setNewProjectOpen] = useState(false);
-
-  const [open, setOpen] = useState(false);
   const [view, setView] = useState(_actions[0].name);
 
-  const handleOpen = () => setOpen(true);
-  const handleClose = () => setOpen(false);
   const handleNewProjectOpen = () => setNewProjectOpen(true);
   const handleNewProjectClose = () => setNewProjectOpen(false);
 
   const actions = fabVisible
     ? [
         {
-          icon: <BuildIcon />,
+          icon: <WrenchScrewdriverIcon className="h-4 w-4" />,
           name: "Show Toolbar",
           onClick: () => {
-            handleClose();
             setFabVisible(false);
           },
         },
@@ -118,10 +51,9 @@ const Projects = () => {
           onClick: () => setView(action.name),
         })),
         {
-          icon: <AddIcon />,
+          icon: <PlusIcon className="h-4 w-4" />,
           name: "New Project",
           onClick: () => {
-            handleClose();
             setTimeout(handleNewProjectOpen, 200);
           },
         },
@@ -130,7 +62,7 @@ const Projects = () => {
         {
           group: [
             {
-              icon: <AddIcon />,
+              icon: <PlusIcon className="h-4 w-4" />,
               onClick: (event) => {
                 event.preventDefault();
                 handleNewProjectOpen();
@@ -147,7 +79,7 @@ const Projects = () => {
           group: [
             {
               name: view, // A hack to make this always a "depressed" value
-              icon: <BuildIcon />,
+              icon: <WrenchScrewdriverIcon className="h-4 w-4" />,
               onClick: (event) => {
                 event.preventDefault();
                 setFabVisible(true);
@@ -159,83 +91,84 @@ const Projects = () => {
       ];
 
   return (
-    <div className={classes.root}>
-      <Container maxWidth="lg" className={classes.container} disableGutters>
+    <div className="h-full w-full flex-grow relative">
+      <div className="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8 h-full flex flex-col">
         {!fabVisible && (
-          <div className={classes.toolbar}>
-            <Paper className={classes.paper}>
+          <div className="flex-shrink-0 w-full mb-4">
+            <div className="bg-white border border-gray-200 rounded-lg shadow-sm p-2 flex items-center justify-end gap-2">
               {actions.map(({ group, exclusive }, index) => (
                 <React.Fragment key={index}>
-                  <ToggleButtonGroup
-                    classes={{ grouped: classes.grouped }}
-                    size="small"
-                    value={view}
-                    exclusive={exclusive}
-                    onChange={(event, newView) =>
-                      newView !== null && setView(newView)
-                    }
-                  >
-                    {group.map((item, index) => (
-                      <ToggleButton
-                        key={index}
-                        value={item.name ?? ""}
-                        onClick={item.onClick}
-                      >
-                        {item.icon}
-                      </ToggleButton>
-                    ))}
-                  </ToggleButtonGroup>
+                  {exclusive ? (
+                    <ToggleGroup
+                      type="single"
+                      value={view}
+                      onValueChange={(newView) => newView && setView(newView)}
+                      className="flex"
+                    >
+                      {group.map((item, itemIndex) => (
+                        <ToggleGroupItem
+                          key={itemIndex}
+                          value={item.name || ""}
+                          onClick={item.onClick}
+                          className="flex items-center justify-center p-2"
+                        >
+                          {item.icon}
+                        </ToggleGroupItem>
+                      ))}
+                    </ToggleGroup>
+                  ) : (
+                    <div className="flex">
+                      {group.map((item, itemIndex) => (
+                        <Button
+                          key={itemIndex}
+                          variant="outline"
+                          size="sm"
+                          onClick={item.onClick}
+                          className="flex items-center justify-center p-2"
+                        >
+                          {item.icon}
+                        </Button>
+                      ))}
+                    </div>
+                  )}
                   {index !== actions.length - 1 && (
-                    <Divider
-                      flexItem
-                      orientation="vertical"
-                      className={classes.divider}
-                    />
+                    <Separator orientation="vertical" className="h-6" />
                   )}
                 </React.Fragment>
               ))}
-            </Paper>
+            </div>
           </div>
         )}
-        <div className={classes.projects_container}>
+
+        <div className="flex-1 w-full">
           <Components.ProjectsView view={view} />
         </div>
+
         <Components.NewProjectWorkflow
           open={newProjectOpen}
           handleClose={handleNewProjectClose}
         />
-      </Container>
-      {fabVisible && (
-        <>
-          <Backdrop open={open} />
-          <SpeedDial
-            ariaLabel=""
-            hidden={!fabVisible}
-            className={classes.speedDial}
-            icon={
-              <SpeedDialIcon icon={<EditIcon />} openIcon={<CloseIcon />} />
-            }
-            onClose={handleClose}
-            onOpen={(event, reason) => {
-              if (reason === "focus") return;
-              handleOpen();
-            }}
-            open={open}
-          >
-            {actions.reverse().map((action) => (
-              <SpeedDialAction
-                key={action.name}
-                FabProps={{ disabled: action.name === view }}
-                icon={action.icon}
-                classes={{ staticTooltipLabel: classes.action_tooltip }}
-                tooltipTitle={action.name}
-                tooltipOpen
-                onClick={action.onClick}
-              />
-            ))}
-          </SpeedDial>
-        </>
-      )}
+
+        {/* Mobile FAB for when toolbar is hidden */}
+        {fabVisible && (
+          <div className="fixed bottom-4 right-4 z-10">
+            <div className="bg-white rounded-lg shadow-lg border border-gray-200 p-2 space-y-2">
+              {actions.map((action, index) => (
+                <Button
+                  key={index}
+                  variant="ghost"
+                  size="sm"
+                  onClick={action.onClick}
+                  className="w-full justify-start gap-2"
+                >
+                  <action.icon className="size-6 text-black-500" />
+                  {action.name}
+                </Button>
+              ))}
+            </div>
+          </div>
+        )}
+      </div>
     </div>
   );
 };

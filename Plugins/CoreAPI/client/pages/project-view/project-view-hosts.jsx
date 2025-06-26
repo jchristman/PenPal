@@ -1,36 +1,15 @@
 import React, { useState } from "react";
-import { Components, registerComponent } from "@penpal/core";
-import { makeStyles } from "@mui/styles";
-import Paper from "@mui/material/Paper";
-import Tabs from "@mui/material/Tabs";
-import Tab from "@mui/material/Tab";
-import { useSnackbar } from "notistack";
+import { Components, registerComponent, Hooks } from "@penpal/core";
 
 import { useQuery } from "@apollo/client";
 import getHostsInformation from "./queries/get-hosts-information.js";
 
-import { TabPanel } from "./project-view-data-container.jsx";
-
-const useStyles = makeStyles((theme) => ({
-  container: {
-    flexGrow: 1,
-    display: "flex",
-    height: "100%",
-  },
-  tabs: {
-    borderRight: `1px solid ${theme.palette.divider}`,
-  },
-  tab_panel_container: {
-    width: "100%",
-    paddingLeft: theme.spacing(2),
-    paddingRight: theme.spacing(2),
-  },
-}));
+const { Tabs, TabsContent, TabsList, TabsTrigger } = Components.Tabs;
+const { useToast } = Hooks;
 
 const ProjectViewHosts = ({ project, disable_polling }) => {
-  const { enqueueSnackbar } = useSnackbar();
-  const classes = useStyles();
-  const [value, setValue] = useState(0);
+  const { toast } = useToast();
+  const [activeTab, setActiveTab] = useState("list");
 
   const { data, loading, error } = useQuery(getHostsInformation, {
     pollInterval: disable_polling ? 0 : 15000,
@@ -40,56 +19,76 @@ const ProjectViewHosts = ({ project, disable_polling }) => {
   });
 
   if (loading) {
-    return "Loading host information";
-  }
-
-  if (error) {
-    enqueueSnackbar(error.message, { variant: "error" });
     return null;
   }
 
-  const handleChange = (event, newValue) => {
-    setValue(newValue);
-  };
+  if (error) {
+    toast({
+      title: "Error",
+      description: error.message,
+      variant: "destructive",
+    });
+    return null;
+  }
 
-  const hosts = data?.getHostsByProjectID ?? [];
+  const { getProject: { hosts } = { hosts: [] } } = data || {};
 
   const tabs = [
     {
-      title: "List",
-      content: Components.ProjectViewHostsList,
+      value: "list",
+      label: "List",
+      content: ({ project, hosts }) => (
+        <Components.ProjectViewHostsList project={project} hosts={hosts} />
+      ),
     },
     {
-      title: "Services",
-      content: () => "Services",
+      value: "dashboard",
+      label: "Dashboard",
+      content: () => (
+        <div className="flex items-center justify-center h-64 text-muted-foreground">
+          Hosts Dashboard Coming Soon
+        </div>
+      ),
     },
     {
-      title: "Graph",
-      content: () => "Graph",
+      value: "graph",
+      label: "Graph",
+      content: () => (
+        <div className="flex items-center justify-center h-64 text-muted-foreground">
+          Hosts Graph Coming Soon
+        </div>
+      ),
     },
   ];
 
   return (
-    <Paper className={classes.container}>
+    <div className="w-full h-full">
       <Tabs
+        value={activeTab}
+        onValueChange={setActiveTab}
         orientation="vertical"
-        variant="scrollable"
-        value={value}
-        onChange={handleChange}
-        className={classes.tabs}
+        className="w-full h-full flex"
       >
-        {tabs.map(({ title }, i) => (
-          <Tab key={i} label={title} />
-        ))}
+        <TabsList className="h-full w-48 flex-col justify-start">
+          {tabs.map(({ value, label }) => (
+            <TabsTrigger
+              key={value}
+              value={value}
+              className="w-full justify-start"
+            >
+              {label}
+            </TabsTrigger>
+          ))}
+        </TabsList>
+        <div className="flex-1 pl-8 pr-8">
+          {tabs.map(({ value, content: Content }) => (
+            <TabsContent key={value} value={value} className="mt-4">
+              <Content project={project} hosts={hosts} />
+            </TabsContent>
+          ))}
+        </div>
       </Tabs>
-      <div className={classes.tab_panel_container}>
-        {tabs.map(({ content: Content }, i) => (
-          <TabPanel value={value} index={i} key={i}>
-            <Content project={project} hosts={hosts} />
-          </TabPanel>
-        ))}
-      </div>
-    </Paper>
+    </div>
   );
 };
 

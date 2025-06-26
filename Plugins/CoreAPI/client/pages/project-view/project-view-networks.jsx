@@ -1,75 +1,79 @@
 import React, { useState } from "react";
 import { Components, registerComponent } from "@penpal/core";
-import { makeStyles } from "@mui/styles";
-import Paper from "@mui/material/Paper";
-import Tabs from "@mui/material/Tabs";
-import Tab from "@mui/material/Tab";
 
-import { TabPanel } from "./project-view-data-container.jsx";
-
-const useStyles = makeStyles((theme) => ({
-  container: {
-    flexGrow: 1,
-    display: "flex",
-    height: "100%",
-  },
-  tabs: {
-    borderRight: `1px solid ${theme.palette.divider}`,
-  },
-  tab_panel_container: {
-    paddingLeft: theme.spacing(2),
-    paddingRight: theme.spacing(2),
-  },
-}));
+const { Tabs, TabsContent, TabsList, TabsTrigger } = Components.Tabs;
 
 const ProjectViewNetworks = ({ project }) => {
-  const classes = useStyles();
-  const [value, setValue] = useState(0);
-
-  const handleChange = (event, newValue) => {
-    setValue(newValue);
-  };
+  const [activeTab, setActiveTab] = useState("list");
 
   const tabs = [
     {
-      title: "List",
-      content: () => "List",
+      value: "list",
+      label: "List",
+      content: () => (
+        <div className="flex items-center justify-center h-64 text-muted-foreground">
+          Networks List Coming Soon
+        </div>
+      ),
     },
     {
-      title: "Hosts",
-      content: () => "Hosts",
+      value: "hosts",
+      label: "Hosts",
+      content: () => (
+        <div className="flex items-center justify-center h-64 text-muted-foreground">
+          Networks Hosts View Coming Soon
+        </div>
+      ),
     },
     {
-      title: "Services",
-      content: () => "Services",
+      value: "services",
+      label: "Services",
+      content: () => (
+        <div className="flex items-center justify-center h-64 text-muted-foreground">
+          Networks Services View Coming Soon
+        </div>
+      ),
     },
     {
-      title: "Graph",
-      content: () => "Graph",
+      value: "graph",
+      label: "Graph",
+      content: () => (
+        <div className="flex items-center justify-center h-64 text-muted-foreground">
+          Networks Graph View Coming Soon
+        </div>
+      ),
     },
   ];
 
   return (
-    <Paper className={classes.container}>
+    <div className="flex-1 flex h-full">
       <Tabs
+        value={activeTab}
+        onValueChange={setActiveTab}
         orientation="vertical"
-        variant="scrollable"
-        value={value}
-        onChange={handleChange}
-        className={classes.tabs}
+        className="flex-1 flex h-full"
       >
-        {tabs.map(({ title }, i) => (
-          <Tab key={i} label={title} />
-        ))}
+        <TabsList className="h-full w-48 flex flex-col justify-start p-1 bg-muted/50 border-r">
+          {tabs.map(({ value, label }) => (
+            <TabsTrigger
+              key={value}
+              value={value}
+              className="w-full justify-start"
+            >
+              {label}
+            </TabsTrigger>
+          ))}
+        </TabsList>
+
+        <div className="flex-1 pl-8 pr-8">
+          {tabs.map(({ value, content: Content }) => (
+            <TabsContent key={value} value={value} className="mt-4">
+              <Content project={project} />
+            </TabsContent>
+          ))}
+        </div>
       </Tabs>
-      <div className={classes.tab_panel_container}>
-        {tabs.map(({ content: Content }, i) => (
-          <TabPanel value={value} index={i} key={i}>
-            <Content project={project} />
-          </TabPanel>
-        ))}
-      </div>
-    </Paper>
+    </div>
   );
 };
 

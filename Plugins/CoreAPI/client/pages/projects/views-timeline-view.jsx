@@ -1,12 +1,12 @@
 import React from "react";
 import { Components, registerComponent } from "@penpal/core";
-import CalendarViewDayIcon from "@mui/icons-material/CalendarViewDay";
+import { CalendarDaysIcon } from "@heroicons/react/24/outline";
 
 const ProjectsViewTimelineView = ({ projects }) => {
   return null;
 };
 
-export const Icon = <CalendarViewDayIcon />;
+export const Icon = <CalendarDaysIcon />;
 export const Name = "Timeline View";
 
 registerComponent("ProjectsViewTimelineView", ProjectsViewTimelineView);

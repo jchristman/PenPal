@@ -1,36 +1,40 @@
 import React, { useState } from "react";
-import { Components, registerComponent } from "@penpal/core";
-import { makeStyles } from "@mui/styles";
-import Stack from "@mui/material/Stack";
-import Card from "@mui/material/Card";
-import CardHeader from "@mui/material/CardHeader";
-import CardContent from "@mui/material/CardContent";
+import { Components, registerComponent, Utils } from "@penpal/core";
 
-const useStyles = makeStyles((theme) => ({
-  card: {
-    minWidth: `calc(50% - ${theme.spacing(2)})`,
-    border: `1px solid ${theme.palette.divider}`,
-  },
-}));
+const { cn } = Utils;
+const { Card, CardHeader, CardContent } = Components.Card;
 
 const ProjectViewHostsList = ({ hosts }) => {
-  const classes = useStyles();
   console.log(hosts);
   return (
-    <Stack spacing={2} direction="row" useFlexGap flexWrap="wrap">
+    <div className="flex flex-wrap gap-4">
       {hosts.map((host) => (
-        <Card key={host.id} className={classes.card}>
-          <CardHeader title={host.ip_address} />
+        <Card
+          key={host.id}
+          className="min-w-[calc(50%-0.5rem)] border border-border"
+        >
+          <CardHeader>
+            <h3 className="text-lg font-semibold">{host.ip_address}</h3>
+          </CardHeader>
           <CardContent>
-            <div>
-              Hostnames:{" "}
-              {host.hostnames?.join(", ") ?? "No hostnames available"}
+            <div className="space-y-2">
+              <div>
+                <span className="font-medium">Hostnames: </span>
+                <span className="text-muted-foreground">
+                  {host.hostnames?.join(", ") ?? "No hostnames available"}
+                </span>
+              </div>
+              <div>
+                <span className="font-medium">Services Count: </span>
+                <span className="text-muted-foreground">
+                  {host.servicesConnection.totalCount}
+                </span>
+              </div>
             </div>
-            <div>Services Count: {host.servicesConnection.totalCount}</div>
           </CardContent>
         </Card>
       ))}
-    </Stack>
+    </div>
   );
 };
 

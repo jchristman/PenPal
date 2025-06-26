@@ -11,6 +11,7 @@ export default defineConfig({
     hmr: {
       host: "localhost",
     },
+    sourcemap: true,
   },
   build: {
     outDir: path.resolve(__dirname, "./dist"),

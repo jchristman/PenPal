@@ -1,32 +1,27 @@
 import React, { useState } from "react";
 import { useNavigate } from "react-router-dom";
-import { Components, registerComponent } from "@penpal/core";
-import Table from "@mui/material/Table";
-import TableBody from "@mui/material/TableBody";
-import TableCell from "@mui/material/TableCell";
-import TableContainer from "@mui/material/TableContainer";
-import TableFooter from "@mui/material/TableFooter";
-import TablePagination from "@mui/material/TablePagination";
-import TableRow from "@mui/material/TableRow";
-import Paper from "@mui/material/Paper";
-import IconButton from "@mui/material/IconButton";
-import FirstPageIcon from "@mui/icons-material/FirstPage";
-import KeyboardArrowLeft from "@mui/icons-material/KeyboardArrowLeft";
-import KeyboardArrowRight from "@mui/icons-material/KeyboardArrowRight";
-import LastPageIcon from "@mui/icons-material/LastPage";
-import ViewListIcon from "@mui/icons-material/ViewList";
-import { makeStyles, useTheme } from "@mui/styles";
+import { Components, registerComponent, Utils } from "@penpal/core";
+import {
+  ChevronDoubleLeftIcon,
+  ChevronLeftIcon,
+  ChevronRightIcon,
+  ChevronDoubleRightIcon,
+  Bars3Icon,
+} from "@heroicons/react/24/outline";
 
-const useStyles1 = makeStyles((theme) => ({
-  root: {
-    flexShrink: 0,
-    marginLeft: theme.spacing(2.5),
-  },
-}));
+const {
+  Button,
+  Table,
+  TableBody,
+  TableCell,
+  TableHead,
+  TableHeader,
+  TableRow,
+  Card,
+  CardContent,
+} = Components;
 
 const TablePaginationActions = ({ count, page, rowsPerPage, onPageChange }) => {
-  const classes = useStyles1();
-
   const handleFirstPageButtonClick = (event) => {
     onPageChange(event, 0);
   };
@@ -44,84 +39,55 @@ const TablePaginationActions = ({ count, page, rowsPerPage, onPageChange }) => {
   };
 
   return (
-    <div className={classes.root}>
-      <IconButton onClick={handleFirstPageButtonClick} disabled={page === 0}>
-        <FirstPageIcon />
-      </IconButton>
-      <IconButton onClick={handleBackButtonClick} disabled={page === 0}>
-        <KeyboardArrowLeft />
-      </IconButton>
-      <IconButton
+    <div className="flex items-center space-x-2 ml-4">
+      <Button
+        variant="outline"
+        size="icon"
+        onClick={handleFirstPageButtonClick}
+        disabled={page === 0}
+        className="h-8 w-8"
+      >
+        <ChevronDoubleLeftIcon className="h-4 w-4" />
+      </Button>
+      <Button
+        variant="outline"
+        size="icon"
+        onClick={handleBackButtonClick}
+        disabled={page === 0}
+        className="h-8 w-8"
+      >
+        <ChevronLeftIcon className="h-4 w-4" />
+      </Button>
+      <Button
+        variant="outline"
+        size="icon"
         onClick={handleNextButtonClick}
         disabled={page >= Math.ceil(count / rowsPerPage) - 1}
+        className="h-8 w-8"
       >
-        <KeyboardArrowRight />
-      </IconButton>
-      <IconButton
+        <ChevronRightIcon className="h-4 w-4" />
+      </Button>
+      <Button
+        variant="outline"
+        size="icon"
         onClick={handleLastPageButtonClick}
         disabled={page >= Math.ceil(count / rowsPerPage) - 1}
+        className="h-8 w-8"
       >
-        <LastPageIcon />
-      </IconButton>
+        <ChevronDoubleRightIcon className="h-4 w-4" />
+      </Button>
     </div>
   );
 };
 
-const useStyles2 = makeStyles((theme) => ({
-  table: {
-    minWidth: 500,
-  },
-  clickable: {
-    cursor: "pointer",
-  },
-  statContainer: {
-    display: "flex",
-    flexDirection: "row",
-    justifyContent: "space-between",
-    alignItems: "center",
-    marginRight: theme.spacing(1.5),
-    marginLeft: theme.spacing(1.5),
-  },
-  statTitle: {},
-  statTopBottom: {
-    display: "flex",
-    flexDirection: "column",
-  },
-  statTop: {},
-  summaryContainer: {
-    display: "flex",
-    flexDirection: "row",
-    justifyContent: "flex-start",
-    alignItems: "center",
-    marginRight: theme.spacing(1.5),
-    marginLeft: theme.spacing(1.5),
-  },
-  summaryTitle: {
-    width: 130,
-    whiteSpace: "nowrap",
-    overflow: "hidden",
-    textOverflow: "ellipsis",
-    marginRight: theme.spacing(2),
-  },
-  summaryTopBottom: {
-    display: "flex",
-    flexDirection: "column",
-  },
-  summaryTop: {},
-}));
-
 const ProjectsViewTableView = ({
-  page,
-  setPage,
+  projects = [],
   pageSize,
   setPageSize,
-  pageSizeOptions,
-  projectSummaries: { projects, totalCount },
+  page,
+  setPage,
 }) => {
-  const classes = useStyles2();
   const navigate = useNavigate();
-
-  const emptyRows = pageSize - Math.min(pageSize, projects.length);
 
   const handleChangePage = (event, newPage) => {
     setPage(newPage);
@@ -137,109 +103,72 @@ const ProjectsViewTableView = ({
   };
 
   return (
-    <TableContainer component={Paper}>
-      <Table className={classes.table}>
-        <TableBody>
-          {projects.map((project) => (
-            <TableRow
-              hover
-              className={classes.clickable}
-              key={project.id}
-              onClick={() => handleNavigate(project.id)}
-            >
-              <TableCell
-                component="th"
-                scope="row"
-                style={{ padding: 0, height: 52 }}
+    <Card>
+      <CardContent className="p-0">
+        <Table>
+          <TableBody>
+            {projects.map((project) => (
+              <TableRow
+                key={project.id}
+                className="cursor-pointer hover:bg-muted/50"
+                onClick={() => handleNavigate(project.id)}
               >
-                <div className={classes.summaryContainer}>
-                  <div className={classes.summaryTitle}>{project.name}</div>
-                  <div className={classes.summaryTopBottom}>
-                    <div className={classes.summaryTop}>
-                      Customer: {project.customer.name}
+                <TableCell className="p-0 h-13">
+                  <div className="p-4">
+                    <div className="font-semibold text-lg mb-1">
+                      {project.name}
                     </div>
-                    <div className={classes.summaryBottom}>
-                      {project.description} - Start Date:{" "}
-                      {project.dates.start ?? "None"}
-                    </div>
-                  </div>
-                </div>
-              </TableCell>
-              <TableCell style={{ width: 200, padding: 0 }} align="right">
-                <div className={classes.statContainer}>
-                  <div className={classes.statTitle}>Public Hosts</div>
-                  <div className={classes.statTopBottom}>
-                    <div className={classes.statTop}>
-                      {project.scope.hostsConnection.totalCount} Hosts
-                    </div>
-                    <div className={classes.statBottom}>
-                      {
-                        project.scope.hostsConnection.servicesConnection
-                          .totalCount
-                      }{" "}
-                      Services
+                    <div className="space-y-1">
+                      <div className="text-sm text-muted-foreground">
+                        Customer: {project.customer.name}
+                      </div>
+                      <div className="text-sm text-muted-foreground">
+                        {project.description} - Start Date:{" "}
+                        {project.dates.start ?? "None"}
+                      </div>
                     </div>
                   </div>
-                </div>
-              </TableCell>
-              <TableCell style={{ width: 200, padding: 0 }} align="right">
-                <div className={classes.statContainer}>
-                  <div className={classes.statTitle}>
-                    {project.scope.networksConnection.totalCount} Networks
-                  </div>
-                  <div className={classes.statTopBottom}>
-                    <div className={classes.statTop}>
-                      {
-                        project.scope.networksConnection.hostsConnection
-                          .totalCount
-                      }{" "}
-                      Hosts
-                    </div>
-                    <div className={classes.statBottom}>
-                      {
-                        project.scope.networksConnection.hostsConnection
-                          .servicesConnection.totalCount
-                      }{" "}
-                      Services
-                    </div>
-                  </div>
-                </div>
-              </TableCell>
-            </TableRow>
-          ))}
+                </TableCell>
+              </TableRow>
+            ))}
+          </TableBody>
+        </Table>
 
-          {emptyRows > 0 && (
-            <TableRow style={{ height: 53 * emptyRows }}>
-              <TableCell colSpan={6} />
-            </TableRow>
-          )}
-        </TableBody>
-        <TableFooter>
-          <TableRow>
-            <TablePagination
-              rowsPerPageOptions={pageSizeOptions}
-              colSpan={3}
-              count={totalCount}
-              rowsPerPage={pageSize}
-              labelDisplayedRows={({ from, to, count }) =>
-                `${from}-${to === -1 ? totalCount : to} of ${count}`
-              }
+        {/* Pagination Footer */}
+        <div className="flex items-center justify-between p-4 border-t">
+          <div className="text-sm text-muted-foreground">
+            Rows per page:
+            <select
+              className="ml-2 border border-input rounded px-2 py-1"
+              value={pageSize}
+              onChange={handleChangeRowsPerPage}
+            >
+              <option value={5}>5</option>
+              <option value={10}>10</option>
+              <option value={25}>25</option>
+              <option value={50}>50</option>
+            </select>
+          </div>
+          <div className="flex items-center space-x-4">
+            <div className="text-sm text-muted-foreground">
+              {page * pageSize + 1}-
+              {Math.min((page + 1) * pageSize, projects.length)} of{" "}
+              {projects.length}
+            </div>
+            <TablePaginationActions
+              count={projects.length}
               page={page}
-              SelectProps={{
-                native: true,
-              }}
+              rowsPerPage={pageSize}
               onPageChange={handleChangePage}
-              onRowsPerPageChange={handleChangeRowsPerPage}
-              ActionsComponent={TablePaginationActions}
             />
-          </TableRow>
-        </TableFooter>
-      </Table>
-    </TableContainer>
+          </div>
+        </div>
+      </CardContent>
+    </Card>
   );
 };
 
-export const Icon = <ViewListIcon />;
+export const Icon = <Bars3Icon className="h-4 w-4" />;
 export const Name = "Table View";
 
 registerComponent("ProjectsViewTableView", ProjectsViewTableView);

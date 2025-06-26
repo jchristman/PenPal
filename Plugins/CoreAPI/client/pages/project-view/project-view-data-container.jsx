@@ -1,37 +1,9 @@
 import React, { useState } from "react";
 import { Components, registerComponent } from "@penpal/core";
-import { makeStyles } from "@mui/styles";
-import Paper from "@mui/material/Paper";
-import Tabs from "@mui/material/Tabs";
-import Tab from "@mui/material/Tab";
 
-const useStyles = makeStyles((theme) => ({
-  root: {
-    flex: 1,
-    width: "100%",
-    background: "transparent",
-    display: "flex",
-    flexDirection: "column",
-    overflowY: "auto",
-  },
-  tab_bar: {
-    paddingLeft: 4,
-    paddingRight: 4,
-  },
-  tab_panel: {
-    marginTop: theme.spacing(2),
-    flex: 1,
-    overflowY: "auto",
-  },
-  tab_container: {
-    flex: 1,
-    display: "flex",
-    overflowY: "auto",
-  },
-}));
+const { Tabs, TabsContent, TabsList, TabsTrigger } = Components.Tabs;
 
 export const TabPanel = (props) => {
-  const classes = useStyles();
   const { children, value, index, ...other } = props;
 
   return (
@@ -39,7 +11,7 @@ export const TabPanel = (props) => {
       role="tabpanel"
       hidden={value !== index}
       {...other}
-      className={classes.tab_panel}
+      className="mt-4 flex-1 overflow-y-auto"
     >
       {value === index ? children : null}
     </div>
@@ -47,55 +19,51 @@ export const TabPanel = (props) => {
 };
 
 const ProjectViewDataContainer = ({ project, disable_polling }) => {
-  const classes = useStyles();
-  const [value, setValue] = useState(0);
-
-  const handleChange = (event, newValue) => {
-    setValue(newValue);
-  };
+  const [activeTab, setActiveTab] = useState("hosts");
 
   const tabs = [
     {
-      title: "Dashboard",
-      content: Components.ProjectViewDashboard,
+      value: "hosts",
+      label: "Hosts",
+      component: Components.ProjectViewHosts,
     },
     {
-      title: "Hosts",
-      content: Components.ProjectViewHosts,
+      value: "services",
+      label: "Services",
+      component: Components.ProjectViewServices,
     },
     {
-      title: "Networks",
-      content: Components.ProjectViewNetworks,
-    },
-    {
-      title: "Services",
-      content: Components.ProjectViewServices,
+      value: "networks",
+      label: "Networks",
+      component: Components.ProjectViewNetworks,
     },
   ];
 
   return (
-    <div className={classes.root}>
-      <Paper className={classes.tab_bar}>
-        <Tabs
-          value={value}
-          onChange={handleChange}
-          indicatorColor="primary"
-          textColor="primary"
-          variant="scrollable"
-          scrollButtons="auto"
-        >
-          {tabs.map(({ title }, i) => (
-            <Tab key={i} label={title} />
+    <div className="flex-1 w-full bg-transparent flex flex-col overflow-y-auto">
+      <Tabs
+        value={activeTab}
+        onValueChange={setActiveTab}
+        className="flex-1 flex flex-col"
+      >
+        <TabsList className="px-1">
+          {tabs.map(({ value, label }) => (
+            <TabsTrigger key={value} value={value}>
+              {label}
+            </TabsTrigger>
           ))}
-        </Tabs>
-      </Paper>
-      <div className={classes.tab_container}>
-        {tabs.map(({ content: Content }, i) => (
-          <TabPanel value={value} index={i} key={i}>
-            <Content project={project} disable_polling={disable_polling} />
-          </TabPanel>
+        </TabsList>
+
+        {tabs.map(({ value, component: Component }) => (
+          <TabsContent
+            key={value}
+            value={value}
+            className="flex-1 flex overflow-y-auto mt-4"
+          >
+            <Component project={project} disable_polling={disable_polling} />
+          </TabsContent>
         ))}
-      </div>
+      </Tabs>
     </div>
   );
 };

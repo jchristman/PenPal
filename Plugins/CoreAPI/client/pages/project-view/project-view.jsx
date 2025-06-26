@@ -1,23 +1,13 @@
 import React, { useState, useEffect } from "react";
-import { Components, registerComponent } from "@penpal/core";
-import { useSnackbar } from "notistack";
-import { makeStyles } from "@mui/styles";
+import { Components, registerComponent, Hooks } from "@penpal/core";
 
 import { useQuery } from "@apollo/client";
 import GetProjectDetails from "./queries/get-project-details.js";
 
-const useStyles = makeStyles((theme) => ({
-  container: {
-    width: "100%",
-    height: "100%",
-    display: "flex",
-    flexDirection: "column",
-  },
-}));
+const { useToast } = Hooks;
 
 const ProjectView = ({ project_id, disable_polling = false }) => {
-  const { enqueueSnackbar } = useSnackbar();
-  const classes = useStyles();
+  const { toast } = useToast();
 
   const {
     loading,
@@ -35,17 +25,23 @@ const ProjectView = ({ project_id, disable_polling = false }) => {
   }
 
   if (error) {
-    enqueueSnackbar(error.message, { variant: "error" });
+    toast({
+      title: "Error",
+      description: error.message,
+      variant: "destructive",
+    });
     return null;
   }
 
   return (
-    <div className={classes.container}>
+    <div className="w-full h-full flex flex-col">
       <Components.ProjectViewTitleBar project={project} />
-      <Components.ProjectViewDataContainer
-        project={project}
-        disable_polling={disable_polling}
-      />
+      <div className="flex-1">
+        <Components.ProjectViewDataContainer
+          project={project}
+          disable_polling={disable_polling}
+        />
+      </div>
     </div>
   );
 };

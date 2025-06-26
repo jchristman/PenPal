@@ -1,44 +1,35 @@
 import React, { useState } from "react";
-import { Components, registerComponent, Hooks } from "@penpal/core";
-import { makeStyles, useTheme } from "@mui/styles";
-import { grey, indigo } from "@mui/material/colors";
-import TextField from "@mui/material/TextField";
-import Divider from "@mui/material/Divider";
-import MenuItem from "@mui/material/MenuItem";
-import cx from "classnames";
+import { Components, registerComponent, Hooks, Utils } from "@penpal/core";
+import { Check, ChevronsUpDown } from "lucide-react";
 
 import { useMutation, useQuery, useApolloClient } from "@apollo/client";
 import CreateNewCustomer from "./mutations/create-new-customer.js";
 import GetCustomers from "./queries/get-customers.js";
 
-const useStyles = makeStyles((theme) => ({
-  root: {
-    display: "flex",
-    flexDirection: "column",
-    justifyContent: "center",
-    alignItems: "flex-start",
-    height: "100%",
-    width: "100%",
-  },
-  form_field: {
-    marginBottom: theme.spacing(2),
-  },
-  submit_container: {
-    marginTop: theme.spacing(4),
-  },
-  submit: {
-    width: 300,
-  },
-}));
+const { cn } = Utils;
+const {
+  Button,
+  Input,
+  Label,
+  Command,
+  CommandEmpty,
+  CommandGroup,
+  CommandInput,
+  CommandItem,
+  CommandList,
+  Popover,
+  PopoverContent,
+  PopoverTrigger,
+} = Components;
 
 const NewCustomerForm = ({ newCustomerHook = () => null }) => {
   // ----------------------------------------------------
   const { useIntrospection } = Hooks;
 
-  const classes = useStyles();
   const [customerName, setCustomerName] = useState("");
   const [customerIndustry, setCustomerIndustry] = useState("");
   const [newCustomerPending, setNewCustomerPending] = useState(false);
+  const [popoverOpen, setPopoverOpen] = useState(false);
   const { loading, types } = useIntrospection();
 
   const [
@@ -61,21 +52,19 @@ const NewCustomerForm = ({ newCustomerHook = () => null }) => {
   // ----------------------------------------------------
 
   const industries = loading
-    ? ["Loading industry values..."]
+    ? []
     : types.Industry.enumValues.map((value) => value.name);
 
   // ----------------------------------------------------
 
   const handleCustomerNameChange = (event) =>
     setCustomerName(event.target.value);
-  const handleCustomerIndustryChange = (event) =>
-    setCustomerIndustry(event.target.value);
   const submitNewCustomer = () => {
     setNewCustomerPending(true);
     createNewCustomer({
       variables: {
         name: customerName,
-        industry: industries[customerIndustry],
+        industry: customerIndustry,
       },
     });
     setCustomerName("");
@@ -84,34 +73,74 @@ const NewCustomerForm = ({ newCustomerHook = () => null }) => {
   };
 
   return (
-    <div className={classes.root}>
-      <Components.StyledTextField
-        label={"Name"}
-        value={customerName}
-        onChange={handleCustomerNameChange}
-        className={classes.form_field}
-      />
-      <Components.StyledSelect
-        value={customerIndustry}
-        onChange={handleCustomerIndustryChange}
-        label="Industry"
-        className={classes.form_field}
-      >
-        {industries.map((item, index) => (
-          <MenuItem key={index} value={index}>
-            {item}
-          </MenuItem>
-        ))}
-      </Components.StyledSelect>
-      <div className={classes.submit_container}>
-        <Components.StyledButton
-          classes={{ root: classes.submit }}
+    <div className="flex flex-col justify-center items-start h-full w-full space-y-4">
+      <div className="w-full max-w-sm space-y-2">
+        <Input
+          id="customer-name"
+          value={customerName}
+          onChange={handleCustomerNameChange}
+          placeholder="Enter customer name"
+        />
+      </div>
+
+      <div className="w-full max-w-sm space-y-2">
+        <Popover open={popoverOpen} onOpenChange={setPopoverOpen} modal={true}>
+          <PopoverTrigger asChild>
+            <Button
+              variant="outline"
+              role="combobox"
+              aria-expanded={popoverOpen}
+              className="w-full justify-between"
+            >
+              {customerIndustry
+                ? industries.find((industry) => industry === customerIndustry)
+                : "Select an industry..."}
+              <ChevronsUpDown className="ml-2 h-4 w-4 shrink-0 opacity-50" />
+            </Button>
+          </PopoverTrigger>
+          <PopoverContent className="w-[200px] p-0">
+            <Command>
+              <CommandInput placeholder="Search industries..." />
+              <CommandList>
+                <CommandEmpty>No industry found.</CommandEmpty>
+                <CommandGroup>
+                  {industries.map((industry) => (
+                    <CommandItem
+                      key={industry}
+                      value={industry}
+                      onSelect={(currentValue) => {
+                        setCustomerIndustry(
+                          currentValue === customerIndustry ? "" : currentValue
+                        );
+                        setPopoverOpen(false);
+                      }}
+                    >
+                      <Check
+                        className={cn(
+                          "mr-2 h-4 w-4",
+                          customerIndustry === industry
+                            ? "opacity-100"
+                            : "opacity-0"
+                        )}
+                      />
+                      {industry}
+                    </CommandItem>
+                  ))}
+                </CommandGroup>
+              </CommandList>
+            </Command>
+          </PopoverContent>
+        </Popover>
+      </div>
+
+      <div className="mt-8">
+        <Button
+          className="w-80"
           disabled={customerName.length === 0 || customerIndustry === ""}
-          color="primary"
           onClick={submitNewCustomer}
         >
           Submit
-        </Components.StyledButton>
+        </Button>
       </div>
     </div>
   );

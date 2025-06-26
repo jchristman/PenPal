@@ -1,52 +1,23 @@
 import React, { useState, useEffect } from "react";
-import { Components, registerComponent } from "@penpal/core";
+import { Components, registerComponent, Utils } from "@penpal/core";
 import _ from "lodash";
-import { makeStyles, useTheme } from "@mui/styles";
-import { indigo } from "@mui/material/colors";
-import Select from "@mui/material/Select";
-import Divider from "@mui/material/Divider";
-import MenuItem from "@mui/material/MenuItem";
-import FormControl from "@mui/material/FormControl";
-import ExpandMoreIcon from "@mui/icons-material/ExpandMore";
-import cx from "classnames";
+import { Check, ChevronsUpDown } from "lucide-react";
 
-const useStyles = makeStyles((theme) => ({
-  root: {
-    width: "100%",
-    height: "100%",
-    display: "flex",
-    flexDirection: "row",
-    justifyContent: "space-evenly",
-    alignItems: "center",
-  },
-  pane: {
-    height: `calc(100% - ${theme.spacing(4)}px)`,
-    display: "flex",
-    flexDirection: "column",
-    justifyContent: "center",
-    alignItems: "flex-start",
-    flex: 1,
-    margin: theme.spacing(2),
-  },
-  pane_title: {
-    color: "#555",
-    fontSize: 17,
-    textTransform: "uppercase",
-    width: "100%",
-    textAlign: "center",
-    marginBottom: theme.spacing(1),
-  },
-  pane_rest: {
-    flex: 1,
-    display: "flex",
-    flexDirection: "column",
-    justifyContent: "center",
-    alignItems: "flex-start",
-  },
-  divider: {
-    margin: theme.spacing(2),
-  },
-}));
+const {
+  Command,
+  CommandEmpty,
+  CommandGroup,
+  CommandInput,
+  CommandItem,
+  CommandList,
+  Popover,
+  PopoverContent,
+  PopoverTrigger,
+  Button,
+  Separator,
+} = Components;
+
+const { cn } = Utils;
 
 const SelectCustomer = ({
   enableNext = () => null,
@@ -56,8 +27,7 @@ const SelectCustomer = ({
   customers,
 }) => {
   // ----------------------------------------------------
-
-  const classes = useStyles();
+  const [popoverOpen, setPopoverOpen] = useState(false);
 
   useEffect(() => {
     if (selectedCustomer !== "") {
@@ -69,7 +39,6 @@ const SelectCustomer = ({
 
   // ----------------------------------------------------
 
-  const handleChange = (event) => setSelectedCustomer(event.target.value);
   const handleNewCustomer = (all_customers, new_customer) => {
     const new_customer_index = _.findIndex(
       all_customers,
@@ -77,37 +46,79 @@ const SelectCustomer = ({
     );
 
     // Delay this by a scosh to avoid a warning on the race condition
-    setTimeout(() => setSelectedCustomer(new_customer_index), 50);
+    setTimeout(() => setSelectedCustomer(new_customer_index.toString()), 50);
   };
 
   // ----------------------------------------------------
 
   return (
-    <div className={classes.root}>
-      <div className={classes.pane}>
-        <div className={classes.pane_title}>Select Customer</div>
-        <div className={classes.pane_rest}>
-          <Components.StyledSelect
-            value={selectedCustomer}
-            onChange={handleChange}
+    <div className="w-full h-full flex flex-row justify-evenly items-stretch gap-4">
+      <div className="h-[calc(100%-2rem)] flex flex-col justify-center items-start flex-1 m-4">
+        <div className="text-[#555] text-[17px] uppercase w-full text-center mb-2">
+          Select Customer
+        </div>
+        <div className="flex-1 flex flex-col justify-start items-start w-full">
+          <Popover
+            open={popoverOpen}
+            onOpenChange={setPopoverOpen}
+            modal={true}
           >
-            {customers.length === 0 && (
-              <MenuItem value="" disabled>
-                No customers found
-              </MenuItem>
-            )}
-            {customers.map((customer, index) => (
-              <MenuItem key={customer.id} value={index}>
-                {customer.name}
-              </MenuItem>
-            ))}
-          </Components.StyledSelect>
+            <PopoverTrigger asChild>
+              <Button
+                variant="outline"
+                role="combobox"
+                aria-expanded={popoverOpen}
+                className="w-full justify-between"
+              >
+                {selectedCustomer !== ""
+                  ? customers[selectedCustomer]?.name
+                  : "Select a customer..."}
+                <ChevronsUpDown className="ml-2 h-4 w-4 shrink-0 opacity-50" />
+              </Button>
+            </PopoverTrigger>
+            <PopoverContent className="w-full p-0">
+              <Command>
+                <CommandInput placeholder="Search customer..." />
+                <CommandList>
+                  <CommandEmpty>No customer found.</CommandEmpty>
+                  <CommandGroup>
+                    {customers.map((customer, index) => (
+                      <CommandItem
+                        key={customer.id}
+                        value={index.toString()}
+                        onSelect={(currentValue) => {
+                          setSelectedCustomer(
+                            currentValue === selectedCustomer
+                              ? ""
+                              : currentValue
+                          );
+                          setPopoverOpen(false);
+                        }}
+                      >
+                        <Check
+                          className={cn(
+                            "mr-2 h-4 w-4",
+                            selectedCustomer === index.toString()
+                              ? "opacity-100"
+                              : "opacity-0"
+                          )}
+                        />
+                        {customer.name}
+                      </CommandItem>
+                    ))}
+                  </CommandGroup>
+                </CommandList>
+              </Command>
+            </PopoverContent>
+          </Popover>
         </div>
       </div>
-      <Divider flexItem orientation="vertical" className={classes.divider} />
-      <div className={classes.pane}>
-        <div className={classes.pane_title}>New Customer</div>
-        <div className={classes.pane_rest}>
+      <Separator orientation="vertical" className="h-auto" />
+      <div className="h-[calc(100%-2rem)] flex flex-col justify-center items-start flex-1 m-4">
+        <div className="text-[#555] text-[17px] uppercase w-full text-center mb-2">
+          New Customer
+        </div>
+        <div className="flex-1 flex flex-col justify-center items-start w-full">
           <Components.NewCustomerForm newCustomerHook={handleNewCustomer} />
         </div>
       </div>

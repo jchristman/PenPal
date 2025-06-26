@@ -1,12 +1,12 @@
 import React from "react";
 import { Components, registerComponent } from "@penpal/core";
-import ViewModuleIcon from "@mui/icons-material/ViewModule";
+import { Squares2X2Icon } from "@heroicons/react/24/outline";
 
 const ProjectsViewCardView = ({ projects }) => {
   return null;
 };
 
-export const Icon = <ViewModuleIcon />;
+export const Icon = <Squares2X2Icon />;
 export const Name = "Card View";
 
 registerComponent("ProjectsViewCardView", ProjectsViewCardView);

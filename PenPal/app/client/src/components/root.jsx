@@ -1,5 +1,5 @@
 import React, { useState, useEffect, useCallback } from "react";
-import { Components, registerComponent } from "@penpal/core";
+import { Components, Routes, registerComponent } from "@penpal/core";
 import { BrowserRouter } from "react-router-dom";
 import { ApolloProvider } from "@apollo/client";
 
@@ -131,7 +131,7 @@ const Root = () => {
         <Components.ErrorBoundary>
           <Components.IntrospectionProvider>
             <Components.AccountProvider>
-              <Components.Layout />
+              <Components.Layout routes={Routes} />
             </Components.AccountProvider>
           </Components.IntrospectionProvider>
         </Components.ErrorBoundary>

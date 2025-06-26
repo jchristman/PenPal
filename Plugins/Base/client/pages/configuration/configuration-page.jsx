@@ -1,29 +1,13 @@
 import React, { useState, useEffect } from "react";
-import { Components, registerComponent } from "@penpal/core";
 import _ from "lodash";
-import Grid from "@mui/material/Grid";
-import Paper from "@mui/material/Paper";
-import AppBar from "@mui/material/AppBar";
-import Tabs from "@mui/material/Tabs";
-import Tab from "@mui/material/Tab";
-import TextField from "@mui/material/TextField";
-import FormControlLabel from "@mui/material/FormControlLabel";
-import Checkbox from "@mui/material/Checkbox";
-import { useSnackbar } from "notistack";
-import { makeStyles } from "@mui/styles";
+import { Components, Hooks, registerComponent } from "@penpal/core";
 
-const useStyles = makeStyles((theme) => ({
-  main: {
-    padding: theme.spacing(2),
-  },
-  label: {
-    textTransform: "capitalize",
-  },
-  configuration_option: {},
-  section: {
-    width: "100%",
-  },
-}));
+const { Card, CardContent } = Components.Card;
+const { Tabs, TabsList, TabsTrigger, TabsContent } = Components.Tabs;
+const { Checkbox } = Components.Checkbox;
+const { Input } = Components.Input;
+const { Label } = Components.Label;
+const { useToast } = Hooks.useToast;
 
 const transform_key = (key) => key.replaceAll("_", " ");
 
@@ -33,8 +17,7 @@ const ConfigurationPageSection = ({
   config: { __typename, ...rest },
   depth = 0,
 }) => {
-  const classes = useStyles();
-  const { enqueueSnackbar } = useSnackbar();
+  const { toast } = useToast();
 
   const is_error = __typename === "PenPalError";
   let messageEffectConditions = [];
@@ -44,8 +27,10 @@ const ConfigurationPageSection = ({
 
   useEffect(() => {
     if (__typename === "PenPalError") {
-      enqueueSnackbar(`Error ${rest.code}: ${rest.message}`, {
-        variant: "error",
+      toast({
+        title: "Configuration Error",
+        description: `Error ${rest.code}: ${rest.message}`,
+        variant: "destructive",
       });
     }
   }, messageEffectConditions);
@@ -56,115 +41,119 @@ const ConfigurationPageSection = ({
     switch (typeof rest[key]) {
       case "string":
         return (
-          <TextField
-            fullWidth
-            className={classes.configuration_option}
-            InputLabelProps={{ className: classes.label }}
-            label={transform_key(key)}
-            value={rest[key]}
-            onChange={(event) =>
-              handleConfigChange(key_path, event.target.value)
-            }
-            key={key_path}
-          ></TextField>
+          <div key={key_path} className="space-y-2">
+            <Label htmlFor={key_path} className="capitalize">
+              {transform_key(key)}
+            </Label>
+            <Input
+              id={key_path}
+              value={rest[key]}
+              onChange={(event) =>
+                handleConfigChange(key_path, event.target.value)
+              }
+            />
+          </div>
         );
       case "boolean":
         return (
-          <FormControlLabel
-            control={
-              <Checkbox
-                checked={rest[key]}
-                onChange={(event) =>
-                  handleConfigChange(key_path, event.target.checked)
-                }
-              />
-            }
-            classes={{ label: classes.label }}
-            label={transform_key(key)}
-          />
+          <div key={key_path} className="flex items-center space-x-2">
+            <Checkbox
+              id={key_path}
+              checked={rest[key]}
+              onCheckedChange={(checked) =>
+                handleConfigChange(key_path, checked)
+              }
+            />
+            <Label htmlFor={key_path} className="capitalize">
+              {transform_key(key)}
+            </Label>
+          </div>
         );
       case "number":
         return (
-          <TextField
-            fullWidth
-            className={classes.configuration_option}
-            InputLabelProps={{ className: classes.label }}
-            type="number"
-            label={transform_key(key)}
-            value={rest[key]}
-            onChange={(event) =>
-              handleConfigChange(key_path, event.target.value)
-            }
-            key={key_path}
-          ></TextField>
+          <div key={key_path} className="space-y-2">
+            <Label htmlFor={key_path} className="capitalize">
+              {transform_key(key)}
+            </Label>
+            <Input
+              id={key_path}
+              type="number"
+              value={rest[key]}
+              onChange={(event) =>
+                handleConfigChange(key_path, event.target.value)
+              }
+            />
+          </div>
         );
       case "object":
         if (rest[key] === null) {
           return null;
         }
         return (
-          <div className={classes.section}>
-            <h3>{transform_key(key)}</h3>
-            <ConfigurationPageSection
-              key={key_path}
-              handleConfigChange={handleConfigChange}
-              path={key_path}
-              depth={depth + 1}
-              config={rest[key]}
-            />
+          <div key={key_path} className="space-y-4">
+            <h3 className="text-lg font-semibold capitalize">
+              {transform_key(key)}
+            </h3>
+            <div className="pl-4 border-l-2 border-gray-200 space-y-4">
+              <ConfigurationPageSection
+                handleConfigChange={handleConfigChange}
+                path={key_path}
+                depth={depth + 1}
+                config={rest[key]}
+              />
+            </div>
           </div>
         );
       default:
-        return <p>'Unknown'</p>;
+        return <p key={key_path}>Unknown configuration type</p>;
     }
   });
 
-  return is_error ? null : children;
+  return is_error ? null : <div className="space-y-4">{children}</div>;
 };
 
 const ConfigurationPage = ({ localConfig, handleConfigChange }) => {
-  const classes = useStyles();
   const [selectedTab, setSelectedTab] = useState(
     Object.keys(localConfig)?.[0] ?? ""
   );
-  const handleChange = (event, newValue) => setSelectedTab(newValue);
+
   const config_items = Object.keys(localConfig);
 
   return (
-    <>
-      <AppBar position="static" color="transparent">
-        <Tabs
-          value={selectedTab}
-          onChange={handleChange}
-          indicatorColor="primary"
-          variant="scrollable"
-          scrollButtons="auto"
-        >
+    <div className="w-full h-full">
+      <Tabs
+        value={selectedTab}
+        onValueChange={setSelectedTab}
+        className="w-full"
+      >
+        <TabsList className="w-full justify-start border-b rounded-none bg-transparent p-0">
           {config_items.map((item) => (
-            <Tab
+            <TabsTrigger
               key={item}
-              disabled={localConfig[item] === null}
               value={item}
-              label={item.replace("_", " ")}
-            />
+              disabled={localConfig[item] === null}
+              className="capitalize"
+            >
+              {item.replace("_", " ")}
+            </TabsTrigger>
           ))}
-        </Tabs>
-      </AppBar>
+        </TabsList>
 
-      {config_items.map((item) => (
-        <div key={item} hidden={selectedTab !== item} className={classes.main}>
-          {selectedTab === item && (
-            <Grid container>
-              <ConfigurationPageSection
-                handleConfigChange={handleConfigChange}
-                path={item}
-                config={localConfig[item]}
-              />
-            </Grid>
-          )}
-        </div>
-      ))}
-    </>
+        {config_items.map((item) => (
+          <TabsContent key={item} value={item} className="mt-6">
+            <Card>
+              <CardContent className="p-6">
+                <ConfigurationPageSection
+                  handleConfigChange={handleConfigChange}
+                  path={item}
+                  config={localConfig[item]}
+                />
+              </CardContent>
+            </Card>
+          </TabsContent>
+        ))}
+      </Tabs>
+    </div>
   );
 };
 

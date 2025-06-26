@@ -5,8 +5,14 @@ import animate from "tailwindcss-animate";
 import typography from "@tailwindcss/typography";
 
 export default {
-  darkMode: ["class", "system"],
-  content: ["./src/**/*.tsx"],
+  darkMode: "class",
+  content: [
+    "./index.html",
+    "./src/**/*.tsx",
+    "./src/**/*.jsx",
+    "./src/**/*.js",
+    "../Plugins/**/*.jsx",
+  ],
   theme: {
     extend: {
       fontFamily: {

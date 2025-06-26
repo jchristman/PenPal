@@ -20,10 +20,9 @@ const Layout = ({ routes = [] }) => {
     }
 
     return {
-      title: route.name,
+      title: route.prettyName,
       href: route.path,
-      icon: route.icon || "📄",
-      disabled: route.disabled || false,
+      icon: <route.icon className="size-6 text-black-500" />,
     };
   });
 
@@ -62,11 +61,12 @@ const Layout = ({ routes = [] }) => {
           <Routes>
             {routes.map((route) => {
               if (route.divider) return null;
+              const Component = Components[route.componentName];
               return (
                 <Route
                   key={route.path}
                   path={route.path}
-                  element={route.component}
+                  element={<Component />}
                 />
               );
             })}

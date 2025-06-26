@@ -1,6 +1,6 @@
 import { registerRoute } from "@penpal/core";
 
-import AccountTreeIcon from "@mui/icons-material/AccountTree";
+import { FolderIcon } from "@heroicons/react/24/outline";
 
 const registerRoutes = () => {
   const Projects = {
@@ -8,16 +8,9 @@ const registerRoutes = () => {
     path: "/projects",
     componentName: "Projects",
     prettyName: "Projects",
-    icon: AccountTreeIcon,
+    icon: FolderIcon,
   };
   registerRoute(Projects, 1);
-
-  const Project = {
-    name: "project",
-    path: "/projects/:project_id",
-    componentName: "Project",
-  };
-  registerRoute(Project);
 };
 
 export default registerRoutes;

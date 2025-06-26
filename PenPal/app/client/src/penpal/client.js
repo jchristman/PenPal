@@ -58,6 +58,18 @@ PenPal.getRoute = getRoute;
 
 // ----------------------------------------------------------------------------
 
+export const Utils = {};
+PenPal.Utils = Utils;
+
+// ----------------------------------------------------------------------------
+
+export const registerUtil = (name, util) => {
+  Utils[name] = util;
+};
+PenPal.registerUtil = registerUtil;
+
+// ----------------------------------------------------------------------------
+
 export const Regex = _Regex;
 PenPal.Regex = Regex;
 
