@@ -9,6 +9,9 @@ export default gql`
     $before: String
     $pageSize: Int
     $pageNumber: Int
+    $searchTerm: String
+    $sortBy: String
+    $sortDirection: String
   ) {
     getProjects(
       first: $first
@@ -17,6 +20,9 @@ export default gql`
       before: $before
       pageSize: $pageSize
       pageNumber: $pageNumber
+      searchTerm: $searchTerm
+      sortBy: $sortBy
+      sortDirection: $sortDirection
     ) {
       projects {
         ${ProjectFields}

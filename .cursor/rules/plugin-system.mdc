@@ -2033,6 +2033,84 @@ const job = await PenPal.Jobs.Create({
 
 The Jobs API provides better reliability, persistence, monitoring, and user experience compared to local job management.
 
+## Client-Side Plugin Integration and UI Extensibility
+
+The PenPal UI is built with a modular, component-based architecture that allows plugins to seamlessly extend the user interface. This is achieved through a combination of component registration, route registration, and a consistent plugin structure.
+
+### Client-Side Plugin Structure
+
+A typical client-side `plugin.js` follows a simple, declarative pattern:
+
+```javascript
+// ✅ CORRECT: Standard client-side plugin structure
+import.meta.glob("./**/*.jsx", { eager: true });
+import registerRoutes from "./routes.js";
+
+const MyPlugin = {
+  loadPlugin() {
+    return {
+      registerRoutes,
+    };
+  },
+};
+
+export default MyPlugin;
+```
+- **`import.meta.glob`**: This Vite-specific function eagerly loads all `.jsx` files within the plugin's directory, ensuring all components are available for registration.
+- **`registerRoutes`**: This function, defined in a separate `routes.js` file, tells the PenPal core how to handle navigation for this plugin's pages.
+
+### Component Registration
+
+Plugins can define and register their own React components, which can then be used anywhere in the application, including overriding core components.
+
+**✅ CORRECT: Registering a component**
+```javascript
+// MyComponent.jsx
+import React from 'react';
+import { registerComponent } from '@penpal/core';
+
+const MyComponent = () => <div>Hello from my plugin!</div>;
+
+registerComponent('MyComponent', MyComponent);
+export default MyComponent;
+```
+
+Once registered, `MyComponent` can be rendered by other components using `<Components.MyComponent />`.
+
+### Route Registration
+
+Plugins can add new pages and views to the UI by registering routes.
+
+**✅ CORRECT: Registering routes**
+```javascript
+// routes.js
+import { Components } from '@penpal/core';
+
+const registerRoutes = (routes) => {
+  routes.push({
+    path: '/my-plugin-page',
+    component: Components.MyPluginPage, // A registered component
+  });
+  return routes;
+};
+
+export default registerRoutes;
+```
+This allows plugins to be self-contained, managing their own UI components and navigation.
+
+### View-Based Architecture & Extensibility
+
+The new UI, particularly in areas like the Projects page, is designed around a "view-based" architecture.
+
+- **View Components**: Different ways of looking at data (e.g., Table View, Card View, Timeline View) are implemented as separate, registered components.
+- **View Switcher**: A central component (like `ProjectsView`) dynamically renders the selected view component.
+- **Plugin-Contributed Views**: This pattern makes it straightforward for a new plugin to contribute its own "view". A plugin can:
+  1. Create a new component for its custom view (e.g., `MyCustomProjectView.jsx`).
+  2. Register the component (`registerComponent('MyCustomProjectView', ...)`).
+  3. Potentially, register a button or toggle to allow users to switch to this new view by updating the state that controls the view switcher.
+
+This powerful pattern allows for deep integration and extension of core UI features without modifying the core codebase.
+
 ## GraphQL Integration
 Plugins extend the GraphQL schema with:
 - Custom types and mutations

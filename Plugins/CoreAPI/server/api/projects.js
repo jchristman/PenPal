@@ -13,20 +13,50 @@ export const getProject = async (project_id) => {
 };
 
 export const getProjects = async (project_ids = [], options) => {
+  const { searchTerm, /* sortBy, sortDirection, */ ...otherOptions } =
+    options || {};
+
+  let query = project_ids.length === 0 ? {} : { id: { $in: project_ids } };
+
+  // Add search functionality
+  if (searchTerm && searchTerm.trim()) {
+    const searchRegex = { $regex: searchTerm.trim(), $options: "i" };
+    query = {
+      ...query,
+      $or: [{ name: searchRegex }, { description: searchRegex }],
+    };
+  }
+
+  // Remove all sorting logic
   return await PenPal.DataStore.fetch(
     "CoreAPI",
     "Projects",
-    project_ids.length === 0 ? {} : { id: { $in: project_ids } },
-    options
+    query,
+    otherOptions
   );
 };
 
 export const getProjectsPaginationInfo = async (project_ids = [], options) => {
+  const { searchTerm, /* sortBy, sortDirection, */ ...otherOptions } =
+    options || {};
+
+  let query = project_ids.length === 0 ? {} : { id: { $in: project_ids } };
+
+  // Add search functionality
+  if (searchTerm && searchTerm.trim()) {
+    const searchRegex = { $regex: searchTerm.trim(), $options: "i" };
+    query = {
+      ...query,
+      $or: [{ name: searchRegex }, { description: searchRegex }],
+    };
+  }
+
+  // Remove all sorting logic
   return await PenPal.DataStore.getPaginationInfo(
     "CoreAPI",
     "Projects",
-    project_ids.length === 0 ? {} : { id: { $in: project_ids } },
-    options
+    query,
+    otherOptions
   );
 };
 

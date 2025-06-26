@@ -1,12 +1,6 @@
 import React, { useState, useEffect } from "react";
 import { Components, registerComponent, Hooks } from "@penpal/core";
-import {
-  PencilIcon,
-  XMarkIcon,
-  PlusIcon,
-  WrenchScrewdriverIcon,
-  TrashIcon,
-} from "@heroicons/react/24/outline";
+import { PlusIcon, ArrowPathIcon } from "@heroicons/react/24/outline";
 
 import {
   Icon as CardViewIcon,
@@ -31,6 +25,7 @@ const {
   DropdownMenuContent,
   DropdownMenuItem,
   DropdownMenuSeparator,
+  Input,
 } = Components;
 
 const _actions = [
@@ -40,74 +35,83 @@ const _actions = [
 ];
 
 const Projects = () => {
-  const [fabVisible, setFabVisible] = useState(true);
-  const [fabExpanded, setFabExpanded] = useState(false);
   const [newProjectOpen, setNewProjectOpen] = useState(false);
   const [view, setView] = useState(_actions[0].name);
+  const [isLoading, setIsLoading] = useState(false);
+
+  // Search state management
+  const [searchTerm, setSearchTerm] = useState("");
+  const [debouncedSearchTerm, setDebouncedSearchTerm] = useState("");
+
+  // Debounce search term with 1 second delay
+  useEffect(() => {
+    const handler = setTimeout(() => {
+      setDebouncedSearchTerm(searchTerm);
+    }, 1000);
+
+    return () => {
+      clearTimeout(handler);
+    };
+  }, [searchTerm]);
 
   const handleNewProjectOpen = () => setNewProjectOpen(true);
   const handleNewProjectClose = () => setNewProjectOpen(false);
 
-  const actions = fabVisible
-    ? [
-        {
-          icon: <WrenchScrewdriverIcon className="h-4 w-4" />,
-          name: "Show Toolbar",
-          onClick: () => {
-            setFabVisible(false);
-          },
-        },
-        ..._actions.map((action) => ({
-          ...action,
-          onClick: () => setView(action.name),
-        })),
+  const handleLoadingChange = (loading) => {
+    setIsLoading(loading);
+  };
+
+  const toolbarActions = [
+    {
+      group: [
         {
           icon: <PlusIcon className="h-4 w-4" />,
-          name: "New Project",
-          onClick: () => {
-            setTimeout(handleNewProjectOpen, 200);
+          onClick: (event) => {
+            event.preventDefault();
+            handleNewProjectOpen();
           },
         },
-      ]
-    : [
-        {
-          group: [
-            {
-              icon: <PlusIcon className="h-4 w-4" />,
-              onClick: (event) => {
-                event.preventDefault();
-                handleNewProjectOpen();
-              },
-            },
-          ],
-          exclusive: false,
-        },
-        {
-          group: _actions,
-          exclusive: true,
-        },
-        {
-          group: [
-            {
-              name: view, // A hack to make this always a "depressed" value
-              icon: <WrenchScrewdriverIcon className="h-4 w-4" />,
-              onClick: (event) => {
-                event.preventDefault();
-                setFabVisible(true);
-              },
-            },
-          ],
-          exclusive: false,
-        },
-      ];
+      ],
+      exclusive: false,
+    },
+    {
+      group: _actions,
+      exclusive: true,
+    },
+  ];
 
   return (
     <div className="h-full w-full flex-grow relative">
       <div className="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8 h-full flex flex-col">
-        {!fabVisible && (
-          <div className="flex-shrink-0 w-full mb-4">
-            <div className="bg-white border border-gray-200 rounded-lg shadow-sm p-2 flex items-center justify-end gap-2">
-              {actions.map(({ group, exclusive }, index) => (
+        {/* Always visible toolbar */}
+        <div className="flex-shrink-0 w-full mb-4">
+          <div className="bg-white border border-gray-200 rounded-lg shadow-sm p-2 flex items-center justify-between gap-4">
+            {/* Left side - Loading indicator and Search */}
+            <div className="flex items-center gap-4">
+              {/* Search input */}
+              <div className="flex items-center gap-2">
+                <Input
+                  placeholder="Search projects..."
+                  value={searchTerm}
+                  onChange={(e) => setSearchTerm(e.target.value)}
+                  className="w-64"
+                />
+                {isLoading && (
+                  <div className="flex items-center space-x-2 text-sm text-muted-foreground">
+                    <ArrowPathIcon className="h-4 w-4 animate-spin" />
+                  </div>
+                )}
+                {debouncedSearchTerm && (
+                  <span className="text-sm text-gray-500 whitespace-nowrap">
+                    Searching for "{debouncedSearchTerm}"
+                  </span>
+                )}
+              </div>
+            </div>
+
+            {/* Right side - Actions */}
+            <div className="flex items-center gap-2">
+              {toolbarActions.map(({ group, exclusive }, index) => (
                 <React.Fragment key={index}>
                   {exclusive ? (
                     <ToggleGroup
@@ -121,7 +125,8 @@ const Projects = () => {
                           key={itemIndex}
                           value={item.name || ""}
                           onClick={item.onClick}
-                          className="flex items-center justify-center p-2"
+                          disabled={view === item.name}
+                          className="flex items-center justify-center p-2 toolbar-btn-hover cursor-pointer"
                         >
                           {item.icon}
                         </ToggleGroupItem>
@@ -135,67 +140,35 @@ const Projects = () => {
                           variant="outline"
                           size="sm"
                           onClick={item.onClick}
-                          className="flex items-center justify-center p-2"
+                          className="flex items-center justify-center p-2 toolbar-btn-hover cursor-pointer"
                         >
                           {item.icon}
                         </Button>
                       ))}
                     </div>
                   )}
-                  {index !== actions.length - 1 && (
+                  {index !== toolbarActions.length - 1 && (
                     <Separator orientation="vertical" className="h-6" />
                   )}
                 </React.Fragment>
               ))}
             </div>
           </div>
-        )}
+        </div>
 
         <div className="flex-1 w-full">
-          <Components.ProjectsView view={view} />
+          <Components.ProjectsView
+            view={view}
+            onLoadingChange={handleLoadingChange}
+            searchTerm={searchTerm}
+            debouncedSearchTerm={debouncedSearchTerm}
+          />
         </div>
 
         <Components.NewProjectWorkflow
           open={newProjectOpen}
           handleClose={handleNewProjectClose}
         />
-
-        {/* Mobile FAB for when toolbar is hidden */}
-        {fabVisible && (
-          <div className="fixed bottom-4 right-4 z-10 flex flex-col items-end gap-2">
-            {fabExpanded && (
-              <div className="bg-white rounded-lg shadow-lg border border-gray-200 p-2 space-y-2">
-                {actions.map((action, index) => (
-                  <Button
-                    key={index}
-                    variant="ghost"
-                    size="sm"
-                    onClick={() => {
-                      action.onClick();
-                      setFabExpanded(false);
-                    }}
-                    className="w-full justify-start gap-2"
-                  >
-                    {action.icon}
-                    {action.name}
-                  </Button>
-                ))}
-              </div>
-            )}
-            <Button
-              size="lg"
-              isIconOnly
-              onClick={() => setFabExpanded(!fabExpanded)}
-              className="rounded-full shadow-lg"
-            >
-              {fabExpanded ? (
-                <XMarkIcon className="h-6 w-6" />
-              ) : (
-                <WrenchScrewdriverIcon className="h-6 w-6" />
-              )}
-            </Button>
-          </div>
-        )}
       </div>
     </div>
   );

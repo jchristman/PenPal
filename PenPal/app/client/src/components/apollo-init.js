@@ -115,65 +115,6 @@ const apolloInit = async (onProgress) => {
     onProgress?.("Setting up Apollo Client cache...");
     const cache = new InMemoryCache({
       possibleTypes,
-      typePolicies: {
-        Query: {
-          fields: {
-            getProjects: {
-              keyArgs: false,
-              merge(existing, incoming, { args: { pageSize, pageNumber } }) {
-                if (existing === undefined) {
-                  return incoming;
-                }
-
-                const { projects, ...other } = existing;
-
-                const merged = projects ? projects.slice(0) : [];
-
-                if (pageSize !== undefined && pageNumber !== undefined) {
-                  const offset = pageSize * pageNumber;
-                  for (
-                    let i = offset;
-                    i < offset + incoming.projects.length;
-                    i++
-                  ) {
-                    merged[i] = incoming.projects[i - offset];
-                  }
-                }
-
-                return { projects: merged, ...other };
-              },
-
-              read(existing, { args: { pageSize: _pageSize, pageNumber } }) {
-                if (existing === undefined) {
-                  return;
-                }
-
-                if (_pageSize !== undefined && pageNumber !== undefined) {
-                  const pageSize =
-                    _pageSize === -1 ? existing.totalCount : _pageSize;
-                  const offset = pageNumber * pageSize;
-                  const page = { ...existing };
-                  page.projects =
-                    page.projects?.slice(offset, offset + pageSize) ?? [];
-
-                  // If there are spots on a page that aren't filled in, we need to fetch from the server instead of the cache
-                  if (
-                    (page.projects.length < pageSize &&
-                      page.projects.length + offset !== existing.totalCount) ||
-                    _.some(page.projects, (project) => project === undefined)
-                  ) {
-                    return undefined;
-                  }
-
-                  return page;
-                }
-
-                return existing;
-              },
-            },
-          },
-        },
-      },
     });
 
     onProgress?.("Setting up authentication...");

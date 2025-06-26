@@ -95,7 +95,7 @@ const ConnectionStatusChip = ({ variant = "outline", size = "sm" }) => {
 
 // Full connection status notification using toast system
 const ConnectionStatusNotification = ({
-  autoHideDuration = 4000,
+  autoHideDuration = 40000,
   showOnConnect = true,
   showOnDisconnect = true,
   showOnReconnecting = true,

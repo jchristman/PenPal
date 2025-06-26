@@ -93,7 +93,7 @@ ol {
     --color-muted-foreground: 0 0% 45.1%;
     --color-accent: 0 0% 96.1%;
     --color-accent-foreground: 0 0% 9%;
-    --color-destructive: 0 84.2% 60.2%;
+    --color-destructive: 0 84.2% 60.2%; /* This is a red color (HSL: 0° hue = red, 84.2% saturation, 60.2% lightness) */
     --color-destructive-foreground: 0 0% 98%;
 
     --color-border: 34 94% 56%;
@@ -191,6 +191,19 @@ ol {
     background-color: hsl(var(--color-card));
   }
   
+  /* Destructive color utilities */
+  .bg-destructive {
+    background-color: hsl(var(--color-destructive));
+  }
+  
+  .text-destructive-foreground {
+    color: hsl(var(--color-destructive-foreground));
+  }
+  
+  .border-destructive {
+    border-color: hsl(var(--color-destructive));
+  }
+  
   /* Positioning utilities to ensure they work properly */
   .fixed {
     position: fixed;
@@ -273,5 +286,13 @@ ol {
   100% {
     transform: translateX(100%) scaleX(0.5);
   }
+}
+
+.row-hover-gray:hover {
+  background-color: hsl(var(--color-muted));
+}
+
+.toolbar-btn-hover:hover {
+  background-color: hsl(var(--color-muted));
 }
   

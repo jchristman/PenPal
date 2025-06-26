@@ -72,7 +72,6 @@ export const reducer = (state: State, action: Action): State => {
 
     case "DISMISS_TOAST": {
       const { toastId } = action;
-
       return {
         ...state,
         toasts: state.toasts.map((t) =>
