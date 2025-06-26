@@ -4,12 +4,10 @@ import { Components, registerComponent, Hooks } from "@penpal/core";
 import { useQuery } from "@apollo/client";
 import getHostsInformation from "./queries/get-hosts-information.js";
 
-const { Tabs, TabsContent, TabsList, TabsTrigger } = Components.Tabs;
 const { useToast } = Hooks;
 
 const ProjectViewHosts = ({ project, disable_polling }) => {
   const { toast } = useToast();
-  const [activeTab, setActiveTab] = useState("list");
 
   const { data, loading, error } = useQuery(getHostsInformation, {
     pollInterval: disable_polling ? 0 : 15000,
@@ -31,65 +29,34 @@ const ProjectViewHosts = ({ project, disable_polling }) => {
     return null;
   }
 
-  const { getProject: { hosts } = { hosts: [] } } = data || {};
+  const { getHostsByProjectID: hosts = [] } = data || {};
 
   const tabs = [
     {
       value: "list",
       label: "List",
-      content: ({ project, hosts }) => (
+      content: (
         <Components.ProjectViewHostsList project={project} hosts={hosts} />
       ),
     },
     {
+      value: "table",
+      label: "Table",
+      content: <Components.ProjectViewHostsTable hosts={hosts} />,
+    },
+    {
       value: "dashboard",
       label: "Dashboard",
-      content: () => (
-        <div className="flex items-center justify-center h-64 text-muted-foreground">
-          Hosts Dashboard Coming Soon
-        </div>
-      ),
+      content: <Components.ProjectViewHostsDashboard hosts={hosts} />,
     },
     {
       value: "graph",
       label: "Graph",
-      content: () => (
-        <div className="flex items-center justify-center h-64 text-muted-foreground">
-          Hosts Graph Coming Soon
-        </div>
-      ),
+      content: <Components.ProjectViewHostsGraph hosts={hosts} />,
     },
   ];
 
-  return (
-    <div className="w-full h-full">
-      <Tabs
-        value={activeTab}
-        onValueChange={setActiveTab}
-        orientation="vertical"
-        className="w-full h-full flex"
-      >
-        <TabsList className="h-full w-48 flex-col justify-start">
-          {tabs.map(({ value, label }) => (
-            <TabsTrigger
-              key={value}
-              value={value}
-              className="w-full justify-start"
-            >
-              {label}
-            </TabsTrigger>
-          ))}
-        </TabsList>
-        <div className="flex-1 pl-8 pr-8">
-          {tabs.map(({ value, content: Content }) => (
-            <TabsContent key={value} value={value} className="mt-4">
-              <Content project={project} hosts={hosts} />
-            </TabsContent>
-          ))}
-        </div>
-      </Tabs>
-    </div>
-  );
+  return <Components.VerticalTabs tabs={tabs} defaultTab="list" />;
 };
 
 registerComponent("ProjectViewHosts", ProjectViewHosts);

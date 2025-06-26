@@ -17,7 +17,7 @@ const TabsList = React.forwardRef<
     className={cn("flex items-center", className)}
     {...props}
   />
-)); 
+));
 TabsList.displayName = TabsPrimitive.List.displayName;
 
 const TabsTrigger = React.forwardRef<
@@ -27,9 +27,12 @@ const TabsTrigger = React.forwardRef<
   <TabsPrimitive.Trigger
     ref={ref}
     className={cn(
-      "inline-flex flex-1 items-center justify-center whitespace-nowrap px-6 py-3 text-sm font-medium text-foreground ring-offset-background transition-all focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-ring focus-visible:ring-offset-2 disabled:pointer-events-none disabled:opacity-50",
-      "data-[state=active]:border-b-2 data-[state=active]:border-primary data-[state=active]:font-semibold data-[state=active]:text-primary",
-      "hover:text-primary/90 data-[state=inactive]:hover:border-b-2 data-[state=inactive]:hover:border-transparent",
+      // Essential base styles - accessibility and layout only
+      "inline-flex items-center whitespace-nowrap ring-offset-background transition-all",
+      "focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-ring focus-visible:ring-offset-2",
+      "disabled:pointer-events-none disabled:opacity-50",
+      "data-[state=inactive]:hover:bg-gray-100 data-[state=inactive]:hover:cursor-pointer",
+      // Custom styling should be applied via className prop
       className
     )}
     {...props}

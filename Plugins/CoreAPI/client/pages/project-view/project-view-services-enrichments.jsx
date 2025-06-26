@@ -4,10 +4,16 @@ import PenPal from "@penpal/core";
 import { ChevronDownIcon } from "@heroicons/react/24/outline";
 
 const { cn } = Utils;
-const { Card, CardHeader, CardContent } = Components.Card;
-const { Collapsible, CollapsibleContent, CollapsibleTrigger } = Components;
-const { Badge } = Components.Badge;
-const { Button } = Components.Button;
+const {
+  Card,
+  CardHeader,
+  CardContent,
+  Collapsible,
+  CollapsibleContent,
+  CollapsibleTrigger,
+  Badge,
+  Button,
+} = Components;
 
 // Initialize the enrichment display registry on the PenPal object
 if (!PenPal.API) {

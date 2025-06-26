@@ -2,7 +2,7 @@ import React, { useState } from "react";
 import { Components, registerComponent, Utils } from "@penpal/core";
 
 const { cn } = Utils;
-const { Card, CardHeader, CardContent } = Components.Card;
+const { Card, CardHeader, CardContent } = Components;
 
 const ProjectViewHostsList = ({ hosts }) => {
   console.log(hosts);

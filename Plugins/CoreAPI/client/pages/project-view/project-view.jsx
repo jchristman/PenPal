@@ -1,10 +1,11 @@
 import React, { useState, useEffect } from "react";
 import { Components, registerComponent, Hooks } from "@penpal/core";
+import { useSearchParams } from "react-router-dom";
 
 import { useQuery } from "@apollo/client";
 import GetProjectDetails from "./queries/get-project-details.js";
 
-const { useToast } = Hooks;
+const { useToast, Card } = Hooks;
 
 const ProjectView = ({ project_id, disable_polling = false }) => {
   const { toast } = useToast();
@@ -34,7 +35,7 @@ const ProjectView = ({ project_id, disable_polling = false }) => {
   }
 
   return (
-    <div className="w-full h-full flex flex-col">
+    <Components.Card className="w-full h-full flex flex-col">
       <Components.ProjectViewTitleBar project={project} />
       <div className="flex-1">
         <Components.ProjectViewDataContainer
@@ -42,7 +43,7 @@ const ProjectView = ({ project_id, disable_polling = false }) => {
           disable_polling={disable_polling}
         />
       </div>
-    </div>
+    </Components.Card>
   );
 };
 

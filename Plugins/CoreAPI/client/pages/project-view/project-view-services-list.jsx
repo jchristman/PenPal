@@ -2,8 +2,7 @@ import React, { useState } from "react";
 import { Components, registerComponent, Utils } from "@penpal/core";
 
 const { cn } = Utils;
-const { Card, CardHeader, CardContent } = Components.Card;
-const { Badge } = Components.Badge;
+const { Card, CardHeader, CardContent, Badge } = Components;
 
 const StatusChip = ({ status }) => {
   const getStatusVariant = (status) => {

@@ -14,17 +14,19 @@ const Layout = ({ routes = [] }) => {
   };
 
   // Convert routes to navItems format for the sidebar
-  const navItems = routes.map((route) => {
-    if (route.divider) {
-      return { divider: true, className: route.className };
-    }
+  const navItems = routes
+    .filter((route) => !route.hideFromNav) // Filter out routes that shouldn't show in nav
+    .map((route) => {
+      if (route.divider) {
+        return { divider: true, className: route.className };
+      }
 
-    return {
-      title: route.prettyName,
-      href: route.path,
-      icon: <route.icon className="size-6 text-black-500" />,
-    };
-  });
+      return {
+        title: route.prettyName,
+        href: route.path,
+        icon: <route.icon className="size-6 text-black-500" />,
+      };
+    });
 
   return (
     <div className="flex h-screen bg-gray-100">

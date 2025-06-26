@@ -1,0 +1,88 @@
+---
+description:
+globs:
+alwaysApply: false
+---
+# PenPal Component Import Pattern
+
+**✅ CRITICAL: Use the `Components` Registry for all UI Elements**
+To ensure PenPal's plugin architecture remains flexible, extensible, and themeable, all shared UI components (like `Table`, `Card`, `Button`, `Input`, etc.) **MUST** be imported from the central `Components` registry.
+
+**❌ DO NOT use direct or aliased imports for UI components.**
+
+### The Correct Pattern
+
+1.  **Import `Components` from `@penpal/core`**.
+2.  **Destructure the specific UI components** you need from the `Components` object.
+
+```jsx
+// ✅ CORRECT: Import from the component registry
+import React from "react";
+import { Components, registerComponent } from "@penpal/core";
+
+// Destructure all needed components from the registry
+const {
+  Table,
+  TableBody,
+  TableCell,
+  TableHead,
+  TableHeader,
+  TableRow,
+  Card,
+  CardContent,
+  CardTitle,
+  Button,
+  Input,
+  Badge,
+} = Components;
+
+const MyPluginComponent = () => {
+  // Use the components
+  return (
+    <Card>
+      <CardTitle>My Plugin</CardTitle>
+      <CardContent>
+        <Input placeholder="Search..." />
+        <Button>Submit</Button>
+      </CardContent>
+    </Card>
+  );
+};
+
+registerComponent("MyPluginComponent", MyPluginComponent);
+export default MyPluginComponent;
+```
+
+### The Incorrect Pattern (To Avoid)
+
+This pattern breaks the plugin architecture and prevents components from being themed or swapped out by the core system.
+
+```jsx
+// ❌ INCORRECT: Direct/aliased imports
+import React from "react";
+import { registerComponent } from "@penpal/core";
+
+// These imports are incorrect and should be avoided
+import { Table, TableBody, TableCell } from "@/components/ui/table";
+import { Card, CardContent, CardTitle } from "@/components/ui/card";
+import { Button } from "@/components/ui/button";
+import { Input } from "@/components/ui/input";
+
+const MyBrokenComponent = () => {
+  // ... component implementation ...
+};
+
+registerComponent("MyBrokenComponent", MyBrokenComponent);
+export default MyBrokenComponent;
+```
+
+### Why This is Important
+
+-   **Extensibility**: Allows the core application or other plugins to override or extend base components.
+-   **Theming**: Ensures all components receive the correct theme and styling from the central theme provider.
+-   **Consistency**: Maintains a single, consistent source for all UI components, reducing bugs and improving maintainability.
+-   **Decoupling**: Keeps plugins decoupled from the specific UI library implementation (e.g., Shadcn UI).
+
+### How to Fix
+
+If you see aliased imports like `from "@/components/ui/..."`, replace them with the destructuring pattern from the `Components` registry as shown in the correct example.

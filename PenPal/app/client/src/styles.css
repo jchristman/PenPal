@@ -181,6 +181,16 @@ ol {
     border-color: hsl(var(--color-border));
   }
   
+  /* Add missing border-primary utility */
+  .border-primary {
+    border-color: hsl(var(--color-primary));
+  }
+  
+  /* Add text-primary utility for consistency */
+  .text-primary {
+    color: hsl(var(--color-primary));
+  }
+  
   /* Ensure all border utilities use orange */
   .border {
     border-color: hsl(var(--color-border));
