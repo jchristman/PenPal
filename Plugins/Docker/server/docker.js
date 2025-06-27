@@ -654,6 +654,7 @@ export const Compose = async (args) => {
 
 export const Run = async ({
   image,
+  name,
   cmd,
   daemonize = false,
   network = "",
@@ -671,6 +672,11 @@ export const Run = async ({
     volume ? `-v ${volume.name}:${volume.path}` : "",
     "-it",
   ];
+
+  if (name) {
+    command_args.push(`--name ${name}`);
+  }
+
   const command = `docker ${docker_host} run ${command_args.join(
     " "
   )} ${image} ${cmd}`;
@@ -679,10 +685,96 @@ export const Run = async ({
   return output;
 };
 
-export const Wait = async (container_id) => {
+export const Wait = async (container_id, timeout_ms = null) => {
   await PenPal.Utils.AsyncNOOP();
-  const output = await exec(`docker ${docker_host} wait ${container_id}`);
-  return output;
+
+  if (timeout_ms === null) {
+    // Original behavior - no timeout
+    const output = await exec(`docker ${docker_host} wait ${container_id}`);
+    return output;
+  }
+
+  // Create a promise that will timeout and cleanup the process
+  let childProcess = null;
+  let timeoutId = null;
+
+  const waitPromise = new Promise((resolve, reject) => {
+    // Spawn the docker wait process
+    childProcess = spawn(
+      "docker",
+      ["-H", "penpal-docker-api:2376", "wait", container_id],
+      {
+        stdio: ["ignore", "pipe", "pipe"],
+      }
+    );
+
+    let stdout = "";
+    let stderr = "";
+
+    childProcess.stdout.on("data", (data) => {
+      stdout += data.toString();
+    });
+
+    childProcess.stderr.on("data", (data) => {
+      stderr += data.toString();
+    });
+
+    childProcess.on("close", (code, signal) => {
+      if (timeoutId) {
+        clearTimeout(timeoutId);
+        timeoutId = null;
+      }
+
+      if (code === 0) {
+        resolve({ stdout: stdout.trim(), stderr: stderr.trim() });
+      } else if (signal === "SIGKILL") {
+        // Process was killed due to timeout - this is expected
+        reject(new Error(`Docker wait was killed due to timeout`));
+      } else {
+        reject(new Error(`Docker wait failed with code ${code}: ${stderr}`));
+      }
+    });
+
+    childProcess.on("error", (error) => {
+      if (timeoutId) {
+        clearTimeout(timeoutId);
+        timeoutId = null;
+      }
+      reject(error);
+    });
+  });
+
+  // Create timeout promise
+  const timeoutPromise = new Promise((_, reject) => {
+    timeoutId = setTimeout(() => {
+      // Kill the child process
+      if (childProcess && !childProcess.killed) {
+        // logger.warn(
+        //   `Docker wait for container ${container_id} timed out after ${timeout_ms}ms, killing process`
+        // );
+
+        // Kill immediately with SIGKILL to avoid zombies
+        childProcess.kill("SIGKILL");
+      }
+
+      reject(new Error(`Docker wait timed out after ${timeout_ms}ms`));
+    }, timeout_ms);
+  });
+
+  try {
+    // Race between the wait operation and the timeout
+    const result = await Promise.race([waitPromise, timeoutPromise]);
+    return result;
+  } catch (error) {
+    // Ensure cleanup happens even on error
+    if (timeoutId) {
+      clearTimeout(timeoutId);
+    }
+    if (childProcess && !childProcess.killed) {
+      childProcess.kill("SIGKILL");
+    }
+    throw error;
+  }
 };
 
 export const Start = async (container_id) => {
@@ -1130,32 +1222,36 @@ export const Build = async (args) => {
 export const AttachAndReturnDockerChildProcess = async (args) => {
   await PenPal.Utils.AsyncNOOP();
 
-  // Create a PTY
-  const term = pty.spawn("bash", [], {
-    name: "xterm-256color",
-    cols: 80,
-    rows: 30,
-    cwd: process.cwd(),
-    env: process.env,
-  });
+  // Use PTY to spawn bash, then exec docker attach within it
+  // This allows for proper interactive terminal behavior
+  const term = pty.spawn(
+    "docker",
+    ["-H", "penpal-docker-api:2376", "attach", args.container],
+    {
+      name: "xterm-color",
+      cols: 80,
+      rows: 30,
+      cwd: process.env.HOME,
+      env: process.env,
+    }
+  );
 
-  // Optionally, you can handle other events like 'exit'
-  const exit_listener = term.onExit(({ exitCode, signal }) => {
-    //console.log(`PTY exited with code ${exitCode} and signal ${signal}`);
-    exit_listener.dispose();
-  });
-
-  const command = `docker ${docker_host} attach ${args.container}`;
-  term.write(command + "\n");
+  // logger.log(
+  //   `Started PTY process ${term.pid} with docker attach for container ${args.container}`
+  // );
 
   return term;
 };
 
 export const DetachFromDockerChildProcess = async (term) => {
-  // Send Ctrl-p (ASCII code 16) followed by Ctrl-q (ASCII code 17)
-  term.write(String.fromCharCode(16)); // Ctrl-p
-  term.write(String.fromCharCode(17)); // Ctrl-q
-  term.kill();
+  // Clean up event listeners first
+  if (term.removeAllListeners) {
+    term.removeAllListeners("data");
+    term.removeAllListeners("exit");
+  }
+
+  // Kill the PTY process and underlying docker attach
+  await term.kill("SIGKILL");
 };
 
 export const CreateTemporaryVolume = async () => {

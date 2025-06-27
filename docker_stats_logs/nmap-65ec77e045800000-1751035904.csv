@@ -1,0 +1,3 @@
+Timestamp,CPU_%,Mem_Usage,Mem_Limit,Mem_%,Net_Input,Net_Output,Block_Input,Block_Output,PIDs
+2025-06-27T14:51:54Z,2.16%,7.902MiB,31.29GiB,0.02%,88.9kB,293kB,0B,0B,1
+2025-06-27T14:52:06Z,2.85%,7.656MiB,31.29GiB,0.02%,88.9kB,403kB,0B,20.5kB,1

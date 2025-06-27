@@ -10,7 +10,7 @@ export const settings = {
     name: "penpal:nmap",
     dockercontext: `${__dirname}/docker-context`,
   },
-  STATUS_SLEEP: 500,
+  STATUS_SLEEP: 900,
   scan_configurations: {
     fast: {
       name: "Fast Scan",

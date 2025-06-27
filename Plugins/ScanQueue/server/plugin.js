@@ -162,7 +162,12 @@ class ScanQueue {
             this.totalOperationsInCurrentJob) *
             100
         );
-        await PenPal.Jobs.UpdateProgress(this.currentJob.id, overallProgress);
+        const statusText = `Processing scan operations sequentially... (${this.completedOperationsInCurrentJob}/${this.totalOperationsInCurrentJob} completed)`;
+
+        await PenPal.Jobs.Update(this.currentJob.id, {
+          progress: overallProgress,
+          statusText: statusText,
+        });
       }
 
       try {
@@ -230,9 +235,14 @@ class ScanQueue {
     this.keepAliveInterval = setInterval(async () => {
       if (this.currentJob) {
         try {
+          const currentProgress = Math.round(
+            (this.completedOperationsInCurrentJob /
+              this.totalOperationsInCurrentJob) *
+              100
+          );
           await PenPal.Jobs.Update(this.currentJob.id, {
-            statusText: "Processing scan operations sequentially...",
-            updated_at: new Date().toISOString(),
+            progress: currentProgress,
+            statusText: `Processing scan operations sequentially... (${this.completedOperationsInCurrentJob}/${this.totalOperationsInCurrentJob} completed)`,
           });
         } catch (error) {
           ScanQueueLogger.warn(

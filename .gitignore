@@ -133,3 +133,6 @@ node_modules/
 *.sw?
 # OS specific
 .DS_Store
+
+# Heap snapshots
+heap-snapshots/

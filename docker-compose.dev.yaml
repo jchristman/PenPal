@@ -16,8 +16,10 @@ services:
       - ./PenPal/app/server/package.json:/penpal/package-tmp.json:ro
       - ./PenPal/app/server/nodemon.config.json:/penpal/nodemon.config.json:ro
       - ./PenPal/app/server/src:/penpal/src
+      - ./heap-snapshots:/penpal/heap-snapshots
       - ./Plugins:/penpal/plugins
     environment:
       - LOCAL_USER_ID=${LOCAL_USER_ID}
       - FORCE_COLOR=1
       - CONTAINER_TYPE=server
+      - ENABLE_MEMORY_PROFILER=false

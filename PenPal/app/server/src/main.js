@@ -6,6 +6,16 @@ import startGraphQLServer from "./graphql-server.js";
 // Initialize logger for the core PenPal server
 const logger = PenPal.Utils.BuildLogger("PenPal");
 
+if (process.env.ENABLE_MEMORY_PROFILER === "true") {
+  const { writeHeapSnapshot } = await import("v8");
+  logger.log("Writing heap snapshot");
+  writeHeapSnapshot(`./heap-snapshots/heap-${Date.now()}.heapsnapshot`);
+  setInterval(() => {
+    logger.log("Writing heap snapshot");
+    writeHeapSnapshot(`./heap-snapshots/heap-${Date.now()}.heapsnapshot`);
+  }, 1000 * 60 * 5);
+}
+
 // Global error handlers
 process.on("uncaughtException", (error) => {
   logger.error("UNCAUGHT EXCEPTION:", error);
