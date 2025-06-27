@@ -1,8 +1,11 @@
 import React, { useState } from "react";
 import { Components, registerComponent, Utils } from "@penpal/core";
+import { format } from "date-fns";
+import { Calendar as CalendarIcon } from "lucide-react";
 
 const { cn } = Utils;
-const { Input, Label } = Components;
+const { Input, Label, Button, Popover, PopoverContent, PopoverTrigger } =
+  Components;
 
 const ProjectDetailsForm = ({
   projectName,
@@ -14,13 +17,24 @@ const ProjectDetailsForm = ({
   projectEndDate,
   setProjectEndDate,
 }) => {
+  const [popoverOpen, setPopoverOpen] = useState(false);
   const handleProjectNameChange = (event) => setProjectName(event.target.value);
   const handleProjectDescriptionChange = (event) =>
     setProjectDescription(event.target.value);
 
+  const dateRange = {
+    from: projectStartDate,
+    to: projectEndDate,
+  };
+
+  const handleDateRangeSelect = (range) => {
+    setProjectStartDate(range?.from);
+    setProjectEndDate(range?.to);
+  };
+
   return (
-    <div className="flex flex-col justify-center items-start h-full w-full space-y-4">
-      <div className="w-[300px]">
+    <div className="flex flex-col justify-start items-start h-full w-full space-y-4">
+      <div className="w-full">
         <Label htmlFor="project-name">Name *</Label>
         <Input
           id="project-name"
@@ -31,7 +45,7 @@ const ProjectDetailsForm = ({
         />
       </div>
 
-      <div className="w-[300px]">
+      <div className="w-full">
         <Label htmlFor="project-description">Description *</Label>
         <Input
           id="project-description"
@@ -42,24 +56,45 @@ const ProjectDetailsForm = ({
         />
       </div>
 
-      <div className="w-[300px]">
-        <Components.Calendar
-          value={projectStartDate}
-          onChange={setProjectStartDate}
-          label="Start Date"
-          className="w-full"
-        />
-      </div>
-
-      <div className="w-[300px]">
-        <Components.Calendar
-          disabled={projectStartDate === null}
-          shouldDisableDate={(date) => date.isBefore(projectStartDate, "day")}
-          value={projectEndDate}
-          onChange={setProjectEndDate}
-          label="End Date"
-          className="w-full"
-        />
+      <div className="w-full">
+        <Label>Date Range</Label>
+        <Popover open={popoverOpen} onOpenChange={setPopoverOpen} modal={true}>
+          <PopoverTrigger asChild>
+            <Button
+              variant={"outline"}
+              className={cn(
+                "w-full justify-start text-left font-normal",
+                !projectStartDate && "text-muted-foreground"
+              )}
+            >
+              <CalendarIcon className="mr-2 h-4 w-4" />
+              {projectStartDate && projectEndDate ? (
+                <>
+                  {format(projectStartDate, "LLL dd, y")} -{" "}
+                  {format(projectEndDate, "LLL dd, y")}
+                </>
+              ) : projectStartDate ? (
+                format(projectStartDate, "LLL dd, y")
+              ) : (
+                <span>Pick a date range</span>
+              )}
+            </Button>
+          </PopoverTrigger>
+          <PopoverContent
+            className="w-auto p-0 bg-white border"
+            align="start"
+            onOpenAutoFocus={(e) => e.preventDefault()}
+          >
+            <Components.Calendar
+              initialFocus
+              mode="range"
+              defaultMonth={projectStartDate}
+              selected={dateRange}
+              onSelect={handleDateRangeSelect}
+              numberOfMonths={1}
+            />
+          </PopoverContent>
+        </Popover>
       </div>
     </div>
   );

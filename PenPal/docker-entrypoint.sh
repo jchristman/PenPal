@@ -22,13 +22,16 @@ if [[ ! $CURRENT_NODE_UID -eq $USER_ID ]]; then
 	echo Restarting sudo
 	service sudo restart
 
-	echo Changing file permissions of /penpal and /usr/lib/node_modules
-	chown -R node:node /penpal /usr/lib/node_modules
+	echo Changing file permissions of /penpal
+	chown -R node:node /penpal
 else
 	echo UID matches inside container. Moving on
 fi
 
-chown node:node /home/node/.npm
+# Make bun available to the node user and set up bun directory
+cp /root/.bun/bin/bun /usr/local/bin/bun
+chmod +x /usr/local/bin/bun
+mkdir -p /home/node/.bun && chown -R node:node /home/node/.bun
 /usr/local/bin/gosu node install-dependencies.sh
 
 exec /usr/local/bin/gosu node "$@"

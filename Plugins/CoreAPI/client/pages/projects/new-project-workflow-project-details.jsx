@@ -30,9 +30,9 @@ const ProjectDetails = ({
   }, [projectName, projectDescription]);
 
   return (
-    <div className="w-full h-full flex flex-row justify-evenly items-center">
-      <div className="h-[calc(100%-2rem)] flex flex-col justify-center items-start flex-1 m-4">
-        <div className="text-[#555] text-[17px] uppercase w-full text-center mb-2">
+    <div className="w-full h-full flex flex-row justify-evenly items-stretch">
+      <div className="h-[calc(100%-2rem)] flex flex-col justify-start items-start flex-1 m-4">
+        <div className="text-[#555] text-[17px] uppercase w-full text-center mb-2 min-w-[300px]">
           Details
         </div>
         <div className="flex-1 w-full flex flex-col justify-center items-start">
@@ -48,7 +48,7 @@ const ProjectDetails = ({
           />
         </div>
       </div>
-      <Separator orientation="vertical" className="h-full mx-4" />
+      <Separator orientation="vertical" className="h-auto mx-4" />
       <div className="h-[calc(100%-2rem)] flex flex-col justify-center items-start flex-1 m-4">
         <div className="text-[#555] text-[17px] uppercase w-full text-center mb-2">
           Scope

@@ -1,7 +1,7 @@
 services:
   penpal-frontend:
     volumes:
-      # Mount package.json read-only to prevent npm changes from propagating
+      # Mount package.json read-only to prevent bun changes from propagating
       - ./PenPal/app/client/package.json:/penpal/package-tmp.json:ro
       - ./PenPal/app/client/vite.config.js:/penpal/vite.config.js:ro
       - ./PenPal/app/client/src:/penpal/src
@@ -12,7 +12,7 @@ services:
 
   penpal-server:
     volumes:
-      # Mount package.json read-only to prevent npm changes from propagating
+      # Mount package.json read-only to prevent bun changes from propagating
       - ./PenPal/app/server/package.json:/penpal/package-tmp.json:ro
       - ./PenPal/app/server/nodemon.config.json:/penpal/nodemon.config.json:ro
       - ./PenPal/app/server/src:/penpal/src

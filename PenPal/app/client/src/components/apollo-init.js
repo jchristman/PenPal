@@ -158,6 +158,7 @@ const apolloInit = async (onProgress) => {
     const wsLink = new GraphQLWsLink(
       createClient({
         url: "ws://localhost:3001/graphql",
+        lazy: false,
         retryAttempts: WS_RETRY_CONFIG.maxRetries,
         retryWait: async function (retries) {
           const delay = Math.min(

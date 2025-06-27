@@ -29,14 +29,21 @@ const ProjectViewServices = ({ project, disable_polling }) => {
     return null;
   }
 
-  const { getProject: { services } = { services: [] } } = data || {};
+  const { getServices: services = [] } = data || {};
+
+  console.log(services);
 
   const tabs = [
     {
-      value: "list",
-      label: "List",
+      value: "dashboard",
+      label: "Dashboard",
+      content: <Components.ProjectViewServicesDashboard services={services} />,
+    },
+    {
+      value: "table",
+      label: "Table",
       content: (
-        <Components.ProjectViewServicesList
+        <Components.ProjectViewServicesTable
           project={project}
           services={services}
         />
@@ -51,26 +58,6 @@ const ProjectViewServices = ({ project, disable_polling }) => {
           services={services}
         />
       ),
-    },
-    {
-      value: "table",
-      label: "Table",
-      content: (
-        <Components.ProjectViewServicesTable
-          project={project}
-          services={services}
-        />
-      ),
-    },
-    {
-      value: "dashboard",
-      label: "Dashboard",
-      content: <Components.ProjectViewServicesDashboard services={services} />,
-    },
-    {
-      value: "graph",
-      label: "Graph",
-      content: <Components.ProjectViewServicesGraph services={services} />,
     },
   ];
 

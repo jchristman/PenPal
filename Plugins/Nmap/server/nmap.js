@@ -269,6 +269,7 @@ export const performScan = async ({
                 await PenPal.Jobs.UpdateStage(job_id, 0, {
                   progress: 100,
                   statusText: "SYN scan completed",
+                  status: PenPal.Jobs.Status.DONE,
                 });
               }
             } else if (stats.scanType.includes("Script Scan")) {
@@ -278,12 +279,14 @@ export const performScan = async ({
                 await PenPal.Jobs.UpdateStage(job_id, 0, {
                   progress: 100,
                   statusText: "SYN scan completed",
+                  status: PenPal.Jobs.Status.DONE,
                 });
               }
               if (currentJob.stages[1] && currentJob.stages[1].progress < 100) {
                 await PenPal.Jobs.UpdateStage(job_id, 1, {
                   progress: 100,
                   statusText: "Service scan completed",
+                  status: PenPal.Jobs.Status.DONE,
                 });
               }
             }

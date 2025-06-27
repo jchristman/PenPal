@@ -16,14 +16,21 @@ SHELL ["/bin/bash", "-c"]
 
 # Generic necessities
 RUN apt-get update
-RUN DEBIAN_FRONTEND=noninteractive apt-get install -y ca-certificates gnupg lsb-release sudo curl build-essential
+RUN DEBIAN_FRONTEND=noninteractive apt-get install -y ca-certificates gnupg lsb-release sudo curl build-essential unzip
 
-# Install node.js
-RUN sudo mkdir -p /etc/apt/keyrings
-RUN curl -fsSL https://deb.nodesource.com/gpgkey/nodesource-repo.gpg.key | gpg --dearmor -o /etc/apt/keyrings/nodesource.gpg
-RUN echo "deb [signed-by=/etc/apt/keyrings/nodesource.gpg] https://deb.nodesource.com/node_$NODE_VERSION.x nodistro main" | tee /etc/apt/sources.list.d/nodesource.list
-RUN apt-get update
-RUN DEBIAN_FRONTEND=noninteractive apt-get install -y nodejs
+WORKDIR /tmp
+
+# Install Node.js (needed for node-gyp and native module compilation)
+RUN curl -fsSL https://deb.nodesource.com/setup_23.x -o nodesource_setup.sh
+RUN bash nodesource_setup.sh
+RUN apt-get install -y nodejs
+
+# Install node-gyp
+RUN npm install -g node-gyp
+
+# Install bun (primary package manager and runtime)
+RUN curl -fsSL https://bun.sh/install | bash -s bun-v1.1.20
+ENV PATH="/root/.bun/bin:$PATH"
 
 # Install docker in docker....
 RUN curl -fsSL https://download.docker.com/linux/debian/gpg | gpg --dearmor -o /usr/share/keyrings/docker-archive-keyring.gpg
@@ -52,9 +59,6 @@ RUN echo 'node ALL=(ALL) NOPASSWD: ALL' >> /etc/sudoers
 RUN mkdir -p /penpal/
 RUN mkdir -p /penpal/plugins
 RUN chown -R node:node /penpal
-
-# Update npm to latest version
-RUN npm install -g npm@latest
 
 # For `docker run CONTAINER_ID`
 COPY ./docker-entrypoint.sh /usr/bin/docker-entrypoint.sh

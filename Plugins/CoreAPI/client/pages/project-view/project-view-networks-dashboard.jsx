@@ -1,6 +1,16 @@
 import React, { useMemo } from "react";
 import { registerComponent, Components } from "@penpal/core";
 import { Users, Globe, Server, NetworkIcon } from "lucide-react";
+import {
+  BarChart,
+  Bar,
+  XAxis,
+  YAxis,
+  CartesianGrid,
+  Tooltip,
+  Legend,
+  ResponsiveContainer,
+} from "recharts";
 
 const { Card, CardContent, CardHeader, CardTitle } = Components;
 
@@ -30,7 +40,15 @@ const ProjectViewNetworksDashboard = ({ networks = [] }) => {
       )
       .slice(0, 5);
 
-    return { totalHosts, totalServices, networksWithMostHosts };
+    const chartData = networksWithMostHosts
+      .map((n) => ({
+        name: n.subnet,
+        hosts: n.hostsConnection?.totalCount || 0,
+        services: getTotalServices(n),
+      }))
+      .reverse(); // reverse for horizontal bar chart display
+
+    return { totalHosts, totalServices, networksWithMostHosts, chartData };
   }, [networks]);
 
   if (networks.length === 0) {
@@ -42,7 +60,7 @@ const ProjectViewNetworksDashboard = ({ networks = [] }) => {
   }
 
   return (
-    <div className="grid gap-4 md:grid-cols-2 lg:grid-cols-4">
+    <div className="grid gap-4 md:grid-cols-2 lg:grid-cols-2 xl:grid-cols-4">
       <Card>
         <CardHeader className="flex flex-row items-center justify-between space-y-0 pb-2">
           <CardTitle className="text-sm font-medium">Total Networks</CardTitle>
@@ -70,7 +88,7 @@ const ProjectViewNetworksDashboard = ({ networks = [] }) => {
           <div className="text-2xl font-bold">{stats.totalServices}</div>
         </CardContent>
       </Card>
-      <Card className="col-span-1 md:col-span-2 lg:col-span-1">
+      <Card className="col-span-1 md:col-span-2 lg:col-span-2 xl:col-span-1">
         <CardHeader>
           <CardTitle className="text-sm font-medium">
             Top 5 Networks by Host Count
@@ -91,6 +109,36 @@ const ProjectViewNetworksDashboard = ({ networks = [] }) => {
               </span>
             </div>
           ))}
+        </CardContent>
+      </Card>
+      <Card className="col-span-1 md:col-span-2 lg:col-span-2 xl:col-span-3">
+        <CardHeader>
+          <CardTitle className="text-sm font-medium">
+            Hosts & Services per Network
+          </CardTitle>
+        </CardHeader>
+        <CardContent className="h-[250px]">
+          <ResponsiveContainer width="100%" height="100%">
+            <BarChart
+              data={stats.chartData}
+              layout="vertical"
+              margin={{ top: 5, right: 30, left: 20, bottom: 5 }}
+            >
+              <CartesianGrid strokeDasharray="3 3" />
+              <XAxis type="number" />
+              <YAxis dataKey="name" type="category" width={100} />
+              <Tooltip
+                cursor={{ fill: "rgba(200, 200, 200, 0.1)" }}
+                contentStyle={{
+                  backgroundColor: "#1a1a1a",
+                  border: "1px solid #333",
+                }}
+              />
+              <Legend />
+              <Bar dataKey="hosts" fill="#8884d8" name="Hosts" />
+              <Bar dataKey="services" fill="#82ca9d" name="Services" />
+            </BarChart>
+          </ResponsiveContainer>
         </CardContent>
       </Card>
     </div>

@@ -6,9 +6,16 @@ import {
   ServerIcon,
   ChartBarIcon,
 } from "@heroicons/react/24/outline";
+import {
+  PieChart,
+  Pie,
+  Cell,
+  ResponsiveContainer,
+  Tooltip,
+  Legend,
+} from "recharts";
 
-const { Card, CardHeader, CardContent, CardTitle, Badge, Progress } =
-  Components;
+const { Card, CardHeader, CardContent, CardTitle, Badge } = Components;
 
 const StatCard = ({
   title,
@@ -29,6 +36,20 @@ const StatCard = ({
   </Card>
 );
 
+const COLORS = ["#0088FE", "#00C49F", "#FFBB28", "#FF8042", "#AF19FF"];
+
+const CustomTooltip = ({ active, payload }) => {
+  if (active && payload && payload.length) {
+    return (
+      <div className="bg-background border p-2 rounded-md shadow-lg">
+        <p className="label">{`${payload[0].name} : ${payload[0].value}`}</p>
+        <p className="desc">{`(${(payload[0].percent * 100).toFixed(2)}%)`}</p>
+      </div>
+    );
+  }
+  return null;
+};
+
 const ProjectViewHostsDashboard = ({ hosts = [] }) => {
   const stats = useMemo(() => {
     const totalHosts = hosts.length;
@@ -46,6 +67,10 @@ const ProjectViewHostsDashboard = ({ hosts = [] }) => {
       acc[osName] = (acc[osName] || 0) + 1;
       return acc;
     }, {});
+    const osChartData = Object.entries(osDistribution).map(([name, value]) => ({
+      name,
+      value,
+    }));
 
     // Service count distribution
     const serviceDistribution = hosts.reduce((acc, host) => {
@@ -59,6 +84,9 @@ const ProjectViewHostsDashboard = ({ hosts = [] }) => {
       else acc["20+ Services"] = (acc["20+ Services"] || 0) + 1;
       return acc;
     }, {});
+    const serviceChartData = Object.entries(serviceDistribution).map(
+      ([name, value]) => ({ name, value })
+    );
 
     return {
       totalHosts,
@@ -67,6 +95,8 @@ const ProjectViewHostsDashboard = ({ hosts = [] }) => {
       avgServicesPerHost,
       osDistribution,
       serviceDistribution,
+      osChartData,
+      serviceChartData,
     };
   }, [hosts]);
 
@@ -108,26 +138,30 @@ const ProjectViewHostsDashboard = ({ hosts = [] }) => {
           <CardHeader>
             <CardTitle>Operating System Distribution</CardTitle>
           </CardHeader>
-          <CardContent className="space-y-3">
-            {Object.entries(stats.osDistribution).map(([os, count]) => {
-              const percentage = ((count / stats.totalHosts) * 100).toFixed(1);
-              return (
-                <div key={os} className="space-y-2">
-                  <div className="flex items-center justify-between">
-                    <span className="text-sm font-medium">{os}</span>
-                    <div className="flex items-center space-x-2">
-                      <span className="text-sm text-muted-foreground">
-                        {count}
-                      </span>
-                      <Badge variant="secondary" className="text-xs">
-                        {percentage}%
-                      </Badge>
-                    </div>
-                  </div>
-                  <Progress value={percentage} className="h-2" />
-                </div>
-              );
-            })}
+          <CardContent className="h-[300px]">
+            <ResponsiveContainer width="100%" height="100%">
+              <PieChart>
+                <Pie
+                  data={stats.osChartData}
+                  cx="50%"
+                  cy="50%"
+                  labelLine={false}
+                  outerRadius={80}
+                  fill="#8884d8"
+                  dataKey="value"
+                  nameKey="name"
+                >
+                  {stats.osChartData.map((entry, index) => (
+                    <Cell
+                      key={`cell-${index}`}
+                      fill={COLORS[index % COLORS.length]}
+                    />
+                  ))}
+                </Pie>
+                <Tooltip content={<CustomTooltip />} />
+                <Legend />
+              </PieChart>
+            </ResponsiveContainer>
           </CardContent>
         </Card>
 
@@ -136,26 +170,30 @@ const ProjectViewHostsDashboard = ({ hosts = [] }) => {
           <CardHeader>
             <CardTitle>Service Count Distribution</CardTitle>
           </CardHeader>
-          <CardContent className="space-y-3">
-            {Object.entries(stats.serviceDistribution).map(([range, count]) => {
-              const percentage = ((count / stats.totalHosts) * 100).toFixed(1);
-              return (
-                <div key={range} className="space-y-2">
-                  <div className="flex items-center justify-between">
-                    <span className="text-sm font-medium">{range}</span>
-                    <div className="flex items-center space-x-2">
-                      <span className="text-sm text-muted-foreground">
-                        {count}
-                      </span>
-                      <Badge variant="secondary" className="text-xs">
-                        {percentage}%
-                      </Badge>
-                    </div>
-                  </div>
-                  <Progress value={percentage} className="h-2" />
-                </div>
-              );
-            })}
+          <CardContent className="h-[300px]">
+            <ResponsiveContainer width="100%" height="100%">
+              <PieChart>
+                <Pie
+                  data={stats.serviceChartData}
+                  cx="50%"
+                  cy="50%"
+                  labelLine={false}
+                  outerRadius={80}
+                  fill="#8884d8"
+                  dataKey="value"
+                  nameKey="name"
+                >
+                  {stats.serviceChartData.map((entry, index) => (
+                    <Cell
+                      key={`cell-${index}`}
+                      fill={COLORS[index % COLORS.length]}
+                    />
+                  ))}
+                </Pie>
+                <Tooltip content={<CustomTooltip />} />
+                <Legend />
+              </PieChart>
+            </ResponsiveContainer>
           </CardContent>
         </Card>
       </div>

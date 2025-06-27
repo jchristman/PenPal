@@ -1,6 +1,6 @@
 ---
-description:
-globs:
+description: 
+globs: *.tsx,*.jsx
 alwaysApply: false
 ---
 # PenPal Component Import Pattern

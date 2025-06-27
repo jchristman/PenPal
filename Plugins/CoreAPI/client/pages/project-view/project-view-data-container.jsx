@@ -22,8 +22,8 @@ export const TabPanel = (props) => {
 const ProjectViewDataContainer = ({ project, disable_polling }) => {
   const [searchParams, setSearchParams] = useSearchParams();
 
-  // Get active tab from URL, default to "hosts"
-  const activeTab = searchParams.get("tab") || "hosts";
+  // Get active tab from URL, default to "networks"
+  const activeTab = searchParams.get("tab") || "networks";
 
   const handleTabChange = (value) => {
     setSearchParams((prev) => {
@@ -36,6 +36,11 @@ const ProjectViewDataContainer = ({ project, disable_polling }) => {
   };
 
   const tabs = [
+    {
+      value: "networks",
+      label: "Networks",
+      content: () => <Components.ProjectViewNetworks project={project} />,
+    },
     {
       value: "hosts",
       label: "Hosts",
@@ -55,11 +60,6 @@ const ProjectViewDataContainer = ({ project, disable_polling }) => {
           disable_polling={disable_polling}
         />
       ),
-    },
-    {
-      value: "networks",
-      label: "Networks",
-      content: () => <Components.ProjectViewNetworks project={project} />,
     },
   ];
 

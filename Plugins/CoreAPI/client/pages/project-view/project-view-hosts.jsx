@@ -33,21 +33,14 @@ const ProjectViewHosts = ({ project, disable_polling }) => {
 
   const tabs = [
     {
-      value: "list",
-      label: "List",
-      content: (
-        <Components.ProjectViewHostsList project={project} hosts={hosts} />
-      ),
+      value: "dashboard",
+      label: "Dashboard",
+      content: <Components.ProjectViewHostsDashboard hosts={hosts} />,
     },
     {
       value: "table",
       label: "Table",
       content: <Components.ProjectViewHostsTable hosts={hosts} />,
-    },
-    {
-      value: "dashboard",
-      label: "Dashboard",
-      content: <Components.ProjectViewHostsDashboard hosts={hosts} />,
     },
     {
       value: "graph",
@@ -56,7 +49,7 @@ const ProjectViewHosts = ({ project, disable_polling }) => {
     },
   ];
 
-  return <Components.VerticalTabs tabs={tabs} defaultTab="list" />;
+  return <Components.VerticalTabs tabs={tabs} defaultTab="dashboard" />;
 };
 
 registerComponent("ProjectViewHosts", ProjectViewHosts);

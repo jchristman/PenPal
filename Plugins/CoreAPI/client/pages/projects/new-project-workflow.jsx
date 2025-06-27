@@ -84,13 +84,13 @@ const NewProjectWorkflow = ({ open, handleClose: handleCloseProp }) => {
 
   return (
     <Dialog open={open} onOpenChange={handleClose}>
-      <DialogContent className="max-w-4xl h-[80vh] max-h-[600px] flex flex-col">
+      <DialogContent className="max-w-4xl max-h-[900px] flex flex-col">
         <DialogHeader>
           <DialogTitle className="text-2xl">Create New Project</DialogTitle>
         </DialogHeader>
 
         {/* Stepper */}
-        <div className="flex items-center justify-center mb-6">
+        <div className="flex items-center justify-center mb-4">
           <div className="flex items-center space-x-4">
             {steps.map((step, index) => (
               <React.Fragment key={step.name}>
@@ -124,7 +124,7 @@ const NewProjectWorkflow = ({ open, handleClose: handleCloseProp }) => {
         </div>
 
         {/* Step Content */}
-        <div className="flex-1 overflow-auto pb-8">
+        <div className="flex-1 overflow-auto pb-4">
           <StepComponent
             enableNext={enableNextStep}
             disableNext={disableNextStep}

@@ -1,1606 +1,669 @@
-import React, { useState, useEffect } from "react";
+import React, { useState, useEffect, useMemo } from "react";
 import { useQuery, useSubscription, useMutation, gql } from "@apollo/client";
-import { Components, registerComponent } from "@penpal/core";
-import { makeStyles } from "@mui/styles";
+import { Components, registerComponent, Utils } from "@penpal/core";
 import {
-  Box,
-  Typography,
-  Card,
-  CardContent,
-  Button,
-  Chip,
-  Grid,
-  Collapse,
-  IconButton,
-  Tooltip,
-  Dialog,
-  DialogTitle,
-  DialogContent,
-  DialogActions,
-  DialogContentText,
-} from "@mui/material";
+  ChevronDown,
+  ChevronUp,
+  RefreshCw,
+  Trash2,
+  ListFilter,
+  Eye,
+  EyeOff,
+  Pin,
+  PinOff,
+  Bell,
+  Clock,
+  Archive,
+  Server,
+  Cpu,
+  Database,
+  Shuffle,
+  Info,
+  CheckCircle2,
+  XCircle,
+  CircleSlash2,
+} from "lucide-react";
+import { formatRuntime, formatCompletionTime } from "../../utils/time-utils.js";
 import {
-  ExpandMore as ExpandMoreIcon,
-  ExpandLess as ExpandLessIcon,
-  Refresh as RefreshIcon,
-  Delete as DeleteIcon,
-  DeleteSweep as DeleteSweepIcon,
-} from "@mui/icons-material";
+  JobStatus,
+  COMPLETED_STATUSES,
+} from "../../../common/job-constants.js";
 
 import GetAllJobs from "./queries/get-all-jobs.js";
 import JobsSubscription from "./queries/jobs-subscription.js";
 import JobCreatedSubscription from "./queries/job-created-subscription.js";
 import JobDeletedSubscription from "./queries/job-deleted-subscription.js";
 import ClearAllJobs from "./mutations/clear-all-jobs.js";
-import { formatRuntime, formatCompletionTime } from "../../utils/time-utils.js";
-import { JobStatus } from "../../../common/job-constants.js";
 
-const useStyles = makeStyles((theme) => ({
-  jobsPage: {
-    padding: 20,
-    maxWidth: 1200,
-    margin: "0 auto",
-    fontFamily:
-      "-apple-system, BlinkMacSystemFont, 'Segoe UI', 'Roboto', sans-serif",
-  },
-  jobsPageLoading: {
-    display: "flex",
-    flexDirection: "column",
-    alignItems: "center",
-    justifyContent: "center",
-    minHeight: 400,
-  },
-  jobsPageError: {
-    display: "flex",
-    flexDirection: "column",
-    alignItems: "center",
-    justifyContent: "center",
-    minHeight: 400,
-  },
-  loadingSpinner: {
-    width: 40,
-    height: 40,
-    border: "4px solid #f3f3f3",
-    borderTop: "4px solid #3498db",
-    borderRadius: "50%",
-    animation: "$spin 1s linear infinite",
-    marginBottom: 16,
-  },
-  "@keyframes spin": {
-    "0%": { transform: "rotate(0deg)" },
-    "100%": { transform: "rotate(360deg)" },
-  },
-  jobsHeader: {
-    display: "flex",
-    justifyContent: "space-between",
-    alignItems: "center",
-    marginBottom: 24,
-    paddingBottom: 16,
-    borderBottom: "2px solid #e1e5e9",
-  },
-  filterControls: {
-    display: "flex",
-    gap: 8,
-    alignItems: "center",
-    marginBottom: 16,
-  },
-  filterButton: {
-    padding: "8px 16px",
-    border: "1px solid #e1e5e9",
-    borderRadius: 6,
-    background: "white",
-    cursor: "pointer",
-    fontSize: 13,
-    fontWeight: 500,
-    transition: "all 0.2s ease",
-    "&:hover": {
-      background: "#f8f9fa",
-      borderColor: "#dee2e6",
-    },
-  },
-  filterButtonActive: {
-    background: "#3498db",
-    color: "white",
-    borderColor: "#3498db",
-    "&:hover": {
-      background: "#2980b9",
-      borderColor: "#2980b9",
-    },
-  },
-  toggleControl: {
-    display: "flex",
-    alignItems: "center",
-    gap: 8,
-    padding: "8px 12px",
-    border: "1px solid #e1e5e9",
-    borderRadius: 6,
-    background: "white",
-    fontSize: 13,
-    fontWeight: 500,
-    transition: "all 0.2s ease",
-    cursor: "pointer",
-    "&:hover": {
-      background: "#f8f9fa",
-      borderColor: "#dee2e6",
-    },
-  },
-  toggleCheckbox: {
-    width: 14,
-    height: 14,
-    cursor: "pointer",
-  },
-  clearAllButton: {
-    padding: "8px 16px",
-    border: "1px solid #dc3545",
-    borderRadius: 6,
-    background: "#dc3545",
-    color: "white",
-    cursor: "pointer",
-    fontSize: 13,
-    fontWeight: 500,
-    transition: "all 0.2s ease",
-    display: "flex",
-    alignItems: "center",
-    gap: 6,
-    "&:hover": {
-      background: "#c82333",
-      borderColor: "#c82333",
-    },
-    "&:disabled": {
-      background: "#6c757d",
-      borderColor: "#6c757d",
-      cursor: "not-allowed",
-      opacity: 0.6,
-    },
-  },
-  jobsHeaderTitle: {
-    margin: 0,
-    color: "#2c3e50",
-    fontSize: 28,
-    fontWeight: 600,
-  },
-  jobsSummary: {
-    display: "flex",
-    alignItems: "center",
-  },
-  activeJobs: {
-    background: "#e8f5e8",
-    color: "#2d5a2d",
-    padding: "8px 16px",
-    borderRadius: 20,
-    fontWeight: 500,
-    fontSize: 14,
-  },
-  noActiveJobs: {
-    background: "#f8f9fa",
-    color: "#6c757d",
-    padding: "8px 16px",
-    borderRadius: 20,
-    fontWeight: 500,
-    fontSize: 14,
-  },
-  pluginsContainer: {
-    display: "grid",
-    gap: 20,
-  },
-  pluginSection: {
-    background: "white",
-    borderRadius: 12,
-    border: "1px solid #e1e5e9",
-    overflow: "hidden",
-    boxShadow: "0 2px 4px rgba(0,0,0,0.1)",
-    transition: "box-shadow 0.2s ease",
-    "&:hover": {
-      boxShadow: "0 4px 8px rgba(0,0,0,0.15)",
-    },
-  },
-  pluginHeader: {
-    padding: "16px 20px",
-    background: "#f8f9fa",
-    borderBottom: "1px solid #e1e5e9",
-    display: "flex",
-    alignItems: "center",
-    gap: 12,
-    cursor: "pointer",
-    transition: "background-color 0.2s ease",
-    "&:hover": {
-      background: "#e9ecef",
-    },
-  },
-  pluginName: {
-    margin: 0,
-    fontSize: 18,
-    fontWeight: 600,
-    color: "#2c3e50",
-  },
-  pluginId: {
-    fontSize: 12,
-    color: "#6c757d",
-    background: "#e9ecef",
-    padding: "4px 8px",
-    borderRadius: 6,
-    fontFamily: "'Monaco', 'Menlo', monospace",
-  },
-  jobCount: {
-    marginLeft: "auto",
-    background: "#3498db",
-    color: "white",
-    padding: "4px 12px",
-    borderRadius: 12,
-    fontSize: 12,
-    fontWeight: 500,
-  },
-  collapseIcon: {
-    fontSize: 14,
-    color: "#6c757d",
-    marginLeft: 8,
-    transition: "transform 0.2s ease",
-  },
-  collapseIconCollapsed: {
-    transform: "rotate(-90deg)",
-  },
-  jobsList: {
-    padding: 20,
-    display: "grid",
-    gap: 16,
-  },
-  noJobs: {
-    padding: "12px 20px",
-    textAlign: "center",
-    color: "#6c757d",
-    fontStyle: "italic",
-    fontSize: 13,
-  },
-  jobCard: {
-    background: "#f8f9fa",
-    borderRadius: 8,
-    padding: 16,
-    border: "1px solid #e1e5e9",
-  },
-  jobHeader: {
-    display: "flex",
-    justifyContent: "space-between",
-    alignItems: "flex-start",
-    marginBottom: 12,
-  },
-  jobName: {
-    margin: 0,
-    fontSize: 14,
-    fontWeight: 500,
-    color: "#2c3e50",
-    flex: 1,
-    marginRight: 12,
-    lineHeight: 1.4,
-  },
-  jobHeaderControls: {
-    display: "flex",
-    alignItems: "center",
-    gap: 8,
-  },
-  jobRuntime: {
-    fontSize: 11,
-    color: "#6c757d",
-    background: "#f8f9fa",
-    padding: "2px 6px",
-    borderRadius: 4,
-    fontFamily: "'Monaco', 'Menlo', monospace",
-  },
-  jobCompletionTime: {
-    fontSize: 11,
-    color: "#6c757d",
-    background: "#e9ecef",
-    padding: "2px 6px",
-    borderRadius: 4,
-    fontFamily: "'Monaco', 'Menlo', monospace",
-  },
-  paginationControls: {
-    display: "flex",
-    justifyContent: "center",
-    alignItems: "center",
-    gap: 12,
-    margin: "20px 0",
-    padding: 16,
-    background: "#f8f9fa",
-    borderRadius: 8,
-  },
-  paginationButton: {
-    padding: "6px 12px",
-    border: "1px solid #e1e5e9",
-    borderRadius: 4,
-    background: "white",
-    cursor: "pointer",
-    fontSize: 12,
-    fontWeight: 500,
-    "&:hover": {
-      background: "#f8f9fa",
-    },
-    "&:disabled": {
-      opacity: 0.5,
-      cursor: "not-allowed",
-    },
-  },
-  paginationInfo: {
-    fontSize: 12,
-    color: "#6c757d",
-  },
-  expandedJobRow: {
-    background: "white",
-    borderRadius: 8,
-    border: "1px solid #e1e5e9",
-    marginBottom: 12,
-    overflow: "hidden",
-  },
-  expandedJobHeader: {
-    padding: 12,
-    background: "#f8f9fa",
-    borderBottom: "1px solid #e1e5e9",
-    cursor: "pointer",
-    display: "flex",
-    justifyContent: "space-between",
-    alignItems: "center",
-  },
-  expandedJobContent: {
-    padding: 16,
-  },
-  stagesToggle: {
-    background: "#f8f9fa",
-    border: "1px solid #e1e5e9",
-    borderRadius: 6,
-    padding: "4px 8px",
-    fontSize: 11,
-    color: "#6c757d",
-    cursor: "pointer",
-    display: "flex",
-    alignItems: "center",
-    gap: 4,
-    transition: "all 0.2s ease",
-    "&:hover": {
-      background: "#e9ecef",
-      borderColor: "#dee2e6",
-    },
-  },
-  toggleIcon: {
-    fontSize: 10,
-    transition: "transform 0.2s ease",
-  },
-  toggleIconCollapsed: {
-    transform: "rotate(-90deg)",
-  },
-  toggleIconExpanded: {
-    transform: "rotate(0deg)",
-  },
-  jobStatus: {
-    fontSize: 12,
-    fontWeight: 600,
-    padding: "4px 8px",
-    borderRadius: 6,
-    minWidth: 45,
-    textAlign: "center",
-  },
-  jobStatusRunning: {
-    background: "#fff3cd",
-    color: "#856404",
-  },
-  jobStatusComplete: {
-    background: "#d4edda",
-    color: "#155724",
-  },
-  jobStatusCancelled: {
-    background: "#f8d7da",
-    color: "#721c24",
-  },
-  progressContainer: {
-    marginBottom: 12,
-  },
-  progressFooter: {
-    display: "flex",
-    justifyContent: "space-between",
-    alignItems: "center",
-    marginTop: 8,
-  },
-  completionLabel: {
-    fontSize: 11,
-    color: "#6c757d",
-    background: "#e9ecef",
-    padding: "2px 6px",
-    borderRadius: 4,
-    fontFamily: "'Monaco', 'Menlo', monospace",
-  },
-  progressBar: {
-    width: "100%",
-    height: 8,
-    background: "#e9ecef",
-    borderRadius: 4,
-    overflow: "hidden",
-  },
-  progressFill: {
-    height: "100%",
-    borderRadius: 4,
-    transition: "width 0.3s ease",
-  },
-  progressFillRunning: {
-    background: "linear-gradient(90deg, #3498db, #2980b9)",
-  },
-  progressFillBusy: {
-    background:
-      "linear-gradient(45deg, #ff9800 25%, transparent 25%, transparent 50%, #ff9800 50%, #ff9800 75%, transparent 75%, transparent)",
-    backgroundSize: "15px 15px",
-    animation: "$busyProgressStripes 1s linear infinite",
-  },
-  "@keyframes busyProgressStripes": {
-    "0%": {
-      backgroundPosition: "0 0",
-    },
-    "100%": {
-      backgroundPosition: "15px 0",
-    },
-  },
-  progressFillComplete: {
-    background: "linear-gradient(90deg, #27ae60, #229954)",
-  },
-  progressFillCancelled: {
-    background: "linear-gradient(90deg, #dc3545, #c82333)",
-  },
-  jobStatusText: {
-    fontSize: 12,
-    color: "#6c757d",
-    lineHeight: 1.4,
-  },
-  stagesContainer: {
-    marginTop: 16,
-    paddingTop: 12,
-    borderTop: "1px solid #e9ecef",
-  },
-  stagesList: {
-    display: "grid",
-    gap: 8,
-  },
-  stageCard: {
-    background: "#ffffff",
-    border: "1px solid #e9ecef",
-    borderRadius: 6,
-    padding: 12,
-    marginLeft: 20,
-    position: "relative",
-    "&::before": {
-      content: '""',
-      position: "absolute",
-      left: -20,
-      top: "50%",
-      width: 12,
-      height: 1,
-      background: "#dee2e6",
-    },
-  },
-  stageHeader: {
-    display: "flex",
-    alignItems: "center",
-    gap: 8,
-    marginBottom: 8,
-  },
-  stageNumber: {
-    background: "#6c757d",
-    color: "white",
-    width: 18,
-    height: 18,
-    borderRadius: "50%",
-    display: "flex",
-    alignItems: "center",
-    justifyContent: "center",
-    fontSize: 10,
-    fontWeight: 600,
-    flexShrink: 0,
-  },
-  stageName: {
-    margin: 0,
-    fontSize: 13,
-    fontWeight: 500,
-    color: "#495057",
-    flex: 1,
-  },
-  stageStatus: {
-    fontSize: 11,
-    fontWeight: 600,
-    padding: "2px 6px",
-    borderRadius: 4,
-    minWidth: 35,
-    textAlign: "center",
-  },
-  stageStatusRunning: {
-    background: "#fff3cd",
-    color: "#856404",
-  },
-  stageStatusComplete: {
-    background: "#d4edda",
-    color: "#155724",
-  },
-  stageStatusActive: {
-    background: "#cce5ff",
-    color: "#0052cc",
-    position: "relative",
-    "&::after": {
-      content: '"● ACTIVE"',
-      fontSize: 9,
-      fontWeight: 700,
-      marginLeft: 4,
-    },
-  },
-  stageStatusCancelled: {
-    background: "#f8d7da",
-    color: "#721c24",
-  },
-  stageProgressContainer: {
-    marginBottom: 8,
-  },
-  stageProgressBar: {
-    width: "100%",
-    height: 6,
-    background: "#f1f3f4",
-    borderRadius: 3,
-    overflow: "hidden",
-  },
-  stageProgressFill: {
-    height: "100%",
-    borderRadius: 3,
-    transition: "width 0.3s ease",
-  },
-  stageProgressFillRunning: {
-    background: "linear-gradient(90deg, #17a2b8, #138496)",
-  },
-  stageProgressFillComplete: {
-    background: "linear-gradient(90deg, #28a745, #218838)",
-  },
-  stageProgressFillActive: {
-    background: "linear-gradient(90deg, #007acc, #0066b3)",
-  },
-  stageProgressFillCancelled: {
-    background: "linear-gradient(90deg, #dc3545, #c82333)",
-  },
-  stageCardActive: {
-    background: "#f8fcff",
-    border: "2px solid #007acc",
-    boxShadow: "0 2px 8px rgba(0, 122, 204, 0.15)",
-  },
-  stageStatusText: {
-    fontSize: 11,
-    color: "#868e96",
-    lineHeight: 1.3,
-  },
-  activeStageIndicator: {
-    fontSize: 12,
-    color: "#007acc",
-    fontWeight: 600,
-    marginBottom: 8,
-    display: "flex",
-    alignItems: "center",
-    gap: 6,
-    "&::before": {
-      content: '"▶"',
-      fontSize: 10,
-    },
-  },
-  // Mobile responsive styles
-  [theme.breakpoints.down("md")]: {
-    jobsPage: {
-      padding: 16,
-    },
-    jobsHeader: {
-      flexDirection: "column",
-      alignItems: "flex-start",
-      gap: 12,
-    },
-    pluginHeader: {
-      flexWrap: "wrap",
-    },
-    jobHeader: {
-      flexDirection: "column",
-      alignItems: "flex-start",
-      gap: 8,
-    },
-    jobHeaderControls: {
-      width: "100%",
-      justifyContent: "space-between",
-    },
-    stageCard: {
-      marginLeft: 10,
-      "&::before": {
-        left: -10,
-        width: 6,
-      },
-    },
-  },
-}));
+const { cn } = Utils;
 
-// Helper function to determine which stage is currently active
+const JOB_STATUS_DETAILS = {
+  [JobStatus.PENDING]: {
+    icon: <Clock size={16} className="text-gray-500" />,
+    color: "gray",
+    bgColor: "bg-gray-100",
+    textColor: "text-gray-800",
+  },
+  [JobStatus.RUNNING]: {
+    icon: <RefreshCw size={16} className="text-blue-500 animate-spin" />,
+    color: "blue",
+    bgColor: "bg-blue-100",
+    textColor: "text-blue-800",
+  },
+  [JobStatus.DONE]: {
+    icon: <CheckCircle2 size={16} className="text-green-500" />,
+    color: "green",
+    bgColor: "bg-green-100",
+    textColor: "text-green-800",
+  },
+  [JobStatus.FAILED]: {
+    icon: <XCircle size={16} className="text-red-500" />,
+    color: "red",
+    bgColor: "bg-red-100",
+    textColor: "text-red-800",
+  },
+  [JobStatus.CANCELLED]: {
+    icon: <CircleSlash2 size={16} className="text-yellow-500" />,
+    color: "yellow",
+    bgColor: "bg-yellow-100",
+    textColor: "text-yellow-800",
+  },
+  default: {
+    icon: <Info size={16} className="text-gray-500" />,
+    color: "gray",
+    bgColor: "bg-gray-100",
+    textColor: "text-gray-800",
+  },
+};
+
+const getStatusDetails = (status) =>
+  JOB_STATUS_DETAILS[status] || JOB_STATUS_DETAILS.default;
+
+const ProgressBar = ({ progress, status, variant = "default", className }) => {
+  const statusDetails = getStatusDetails(status);
+
+  const isStriped =
+    variant === "striped" &&
+    (status === JobStatus.RUNNING || status === "busy");
+
+  return (
+    <div
+      className={cn(
+        "w-full bg-gray-200 rounded-full h-2 dark:bg-gray-700 overflow-hidden",
+        className
+      )}
+    >
+      <div
+        className={cn("h-2 rounded-full transition-all duration-500", {
+          "bg-blue-500":
+            (status === JobStatus.RUNNING && !isStriped) ||
+            status === JobStatus.PENDING,
+          "bg-green-500": status === JobStatus.DONE,
+          "bg-red-500": status === JobStatus.FAILED,
+          "bg-yellow-500": status === JobStatus.CANCELLED,
+          "bg-orange-400": isStriped,
+          "bg-size-200 animate-progress-stripes": isStriped,
+        })}
+        style={{ width: `${progress}%` }}
+      ></div>
+    </div>
+  );
+};
+
 const findActiveStageIndex = (stages) => {
-  if (!stages || stages.length === 0) return -1;
-
-  // First, find any stage that's explicitly marked as "running" (this handles busy progress cases)
+  if (stages === undefined || stages === null) return -1;
   for (let i = 0; i < stages.length; i++) {
-    const stage = stages[i];
-    if (stage.status === "running") {
+    if (!COMPLETED_STATUSES.includes(stages[i].status)) {
       return i;
     }
   }
-
-  // If no running stage, find the first stage that's not complete (progress < 100) but has some progress (progress > 0)
-  for (let i = 0; i < stages.length; i++) {
-    const stage = stages[i];
-    const progress = Math.round(stage.progress);
-
-    if (progress > 0 && progress < 100) {
-      return i;
-    }
-  }
-
-  // If no stage is actively in progress, find the first stage that hasn't started yet
-  for (let i = 0; i < stages.length; i++) {
-    const stage = stages[i];
-    const progress = Math.round(stage.progress);
-
-    if (progress === 0) {
-      return i;
-    }
-  }
-
-  // If all stages are complete, no stage is active
   return -1;
 };
 
 const StageCard = ({ stage, index, isActive, jobStatus }) => {
-  const classes = useStyles();
-  const progressPercentage = Math.round(stage.progress);
-  const isComplete = progressPercentage >= 100;
-  const isCancelled = jobStatus === JobStatus.CANCELLED;
+  const isCompleted = COMPLETED_STATUSES.includes(jobStatus);
+  const isStageActive = isActive && !isCompleted;
 
-  // Determine the status style based on completion and active state
-  const getStatusClass = () => {
-    if (isCancelled) return classes.stageStatusCancelled;
-    if (isComplete) return classes.stageStatusComplete;
-    if (isActive && !isCancelled) return classes.stageStatusActive;
-    return classes.stageStatusRunning;
-  };
-
-  // Determine the progress fill style
-  const getProgressFillClass = () => {
-    if (isCancelled) return classes.stageProgressFillCancelled;
-    if (isComplete && stage.status !== "running")
-      return classes.stageProgressFillComplete;
-
-    // Show busy stripes only for running stages at 100% progress (busy waiting)
-    if (stage.status === "running" && progressPercentage === 100) {
-      return classes.progressFillBusy; // Orange stripes for busy waiting
-    }
-
-    // Show blue progress for active stages with real progress (0-99%)
-    if (isActive && !isCancelled) {
-      return classes.stageProgressFillActive; // Blue progress bar
-    }
-
-    return classes.stageProgressFillRunning;
-  };
+  // A stage is "busy" if it's the active stage of a running job, but has 0 progress.
+  // This is a convention from ScanQueue which creates stages that wait.
+  const isBusy = isStageActive && stage.progress === 0;
+  const displayStatus = isBusy ? "busy" : stage.status;
+  const statusDetails = getStatusDetails(displayStatus);
 
   return (
     <div
-      className={`${classes.stageCard} ${
-        isActive ? classes.stageCardActive : ""
-      }`}
-    >
-      {isActive && !isCancelled && (
-        <div className={classes.activeStageIndicator}>
-          Currently Active Stage
-        </div>
+      className={cn(
+        "flex-1 p-3 rounded-lg border transition-all duration-300",
+        isStageActive
+          ? "border-blue-500 bg-blue-50/50 shadow-md"
+          : "border-gray-200 bg-white",
+        stage.status === JobStatus.FAILED && "border-red-300 bg-red-50"
       )}
-
-      <div className={classes.stageHeader}>
-        <span className={classes.stageNumber}>{index + 1}</span>
-        <h5 className={classes.stageName}>{stage.name}</h5>
-        <span className={`${classes.stageStatus} ${getStatusClass()}`}>
-          {stage.status === "running" && progressPercentage === 100
-            ? "Busy"
-            : `${progressPercentage}%`}
-        </span>
-      </div>
-
-      <div className={classes.stageProgressContainer}>
-        <div className={classes.stageProgressBar}>
-          <div
-            className={`${classes.stageProgressFill} ${getProgressFillClass()}`}
-            style={{ width: `${progressPercentage}%` }}
-          />
+    >
+      <div className="flex justify-between items-center mb-2">
+        <div className="flex items-center gap-2">
+          {isStageActive && !isBusy && (
+            <RefreshCw size={14} className="animate-spin text-blue-600" />
+          )}
+          <h6 className="font-semibold text-sm text-gray-800">{stage.name}</h6>
         </div>
+        <Components.Badge
+          variant={
+            isBusy
+              ? "warning"
+              : stage.status === JobStatus.DONE
+              ? "success"
+              : "default"
+          }
+          className="capitalize"
+        >
+          {displayStatus}
+        </Components.Badge>
       </div>
-
-      <div className={classes.stageStatusText}>{stage.statusText}</div>
+      <ProgressBar
+        className="mb-4 mt-4"
+        progress={isBusy ? 100 : stage.progress}
+        status={displayStatus}
+        variant={isBusy ? "striped" : "default"}
+      />
+      <p className="text-xs text-gray-500 h-4">{stage.statusText}</p>
     </div>
   );
 };
 
-const JobCard = ({ job }) => {
-  const classes = useStyles();
-  const [stagesCollapsed, setStagesCollapsed] = useState(false);
-  const progressPercentage = Math.round(job.progress);
-  const isComplete = progressPercentage >= 100;
-  const isCancelled = job.status === JobStatus.CANCELLED;
-  const isFinished =
-    isComplete ||
-    isCancelled ||
-    job.status === JobStatus.DONE ||
-    job.status === JobStatus.FAILED;
-  const hasStages = job.stages && job.stages.length > 0;
+const JobCard = ({ job, isExpanded, onToggleExpand }) => {
+  const activeStageIndex = useMemo(
+    () => findActiveStageIndex(job.stages),
+    [job.stages]
+  );
 
-  // Determine which stage is currently active (only if job is not cancelled)
-  const activeStageIndex =
-    hasStages && !isCancelled ? findActiveStageIndex(job.stages) : -1;
-  const activeStage =
-    activeStageIndex >= 0 ? job.stages[activeStageIndex] : null;
+  const statusBorderColor = useMemo(() => {
+    switch (job.status) {
+      case JobStatus.RUNNING:
+        return "border-blue-500";
+      case JobStatus.DONE:
+        return "border-green-500";
+      case JobStatus.FAILED:
+        return "border-red-500";
+      case JobStatus.CANCELLED:
+        return "border-yellow-500";
+      default:
+        return "border-gray-400";
+    }
+  }, [job.status]);
+
+  const completedStages = job.stages.filter((s) =>
+    COMPLETED_STATUSES.includes(s.status)
+  ).length;
 
   return (
-    <div className={classes.jobCard}>
-      <div className={classes.jobHeader}>
-        <h4 className={classes.jobName}>{job.name}</h4>
-        <div className={classes.jobHeaderControls}>
-          <span
-            className={classes.jobRuntime}
-            title={`Started: ${new Date(
-              job.created_at
-            ).toLocaleString()}\nLast updated: ${new Date(
-              job.updated_at
-            ).toLocaleString()}`}
-          >
-            {formatRuntime(job.created_at, job.updated_at)}
-          </span>
-          {hasStages && (
-            <button
-              className={classes.stagesToggle}
-              onClick={() => setStagesCollapsed(!stagesCollapsed)}
-              title={stagesCollapsed ? "Show stages" : "Hide stages"}
-            >
-              <span
-                className={`${classes.toggleIcon} ${
-                  stagesCollapsed
-                    ? classes.toggleIconCollapsed
-                    : classes.toggleIconExpanded
-                }`}
+    <Components.Card
+      className={cn(
+        "overflow-hidden transition-shadow hover:shadow-md",
+        statusBorderColor
+      )}
+    >
+      <div
+        className="p-4 cursor-pointer"
+        onClick={job.stages.length > 0 ? onToggleExpand : undefined}
+      >
+        <div className="flex justify-between items-start">
+          <h5 className="font-bold text-gray-800 flex-1 pr-4">{job.name}</h5>
+          <div className="flex items-center gap-3 text-xs text-gray-500">
+            <span>{formatRuntime(job.created_at, job.completed_at)}</span>
+            <span className="flex items-center gap-1.5">
+              <ListFilter size={14} />
+              {job.stages.length > 0
+                ? `${completedStages} / ${job.stages.length} stages`
+                : `${job.progress}%`}
+            </span>
+            {job.stages.length > 0 && (
+              <Components.Button
+                variant="ghost"
+                size="icon"
+                className="h-6 w-6"
               >
-                ▼
-              </span>
-              {job.stages.length} stage{job.stages.length !== 1 ? "s" : ""}
-            </button>
-          )}
-          <span
-            className={`${classes.jobStatus} ${
-              isCancelled
-                ? classes.jobStatusCancelled
-                : isComplete
-                ? classes.jobStatusComplete
-                : classes.jobStatusRunning
-            }`}
-          >
-            {progressPercentage}%
-          </span>
-        </div>
-      </div>
-
-      <div className={classes.progressContainer}>
-        <div className={classes.progressBar}>
-          <div
-            className={`${classes.progressFill} ${
-              isCancelled
-                ? classes.progressFillCancelled
-                : isComplete
-                ? classes.progressFillComplete
-                : classes.progressFillRunning
-            }`}
-            style={{ width: `${progressPercentage}%` }}
-          />
-        </div>
-        <div className={classes.progressFooter}>
-          <div className={classes.jobStatusText}>
-            {job.statusText}
-            {activeStage && !isComplete && !isCancelled && (
-              <div style={{ marginTop: 4, fontWeight: 500, color: "#007acc" }}>
-                Currently running: {activeStage.name}
-              </div>
+                {isExpanded ? (
+                  <ChevronUp size={18} />
+                ) : (
+                  <ChevronDown size={18} />
+                )}
+              </Components.Button>
             )}
           </div>
-          {isFinished && (
-            <span
-              className={classes.completionLabel}
-              title={`${isCancelled ? "Cancelled" : "Completed"}: ${new Date(
-                job.updated_at
-              ).toLocaleString()}`}
-            >
-              {isCancelled ? "Cancelled at" : "Completed at"}{" "}
-              {formatCompletionTime(job.updated_at)}
-            </span>
-          )}
+        </div>
+
+        <div className="mt-2 mb-3">
+          <ProgressBar progress={job.progress} status={job.status} />
+        </div>
+
+        <div className="flex justify-between items-center text-xs text-gray-500">
+          <p className="truncate pr-4">
+            Currently running:{" "}
+            <span className="font-medium text-gray-600">{job.statusText}</span>
+          </p>
+          <p className="flex-shrink-0">
+            {COMPLETED_STATUSES.includes(job.status)
+              ? `Completed ${formatCompletionTime(job.completed_at)}`
+              : `Remaining: ${job.remainingTime || "Calculating..."}`}
+          </p>
         </div>
       </div>
-
-      {hasStages && !stagesCollapsed && (
-        <div className={classes.stagesContainer}>
-          <div className={classes.stagesList}>
+      {isExpanded && job.stages && job.stages.length > 0 && (
+        <div className="p-4 bg-gray-50/70 border-t">
+          <h6 className="text-xs font-bold uppercase text-gray-500 mb-2 pl-13">
+            Stages
+          </h6>
+          <div className="flex flex-col gap-3">
             {job.stages.map((stage, index) => (
-              <StageCard
-                key={stage.id}
-                stage={stage}
-                index={index}
-                isActive={index === activeStageIndex}
-                jobStatus={job.status}
-              />
+              <div className="flex flex-row items-center gap-3">
+                <Components.Separator className="w-[40px]" />
+                <StageCard
+                  key={index}
+                  stage={stage}
+                  index={index}
+                  isActive={index === activeStageIndex}
+                  jobStatus={job.status}
+                />
+              </div>
             ))}
           </div>
         </div>
       )}
-    </div>
+    </Components.Card>
   );
 };
 
-const PluginSection = ({ plugin, jobs, isCollapsed, onToggleCollapse }) => {
-  const classes = useStyles();
-  const hasJobs = jobs && jobs.length > 0;
+const PluginSection = ({
+  plugin,
+  jobs,
+  expandedJobs,
+  onToggleJobExpand,
+  isCollapsed,
+  onToggleCollapse,
+}) => {
+  const getPluginIcon = (pluginName) => {
+    switch (pluginName) {
+      case "CoreAPI":
+        return <Database size={20} className="text-blue-500" />;
+      case "Docker":
+        return <Server size={20} className="text-cyan-500" />;
+      case "Nmap":
+      case "HttpX":
+      case "Gowitness":
+        return <Cpu size={20} className="text-green-500" />;
+      case "ScanQueue":
+        return <Shuffle size={20} className="text-purple-500" />;
+      default:
+        return <Info size={20} className="text-gray-500" />;
+    }
+  };
 
   return (
-    <div className={classes.pluginSection}>
-      <div
-        className={classes.pluginHeader}
-        onClick={() => onToggleCollapse(plugin)}
+    <Components.Card className="mb-6">
+      <Components.CardHeader
+        className="flex items-center justify-between p-4 cursor-pointer hover:bg-gray-50 flex-row"
+        onClick={onToggleCollapse}
       >
-        <h3 className={classes.pluginName}>{plugin}</h3>
-        <span className={classes.pluginId}>{plugin}</span>
-        {hasJobs && (
-          <span className={classes.jobCount}>
-            {jobs.length} job{jobs.length !== 1 ? "s" : ""}
-          </span>
-        )}
-        <span
-          className={`${classes.collapseIcon} ${
-            isCollapsed ? classes.collapseIconCollapsed : ""
-          }`}
-        >
-          ▼
-        </span>
-      </div>
-
-      {!isCollapsed &&
-        (hasJobs ? (
-          <div className={classes.jobsList}>
-            {jobs.map((job) => (
-              <JobCard key={job.id} job={job} />
-            ))}
-          </div>
-        ) : (
-          <div className={classes.noJobs}>No active jobs</div>
-        ))}
-    </div>
-  );
-};
-
-const ExpandedJobRow = ({ job, isExpanded, onToggle }) => {
-  const classes = useStyles();
-  const progressPercentage = Math.round(job.progress);
-  const isComplete = progressPercentage >= 100;
-  const isCancelled = job.status === JobStatus.CANCELLED;
-  const isFinished =
-    isComplete ||
-    isCancelled ||
-    job.status === JobStatus.DONE ||
-    job.status === JobStatus.FAILED;
-
-  return (
-    <div className={classes.expandedJobRow}>
-      <div className={classes.expandedJobHeader} onClick={onToggle}>
-        <div style={{ display: "flex", alignItems: "center", gap: 12 }}>
-          <span style={{ fontSize: 11, color: "#6c757d" }}>{job.plugin}</span>
-          <span style={{ fontWeight: 500 }}>{job.name}</span>
-          <span className={classes.jobRuntime}>
-            {formatRuntime(job.created_at, job.updated_at)}
-          </span>
+        <div className="flex flex-row items-center gap-3 flex-1">
+          {getPluginIcon(plugin)}
+          <h4 className="font-bold mb-0!">{plugin}</h4>
         </div>
-        <div style={{ display: "flex", alignItems: "center", gap: 8 }}>
-          <span style={{ fontSize: 12, color: "#6c757d" }}>
-            {Math.round(job.progress)}%
-          </span>
-          <span style={{ fontSize: 12 }}>{isExpanded ? "▼" : "▶"}</span>
+        <div className="flex items-center gap-3">
+          <Components.Badge>{`${jobs.length} Jobs`}</Components.Badge>
+          <Components.Button variant="ghost" size="icon">
+            {isCollapsed ? <ChevronDown size={20} /> : <ChevronUp size={20} />}
+          </Components.Button>
         </div>
-      </div>
-      {isExpanded && (
-        <div className={classes.expandedJobContent}>
-          <JobCard job={job} />
-        </div>
+      </Components.CardHeader>
+      {!isCollapsed && (
+        <Components.CardContent className="p-4 space-y-4">
+          {jobs.length > 0 ? (
+            jobs.map((job) => {
+              const _job = { ...job, stages: job.stages || [] };
+              return (
+                <JobCard
+                  key={job.id}
+                  job={_job}
+                  isExpanded={expandedJobs[job.id]}
+                  onToggleExpand={() => onToggleJobExpand(job.id)}
+                />
+              );
+            })
+          ) : (
+            <p className="text-center text-gray-500 py-4">
+              No jobs for this plugin.
+            </p>
+          )}
+        </Components.CardContent>
       )}
-    </div>
+    </Components.Card>
   );
 };
 
 const JobsPage = () => {
-  const classes = useStyles();
-  const [filterMode, setFilterMode] = useState("active");
-  const [currentPage, setCurrentPage] = useState(0);
-  const [expandedJobs, setExpandedJobs] = useState(new Set());
-  const [collapsedPlugins, setCollapsedPlugins] = useState(new Set());
-  const [hideCancelled, setHideCancelled] = useState(false);
-  const [freezeSort, setFreezeSort] = useState(false);
-  const [frozenPluginOrder, setFrozenPluginOrder] = useState([]);
-  const [lastStableOrder, setLastStableOrder] = useState([]);
+  const [filter, setFilter] = useState("active");
   const [jobs, setJobs] = useState([]);
-  const [clearDialogOpen, setClearDialogOpen] = useState(false);
-  const pageSize = 20;
+  const [groupedJobs, setGroupedJobs] = useState({});
+  const [expandedJobs, setExpandedJobs] = useState({});
+  const [collapsedPlugins, setCollapsedPlugins] = useState({});
+  const [freezeSort, setFreezeSort] = useState(false);
+  const [showClearConfirm, setShowClearConfirm] = useState(false);
+  const [showCompleted, setShowCompleted] = useState(true);
 
-  // Clear all jobs mutation
-  const [clearAllJobs, { loading: clearingJobs }] = useMutation(ClearAllJobs, {
-    onCompleted: (data) => {
-      if (data?.clearAllJobs?.error) {
-        console.error("Error clearing jobs:", data.clearAllJobs.error);
-        alert(`Error clearing jobs: ${data.clearAllJobs.error}`);
-      } else {
-        console.log(
-          `Successfully cleared ${data.clearAllJobs.deletedCount} jobs`
-        );
-        // Clear local jobs state immediately for instant UI update
-        setJobs([]);
-        setClearDialogOpen(false);
-      }
-    },
-    onError: (error) => {
-      console.error("GraphQL error clearing jobs:", error);
-      alert(`Error clearing jobs: ${error.message}`);
-      setClearDialogOpen(false);
-    },
-  });
-
-  // Stability threshold: only reorder if time difference is > 30 seconds
-  const STABILITY_THRESHOLD_MS = 30 * 1000; // 30 seconds
-
-  // Initial query to load data
   const { loading, error, data, refetch } = useQuery(GetAllJobs, {
-    variables: {
-      limit: filterMode === "all" ? pageSize : 1000,
-      offset: filterMode === "all" ? currentPage * pageSize : 0,
-      filterMode: filterMode,
+    variables: { filter: "all" }, // Always fetch all, filter on client
+    fetchPolicy: "cache-and-network",
+    onCompleted: (data) => {
+      if (!freezeSort) {
+        setJobs(data.getAllJobs.jobs);
+      }
     },
-    notifyOnNetworkStatusChange: true,
   });
 
-  // Subscription for job updates
-  const { data: updateSubscriptionData } = useSubscription(JobsSubscription, {
+  const [clearAllJobs] = useMutation(ClearAllJobs, {
+    refetchQueries: [{ query: GetAllJobs, variables: { filter: "all" } }],
+  });
+
+  useSubscription(JobsSubscription, {
     onData: ({ data }) => {
-      if (data?.data?.jobUpdated) {
-        const updatedJob = data.data.jobUpdated;
-
-        setJobs((prev) => {
-          const jobIndex = prev.findIndex((job) => job.id === updatedJob.id);
-          if (jobIndex >= 0) {
-            // Update existing job
-            const updated = [...prev];
-            updated[jobIndex] = updatedJob;
-            return updated;
-          } else {
-            // Add new job if it doesn't exist
-            return [updatedJob, ...prev];
-          }
-        });
-      }
-    },
-    onError: (error) => {
-      console.warn("Jobs update subscription error:", error);
+      if (freezeSort) return;
+      const updatedJob = data.data.jobUpdated;
+      setJobs((prevJobs) => {
+        const index = prevJobs.findIndex((job) => job.id === updatedJob.id);
+        if (index > -1) {
+          const newJobs = [...prevJobs];
+          newJobs[index] = updatedJob;
+          return newJobs;
+        }
+        return prevJobs;
+      });
     },
   });
 
-  // Subscription for job creation
-  const { data: createSubscriptionData } = useSubscription(
-    JobCreatedSubscription,
-    {
-      onData: ({ data }) => {
-        if (data?.data?.jobCreated) {
-          const newJob = data.data.jobCreated;
+  useSubscription(JobCreatedSubscription, {
+    onData: ({ data }) => {
+      if (freezeSort) return;
+      const newJob = data.data.jobCreated;
+      setJobs((prevJobs) => [newJob, ...prevJobs]);
+    },
+  });
 
-          setJobs((prev) => {
-            // Check if job already exists to avoid duplicates
-            const exists = prev.some((job) => job.id === newJob.id);
-            if (!exists) {
-              return [newJob, ...prev];
-            }
-            return prev;
-          });
-        }
-      },
-      onError: (error) => {
-        console.warn("Jobs creation subscription error:", error);
-      },
-    }
-  );
+  useSubscription(JobDeletedSubscription, {
+    onData: ({ data }) => {
+      if (freezeSort) return;
+      const deletedJobId = data.data.jobDeleted;
+      setJobs((prevJobs) => prevJobs.filter((job) => job.id !== deletedJobId));
+    },
+  });
 
-  // Subscription for job deletion
-  const { data: deleteSubscriptionData } = useSubscription(
-    JobDeletedSubscription,
-    {
-      onData: ({ data }) => {
-        if (data?.data?.jobDeleted) {
-          const deletedJobId = data.data.jobDeleted;
-
-          setJobs((prev) => prev.filter((job) => job.id !== deletedJobId));
-        }
-      },
-      onError: (error) => {
-        console.warn("Jobs deletion subscription error:", error);
-      },
-    }
-  );
-
-  // Update local jobs state when query data changes
   useEffect(() => {
-    if (data?.getAllJobs?.jobs) {
-      setJobs(data.getAllJobs.jobs);
-    }
-  }, [data]);
+    let filteredJobs = jobs;
 
-  // Refetch when filter mode or pagination changes
-  useEffect(() => {
-    refetch({
-      limit: filterMode === "all" ? pageSize : 1000,
-      offset: filterMode === "all" ? currentPage * pageSize : 0,
-      filterMode: filterMode,
-    });
-  }, [filterMode, currentPage, refetch]);
-
-  // Update stable order when needed (moved to top to follow Rules of Hooks)
-  useEffect(() => {
-    if (!freezeSort && jobs.length > 0) {
-      const filteredJobs = hideCancelled
-        ? jobs.filter((job) => job.status !== JobStatus.CANCELLED)
-        : jobs;
-
-      const jobsByPlugin = filteredJobs.reduce((acc, job) => {
-        const plugin = job.plugin || "Unknown";
-        if (!acc[plugin]) {
-          acc[plugin] = [];
-        }
-        acc[plugin].push(job);
-        return acc;
-      }, {});
-
-      const pluginsWithJobs = Object.keys(jobsByPlugin).filter(
-        (plugin) => jobsByPlugin[plugin].length > 0
+    if (filter === "active") {
+      filteredJobs = jobs.filter(
+        (job) => !COMPLETED_STATUSES.includes(job.status)
       );
-
-      if (pluginsWithJobs.length === 0) return;
-
-      // Calculate plugin timestamps for sorting
-      const pluginTimestamps = {};
-      pluginsWithJobs.forEach((plugin) => {
-        const jobs = jobsByPlugin[plugin];
-        pluginTimestamps[plugin] = Math.max(
-          ...jobs.map((job) => new Date(job.created_at).getTime())
-        );
+    } else if (filter === "recent") {
+      const now = new Date();
+      const twentyFourHoursAgo = now.getTime() - 24 * 60 * 60 * 1000;
+      filteredJobs = jobs.filter((job) => {
+        const createdAt = new Date(job.created_at).getTime();
+        return createdAt > twentyFourHoursAgo;
       });
-
-      // Determine if we need to reorder
-      let needsReorder = false;
-      let needsReorderForNewPlugins = false;
-
-      if (lastStableOrder.length > 0) {
-        // Check if we need to reorder based on stability threshold
-        needsReorder = lastStableOrder.some((plugin, index) => {
-          const nextPlugin = lastStableOrder[index + 1];
-          if (
-            !nextPlugin ||
-            !pluginTimestamps[plugin] ||
-            !pluginTimestamps[nextPlugin]
-          ) {
-            return false;
-          }
-
-          // If a lower-ranked plugin is now significantly newer, reorder
-          const timeDiff =
-            pluginTimestamps[nextPlugin] - pluginTimestamps[plugin];
-          return timeDiff > STABILITY_THRESHOLD_MS;
-        });
-
-        // Also check for new plugins that are significantly newer than the top plugin
-        const newPlugins = pluginsWithJobs.filter(
-          (plugin) => !lastStableOrder.includes(plugin)
-        );
-        needsReorderForNewPlugins = newPlugins.some((newPlugin) => {
-          const topPlugin = lastStableOrder[0];
-          if (!topPlugin || !pluginTimestamps[topPlugin]) return true;
-
-          const timeDiff =
-            pluginTimestamps[newPlugin] - pluginTimestamps[topPlugin];
-          return timeDiff > STABILITY_THRESHOLD_MS;
-        });
-      }
-
-      // Update stable order when needed
-      if (
-        needsReorder ||
-        needsReorderForNewPlugins ||
-        lastStableOrder.length === 0
-      ) {
-        const newOrder = pluginsWithJobs.sort((pluginA, pluginB) => {
-          return pluginTimestamps[pluginB] - pluginTimestamps[pluginA];
-        });
-        setLastStableOrder(newOrder);
-      }
     }
-  }, [
-    jobs,
-    hideCancelled,
-    freezeSort,
-    lastStableOrder,
-    STABILITY_THRESHOLD_MS,
-  ]);
+
+    if (!showCompleted && filter === "all") {
+      filteredJobs = jobs.filter(
+        (job) => !COMPLETED_STATUSES.includes(job.status)
+      );
+    }
+
+    const groups = filteredJobs.reduce((acc, job) => {
+      const plugin = job.plugin || "Unassigned";
+      if (!acc[plugin]) {
+        acc[plugin] = [];
+      }
+      acc[plugin].push(job);
+      return acc;
+    }, {});
+    setGroupedJobs(groups);
+  }, [jobs, filter, showCompleted]);
 
   const toggleJobExpansion = (jobId) => {
-    const newExpanded = new Set(expandedJobs);
-    if (newExpanded.has(jobId)) {
-      newExpanded.delete(jobId);
-    } else {
-      newExpanded.add(jobId);
-    }
-    setExpandedJobs(newExpanded);
+    setExpandedJobs((prev) => ({ ...prev, [jobId]: !prev[jobId] }));
   };
 
   const togglePluginCollapse = (pluginName) => {
-    const newCollapsed = new Set(collapsedPlugins);
-    if (newCollapsed.has(pluginName)) {
-      newCollapsed.delete(pluginName);
-    } else {
-      newCollapsed.add(pluginName);
-    }
-    setCollapsedPlugins(newCollapsed);
+    setCollapsedPlugins((prev) => ({
+      ...prev,
+      [pluginName]: !prev[pluginName],
+    }));
   };
 
-  const handleFilterChange = (newFilter) => {
-    setFilterMode(newFilter);
-    setCurrentPage(0);
-    setExpandedJobs(new Set());
-    // Reset freeze and stable order when changing filters
-    setFreezeSort(false);
-    setFrozenPluginOrder([]);
-    setLastStableOrder([]);
-  };
-
-  const toggleFreezeSort = () => {
-    if (!freezeSort) {
-      // About to freeze - save current plugin order
-      const filteredJobs = hideCancelled
-        ? jobs.filter((job) => job.status !== JobStatus.CANCELLED)
-        : jobs;
-
-      const jobsByPlugin = filteredJobs.reduce((acc, job) => {
-        const plugin = job.plugin || "Unknown";
-        if (!acc[plugin]) {
-          acc[plugin] = [];
-        }
-        acc[plugin].push(job);
-        return acc;
-      }, {});
-
-      const pluginsWithJobs = Object.keys(jobsByPlugin).filter(
-        (plugin) => jobsByPlugin[plugin].length > 0
-      );
-
-      // Sort plugins by most recent job creation time to capture current order
-      const currentSortedPlugins = pluginsWithJobs.sort((pluginA, pluginB) => {
-        const jobsA = jobsByPlugin[pluginA];
-        const jobsB = jobsByPlugin[pluginB];
-
-        const mostRecentA = Math.max(
-          ...jobsA.map((job) => new Date(job.created_at).getTime())
-        );
-        const mostRecentB = Math.max(
-          ...jobsB.map((job) => new Date(job.created_at).getTime())
-        );
-
-        return mostRecentB - mostRecentA;
-      });
-
-      setFrozenPluginOrder(currentSortedPlugins);
-    }
-
-    setFreezeSort(!freezeSort);
-  };
-
-  const handleClearAllJobs = () => {
-    setClearDialogOpen(true);
-  };
-
+  const handleClearAllJobs = () => setShowClearConfirm(true);
   const handleConfirmClearJobs = () => {
     clearAllJobs();
+    setShowClearConfirm(false);
   };
+  const handleCancelClearJobs = () => setShowClearConfirm(false);
 
-  const handleCancelClearJobs = () => {
-    setClearDialogOpen(false);
-  };
+  const activeJobsCount = jobs.filter(
+    (job) => !COMPLETED_STATUSES.includes(job.status)
+  ).length;
 
-  if (loading) {
+  if (loading && jobs.length === 0)
     return (
-      <div className={classes.jobsPageLoading}>
-        <div className={classes.loadingSpinner}></div>
-        <p>Loading jobs...</p>
+      <div className="flex items-center justify-center h-screen">
+        <RefreshCw className="w-10 h-10 text-blue-500 animate-spin" />
       </div>
     );
-  }
-
-  if (error) {
+  if (error)
     return (
-      <div className={classes.jobsPageError}>
-        <h3>Error loading jobs</h3>
+      <div className="flex flex-col items-center justify-center h-screen text-red-500">
+        <XCircle size={48} className="mb-4" />
+        <h2 className="text-2xl font-bold mb-2">Error loading jobs</h2>
         <p>{error.message}</p>
       </div>
     );
-  }
-
-  const allJobs = jobs; // Using state instead of query data
-  const totalCount = data?.getAllJobs?.totalCount || 0;
-  const hasMore = data?.getAllJobs?.hasMore || false;
-
-  // Filter out cancelled jobs if toggle is enabled
-  const filteredJobs = hideCancelled
-    ? allJobs.filter((job) => job.status !== JobStatus.CANCELLED)
-    : allJobs;
-
-  // For "all" mode, show paginated table
-  if (filterMode === "all") {
-    const totalPages = Math.ceil(totalCount / pageSize);
-    const canGoNext = hasMore;
-    const canGoPrev = currentPage > 0;
-
-    return (
-      <div className={classes.jobsPage}>
-        <div className={classes.jobsHeader}>
-          <h2 className={classes.jobsHeaderTitle}>Plugin Jobs</h2>
-          <div className={classes.jobsSummary}>
-            <span className={classes.noActiveJobs}>
-              {totalCount} total job{totalCount !== 1 ? "s" : ""}
-            </span>
-            {freezeSort && (
-              <span
-                style={{
-                  marginLeft: 12,
-                  background: "#e3f2fd",
-                  color: "#1565c0",
-                  padding: "6px 12px",
-                  borderRadius: 20,
-                  fontSize: 12,
-                  fontWeight: 500,
-                }}
-              >
-                🧊 Sort frozen
-              </span>
-            )}
-          </div>
-        </div>
-
-        <div className={classes.filterControls}>
-          <button
-            className={`${classes.filterButton} ${
-              filterMode === "active" ? classes.filterButtonActive : ""
-            }`}
-            onClick={() => handleFilterChange("active")}
-          >
-            Show Active Jobs
-          </button>
-          <button
-            className={`${classes.filterButton} ${
-              filterMode === "recent" ? classes.filterButtonActive : ""
-            }`}
-            onClick={() => handleFilterChange("recent")}
-          >
-            Show Recent Jobs (24h)
-          </button>
-          <button
-            className={`${classes.filterButton} ${
-              filterMode === "all" ? classes.filterButtonActive : ""
-            }`}
-            onClick={() => handleFilterChange("all")}
-          >
-            Show All Jobs
-          </button>
-          <label className={classes.toggleControl}>
-            <input
-              type="checkbox"
-              className={classes.toggleCheckbox}
-              checked={hideCancelled}
-              onChange={(e) => setHideCancelled(e.target.checked)}
-            />
-            Hide Cancelled Jobs
-          </label>
-          <button
-            className={`${classes.filterButton} ${
-              freezeSort ? classes.filterButtonActive : ""
-            }`}
-            onClick={toggleFreezeSort}
-            title={
-              freezeSort ? "Resume live updates" : "Freeze sorting and updates"
-            }
-          >
-            {freezeSort ? "🧊 Sort Frozen" : "❄️ Freeze Sort"}
-          </button>
-          <button
-            className={classes.clearAllButton}
-            onClick={handleClearAllJobs}
-            disabled={clearingJobs || totalCount === 0}
-            title="Clear all jobs from datastore (ALL users)"
-          >
-            <DeleteSweepIcon style={{ fontSize: 14 }} />
-            {clearingJobs ? "Clearing..." : "Clear All Jobs"}
-          </button>
-        </div>
-
-        <div style={{ marginBottom: 16 }}>
-          {filteredJobs.map((job) => (
-            <ExpandedJobRow
-              key={job.id}
-              job={job}
-              isExpanded={expandedJobs.has(job.id)}
-              onToggle={() => toggleJobExpansion(job.id)}
-            />
-          ))}
-          {filteredJobs.length === 0 && (
-            <div className={classes.noJobs}>No jobs found</div>
-          )}
-        </div>
-
-        {totalCount > pageSize && (
-          <div className={classes.paginationControls}>
-            <button
-              className={classes.paginationButton}
-              onClick={() => setCurrentPage(currentPage - 1)}
-              disabled={!canGoPrev}
-            >
-              Previous
-            </button>
-            <span className={classes.paginationInfo}>
-              Page {currentPage + 1} of {totalPages} ({totalCount} total jobs)
-            </span>
-            <button
-              className={classes.paginationButton}
-              onClick={() => setCurrentPage(currentPage + 1)}
-              disabled={!canGoNext}
-            >
-              Next
-            </button>
-          </div>
-        )}
-
-        {/* Clear All Jobs Confirmation Dialog */}
-        <Dialog
-          open={clearDialogOpen}
-          onClose={handleCancelClearJobs}
-          maxWidth="sm"
-          fullWidth
-        >
-          <DialogTitle>Confirm Clear All Jobs</DialogTitle>
-          <DialogContent>
-            <DialogContentText>
-              Warning: This will clear all logs of plugin jobs for ALL users.
-              This action cannot be undone. Are you sure you want to continue?
-            </DialogContentText>
-          </DialogContent>
-          <DialogActions>
-            <Button onClick={handleCancelClearJobs} color="primary">
-              Cancel
-            </Button>
-            <Button
-              onClick={handleConfirmClearJobs}
-              color="error"
-              variant="contained"
-              disabled={clearingJobs}
-            >
-              {clearingJobs ? "Clearing..." : "Clear All Jobs"}
-            </Button>
-          </DialogActions>
-        </Dialog>
-      </div>
-    );
-  }
-
-  // For "active" and "recent" modes, show grouped by plugin
-  const jobsByPlugin = filteredJobs.reduce((acc, job) => {
-    const plugin = job.plugin || "Unknown";
-    if (!acc[plugin]) {
-      acc[plugin] = [];
-    }
-    acc[plugin].push(job);
-    return acc;
-  }, {});
-
-  const pluginsWithJobs = Object.keys(jobsByPlugin).filter(
-    (plugin) => jobsByPlugin[plugin].length > 0
-  );
-
-  // Sort plugins by most recent job creation time (unless frozen)
-  const sortedPlugins = freezeSort
-    ? frozenPluginOrder
-        .filter((plugin) => pluginsWithJobs.includes(plugin))
-        .concat(
-          pluginsWithJobs.filter(
-            (plugin) => !frozenPluginOrder.includes(plugin)
-          )
-        )
-    : lastStableOrder.length > 0
-    ? // Use stable order + any new plugins at the end
-      lastStableOrder
-        .filter((plugin) => pluginsWithJobs.includes(plugin))
-        .concat(
-          pluginsWithJobs.filter((plugin) => !lastStableOrder.includes(plugin))
-        )
-    : // Fallback to simple sort if no stable order exists yet
-      pluginsWithJobs.sort((pluginA, pluginB) => {
-        const jobsA = jobsByPlugin[pluginA];
-        const jobsB = jobsByPlugin[pluginB];
-        const timestampA = Math.max(
-          ...jobsA.map((job) => new Date(job.created_at).getTime())
-        );
-        const timestampB = Math.max(
-          ...jobsB.map((job) => new Date(job.created_at).getTime())
-        );
-        return timestampB - timestampA;
-      });
-
-  // Calculate truly active jobs from all jobs (not filtered display jobs)
-  const activeJobs = allJobs.filter(
-    (job) =>
-      job.progress < 100 &&
-      job.status !== JobStatus.CANCELLED &&
-      job.status !== JobStatus.DONE &&
-      job.status !== JobStatus.FAILED
-  );
 
   return (
-    <div className={classes.jobsPage}>
-      <div className={classes.jobsHeader}>
-        <h2 className={classes.jobsHeaderTitle}>Plugin Jobs</h2>
-        <div className={classes.jobsSummary}>
-          {activeJobs.length > 0 ? (
-            <span className={classes.activeJobs}>
-              {activeJobs.length} active job{activeJobs.length !== 1 ? "s" : ""}{" "}
-              running
-            </span>
-          ) : (
-            <span className={classes.noActiveJobs}>No active jobs</span>
-          )}
-          {freezeSort && (
-            <span
-              style={{
-                marginLeft: 12,
-                background: "#e3f2fd",
-                color: "#1565c0",
-                padding: "6px 12px",
-                borderRadius: 20,
-                fontSize: 12,
-                fontWeight: 500,
-              }}
-            >
-              🧊 Sort frozen
-            </span>
-          )}
-          {!freezeSort && lastStableOrder.length > 0 && (
-            <span
-              style={{
-                marginLeft: 12,
-                background: "#f1f8e9",
-                color: "#33691e",
-                padding: "6px 12px",
-                borderRadius: 20,
-                fontSize: 12,
-                fontWeight: 500,
-              }}
-              title="Plugins sorted with 30s stability threshold to prevent constant reshuffling"
-            >
-              📌 Stable sort
-            </span>
-          )}
+    <div className="p-6 max-w-7xl mx-auto font-sans">
+      <Components.Card className="mb-6 p-6 pb-2">
+        <div className="flex justify-between items-center mb-6 pb-4 border-b border-gray-200">
+          <div>
+            <h2 className="text-2xl font-bold mb-2">Job Tracker</h2>
+            <p className="text-gray-500">
+              Real-time monitoring of background tasks and processes.
+            </p>
+          </div>
+          <Components.Badge
+            variant={activeJobsCount > 0 ? "success" : "default"}
+          >
+            {activeJobsCount > 0
+              ? `${activeJobsCount} Active Jobs`
+              : "No Active Jobs"}
+          </Components.Badge>
         </div>
-      </div>
 
-      <div className={classes.filterControls}>
-        <button
-          className={`${classes.filterButton} ${
-            filterMode === "active" ? classes.filterButtonActive : ""
-          }`}
-          onClick={() => handleFilterChange("active")}
-        >
-          Show Active Jobs
-        </button>
-        <button
-          className={`${classes.filterButton} ${
-            filterMode === "recent" ? classes.filterButtonActive : ""
-          }`}
-          onClick={() => handleFilterChange("recent")}
-        >
-          Show Recent Jobs (24h)
-        </button>
-        <button
-          className={`${classes.filterButton} ${
-            filterMode === "all" ? classes.filterButtonActive : ""
-          }`}
-          onClick={() => handleFilterChange("all")}
-        >
-          Show All Jobs
-        </button>
-        <label className={classes.toggleControl}>
-          <input
-            type="checkbox"
-            className={classes.toggleCheckbox}
-            checked={hideCancelled}
-            onChange={(e) => setHideCancelled(e.target.checked)}
-          />
-          Hide Cancelled Jobs
-        </label>
-        <button
-          className={`${classes.filterButton} ${
-            freezeSort ? classes.filterButtonActive : ""
-          }`}
-          onClick={toggleFreezeSort}
-          title={
-            freezeSort ? "Resume live updates" : "Freeze sorting and updates"
-          }
-        >
-          {freezeSort ? "🧊 Sort Frozen" : "❄️ Freeze Sort"}
-        </button>
-        <button
-          className={classes.clearAllButton}
-          onClick={handleClearAllJobs}
-          disabled={clearingJobs || allJobs.length === 0}
-          title="Clear all jobs from datastore (ALL users)"
-        >
-          <DeleteSweepIcon style={{ fontSize: 14 }} />
-          {clearingJobs ? "Clearing..." : "Clear All Jobs"}
-        </button>
-      </div>
+        <div className="flex justify-between items-center mb-4">
+          <Components.ToggleGroup
+            type="single"
+            defaultValue="active"
+            value={filter}
+            onValueChange={(value) => value && setFilter(value)}
+          >
+            <Components.ToggleGroupItem
+              value="active"
+              aria-label="Active Jobs"
+              className={`${
+                filter === "active"
+                  ? "bg-primary text-primary-foreground hover:bg-primary/80"
+                  : ""
+              }`}
+            >
+              <Bell size={16} className="mr-2" />
+              Active
+            </Components.ToggleGroupItem>
+            <Components.ToggleGroupItem
+              value="recent"
+              aria-label="Recent Jobs"
+              className={`${
+                filter === "recent"
+                  ? "bg-primary text-primary-foreground hover:bg-primary/80"
+                  : ""
+              }`}
+            >
+              <Clock size={16} className="mr-2" />
+              Recent
+            </Components.ToggleGroupItem>
+            <Components.ToggleGroupItem
+              value="all"
+              aria-label="All Jobs"
+              className={`${
+                filter === "all"
+                  ? "bg-primary text-primary-foreground hover:bg-primary/80"
+                  : ""
+              }`}
+            >
+              <Archive size={16} className="mr-2" />
+              All
+            </Components.ToggleGroupItem>
+          </Components.ToggleGroup>
 
-      <div className={classes.pluginsContainer}>
-        {sortedPlugins.map((plugin) => (
-          <PluginSection
-            key={plugin}
-            plugin={plugin}
-            jobs={jobsByPlugin[plugin]}
-            isCollapsed={collapsedPlugins.has(plugin)}
-            onToggleCollapse={togglePluginCollapse}
-          />
-        ))}
-        {sortedPlugins.length === 0 && (
-          <div className={classes.noJobs}>No jobs found</div>
+          <div className="flex items-center gap-2">
+            {filter === "all" && (
+              <Components.TooltipProvider>
+                <Components.Tooltip>
+                  <Components.TooltipTrigger asChild>
+                    <Components.Button
+                      variant="outline"
+                      onClick={() => setShowCompleted(!showCompleted)}
+                    >
+                      {showCompleted ? (
+                        <Eye size={16} className="mr-2" />
+                      ) : (
+                        <EyeOff size={16} className="mr-2" />
+                      )}
+                      {showCompleted ? "Hide Completed" : "Show Completed"}
+                    </Components.Button>
+                  </Components.TooltipTrigger>
+                  <Components.TooltipContent>
+                    <p>Toggle visibility of completed jobs</p>
+                  </Components.TooltipContent>
+                </Components.Tooltip>
+              </Components.TooltipProvider>
+            )}
+
+            <Components.TooltipProvider>
+              <Components.Tooltip>
+                <Components.TooltipTrigger asChild>
+                  <Components.Button
+                    variant="outline"
+                    onClick={() => setFreezeSort(!freezeSort)}
+                  >
+                    {freezeSort ? (
+                      <PinOff size={16} className="mr-2" />
+                    ) : (
+                      <Pin size={16} className="mr-2" />
+                    )}
+                    {freezeSort ? "Unfreeze" : "Freeze"}
+                  </Components.Button>
+                </Components.TooltipTrigger>
+                <Components.TooltipContent>
+                  <p>Freeze the current job list to prevent updates</p>
+                </Components.TooltipContent>
+              </Components.Tooltip>
+            </Components.TooltipProvider>
+
+            <Components.TooltipProvider>
+              <Components.Tooltip>
+                <Components.TooltipTrigger asChild>
+                  <Components.Button
+                    variant="outline"
+                    onClick={() => refetch()}
+                  >
+                    <RefreshCw size={16} />
+                  </Components.Button>
+                </Components.TooltipTrigger>
+                <Components.TooltipContent>
+                  <p>Refresh Jobs</p>
+                </Components.TooltipContent>
+              </Components.Tooltip>
+            </Components.TooltipProvider>
+
+            <Components.TooltipProvider>
+              <Components.Tooltip>
+                <Components.TooltipTrigger asChild>
+                  <Components.Button
+                    variant="destructive"
+                    onClick={handleClearAllJobs}
+                  >
+                    <Trash2 size={16} className="mr-2" />
+                    Clear All
+                  </Components.Button>
+                </Components.TooltipTrigger>
+                <Components.TooltipContent>
+                  <p>Permanently delete all jobs</p>
+                </Components.TooltipContent>
+              </Components.Tooltip>
+            </Components.TooltipProvider>
+          </div>
+        </div>
+      </Components.Card>
+
+      <div>
+        {Object.keys(groupedJobs).length > 0 ? (
+          Object.entries(groupedJobs).map(([plugin, jobs]) => (
+            <PluginSection
+              key={plugin}
+              plugin={plugin}
+              jobs={jobs}
+              expandedJobs={expandedJobs}
+              onToggleJobExpand={toggleJobExpansion}
+              isCollapsed={collapsedPlugins[plugin]}
+              onToggleCollapse={() => togglePluginCollapse(plugin)}
+            />
+          ))
+        ) : (
+          <div className="text-center py-16 text-gray-500 bg-gray-50 rounded-lg">
+            <h3 className="text-2xl font-bold mb-2">No jobs found</h3>
+            <p>There are no jobs matching the current filter.</p>
+          </div>
         )}
       </div>
 
-      {/* Clear All Jobs Confirmation Dialog */}
-      <Dialog
-        open={clearDialogOpen}
-        onClose={handleCancelClearJobs}
-        maxWidth="sm"
-        fullWidth
+      <Components.Dialog
+        open={showClearConfirm}
+        onOpenChange={setShowClearConfirm}
       >
-        <DialogTitle>Confirm Clear All Jobs</DialogTitle>
-        <DialogContent>
-          <DialogContentText>
-            Warning: This will clear all logs of plugin jobs for ALL users. This
-            action cannot be undone. Are you sure you want to continue?
-          </DialogContentText>
-        </DialogContent>
-        <DialogActions>
-          <Button onClick={handleCancelClearJobs} color="primary">
-            Cancel
-          </Button>
-          <Button
-            onClick={handleConfirmClearJobs}
-            color="error"
-            variant="contained"
-            disabled={clearingJobs}
-          >
-            {clearingJobs ? "Clearing..." : "Clear All Jobs"}
-          </Button>
-        </DialogActions>
-      </Dialog>
+        <Components.DialogContent>
+          <Components.DialogHeader>
+            <Components.DialogTitle>Are you sure?</Components.DialogTitle>
+            <Components.DialogDescription>
+              This will permanently delete all jobs. This action cannot be
+              undone.
+            </Components.DialogDescription>
+          </Components.DialogHeader>
+          <Components.DialogFooter>
+            <Components.Button
+              variant="outline"
+              onClick={handleCancelClearJobs}
+            >
+              Cancel
+            </Components.Button>
+            <Components.Button
+              variant="destructive"
+              onClick={handleConfirmClearJobs}
+            >
+              Confirm Delete
+            </Components.Button>
+          </Components.DialogFooter>
+        </Components.DialogContent>
+      </Components.Dialog>
     </div>
   );
 };
 
-registerComponent("JobsPage", JobsPage);
-
-// This is only needed for the fast refresh plugin, the registerComponent above is needed for the plugin system
+registerComponent("Jobs", JobsPage);
 export default JobsPage;

@@ -1,4 +1,4 @@
-import React, { useState, useMemo } from "react";
+import React, { useState, useMemo, useEffect } from "react";
 import { Components, registerComponent, Utils } from "@penpal/core";
 import {
   ChevronDoubleLeftIcon,
@@ -25,6 +25,9 @@ const {
   TableRow,
   Card,
   CardContent,
+  CardDescription,
+  CardHeader,
+  CardTitle,
   Badge,
   Input,
 } = Components;
@@ -142,14 +145,29 @@ const ProjectViewHostsTable = ({ hosts = [] }) => {
   const [rowsPerPage, setRowsPerPage] = useState(10);
   const [sort, setSort] = useState({ key: "ip_address", direction: "asc" });
   const [searchTerm, setSearchTerm] = useState("");
+  const [debouncedSearchTerm, setDebouncedSearchTerm] = useState("");
+
+  // Debounce search term
+  useEffect(() => {
+    const timer = setTimeout(() => {
+      setDebouncedSearchTerm(searchTerm);
+    }, 1000);
+
+    return () => clearTimeout(timer);
+  }, [searchTerm]);
+
+  // Reset page when search term changes
+  useEffect(() => {
+    setPage(0);
+  }, [debouncedSearchTerm]);
 
   // Filter and sort hosts
   const filteredAndSortedHosts = useMemo(() => {
     let filtered = hosts;
 
     // Apply search filter
-    if (searchTerm) {
-      const search = searchTerm.toLowerCase();
+    if (debouncedSearchTerm) {
+      const search = debouncedSearchTerm.toLowerCase();
       filtered = hosts.filter((host) => {
         return (
           host.ip_address?.toLowerCase().includes(search) ||
@@ -161,7 +179,8 @@ const ProjectViewHostsTable = ({ hosts = [] }) => {
     }
 
     // Apply sorting
-    filtered.sort((a, b) => {
+    const sortableItems = [...filtered];
+    sortableItems.sort((a, b) => {
       let aValue, bValue;
 
       switch (sort.key) {
@@ -204,8 +223,8 @@ const ProjectViewHostsTable = ({ hosts = [] }) => {
       }
     });
 
-    return filtered;
-  }, [hosts, searchTerm, sort]);
+    return sortableItems;
+  }, [hosts, debouncedSearchTerm, sort]);
 
   // Paginate
   const paginatedHosts = filteredAndSortedHosts.slice(
@@ -222,171 +241,187 @@ const ProjectViewHostsTable = ({ hosts = [] }) => {
     setPage(0);
   };
 
+  // Calculate statistics
+  const totalServices = useMemo(
+    () =>
+      hosts.reduce(
+        (sum, host) => sum + (host.servicesConnection?.totalCount || 0),
+        0
+      ),
+    [hosts]
+  );
+
   return (
-    <div className="space-y-4">
-      {/* Search and Controls */}
-      <div className="flex items-center justify-between">
-        <div className="relative w-64">
-          <MagnifyingGlassIcon className="absolute left-3 top-1/2 h-4 w-4 -translate-y-1/2 text-muted-foreground" />
+    <Card>
+      <CardHeader>
+        <CardTitle>Hosts</CardTitle>
+        <CardDescription>
+          A list of all hosts discovered in this project.
+        </CardDescription>
+        <div className="flex justify-between items-center pt-4">
           <Input
             placeholder="Search hosts..."
             value={searchTerm}
             onChange={(e) => setSearchTerm(e.target.value)}
-            className="pl-9"
+            className="max-w-sm"
           />
+          <div className="flex items-center space-x-2">
+            <Badge variant="outline">
+              Total Hosts:{" "}
+              <span className="font-bold ml-1">{hosts.length}</span>
+            </Badge>
+            <Badge variant="outline">
+              Total Services:{" "}
+              <span className="font-bold ml-1">{totalServices}</span>
+            </Badge>
+          </div>
         </div>
-        <div className="flex items-center space-x-2">
-          <span className="text-sm text-muted-foreground">
-            {filteredAndSortedHosts.length} hosts
-          </span>
-        </div>
-      </div>
-
-      {/* Table */}
-      <Card>
-        <CardContent className="p-0">
-          <Table>
-            <TableHeader>
-              <TableRow>
-                <SortableHeader
-                  sortKey="ip_address"
-                  currentSort={sort}
-                  onSort={setSort}
-                >
-                  IP Address
-                </SortableHeader>
-                <SortableHeader
-                  sortKey="hostnames"
-                  currentSort={sort}
-                  onSort={setSort}
-                >
-                  Hostnames
-                </SortableHeader>
-                <SortableHeader
-                  sortKey="os"
-                  currentSort={sort}
-                  onSort={setSort}
-                >
-                  Operating System
-                </SortableHeader>
-                <SortableHeader
-                  sortKey="mac_address"
-                  currentSort={sort}
-                  onSort={setSort}
-                >
-                  MAC Address
-                </SortableHeader>
-                <SortableHeader
-                  sortKey="services"
-                  currentSort={sort}
-                  onSort={setSort}
-                  className="text-right"
-                >
-                  Services
-                </SortableHeader>
+      </CardHeader>
+      <CardContent>
+        <Table className="w-full">
+          <TableHeader>
+            <TableRow>
+              <SortableHeader
+                sortKey="ip_address"
+                currentSort={sort}
+                onSort={setSort}
+              >
+                IP Address
+              </SortableHeader>
+              <SortableHeader
+                sortKey="hostnames"
+                currentSort={sort}
+                onSort={setSort}
+              >
+                Hostnames
+              </SortableHeader>
+              <SortableHeader sortKey="os" currentSort={sort} onSort={setSort}>
+                Operating System
+              </SortableHeader>
+              <SortableHeader
+                sortKey="mac_address"
+                currentSort={sort}
+                onSort={setSort}
+              >
+                MAC Address
+              </SortableHeader>
+              <SortableHeader
+                sortKey="services"
+                currentSort={sort}
+                onSort={setSort}
+                className="text-right"
+              >
+                Services
+              </SortableHeader>
+            </TableRow>
+          </TableHeader>
+          <TableBody>
+            {paginatedHosts.map((host) => (
+              <TableRow
+                key={host.id}
+                className="cursor-pointer hover:bg-muted/50"
+              >
+                <TableCell className="font-medium">
+                  <div className="flex items-center space-x-2">
+                    <ComputerDesktopIcon className="h-4 w-4 text-muted-foreground" />
+                    <span>{host.ip_address}</span>
+                  </div>
+                </TableCell>
+                <TableCell>
+                  {host.hostnames?.length > 0 ? (
+                    <div className="space-y-1">
+                      {host.hostnames.slice(0, 2).map((hostname, idx) => (
+                        <div key={idx} className="flex items-center space-x-1">
+                          <GlobeAltIcon className="h-3 w-3 text-muted-foreground" />
+                          <span className="text-xs">{hostname}</span>
+                        </div>
+                      ))}
+                      {host.hostnames.length > 2 && (
+                        <Badge variant="secondary" className="text-xs">
+                          +{host.hostnames.length - 2} more
+                        </Badge>
+                      )}
+                    </div>
+                  ) : (
+                    <span className="text-muted-foreground text-sm">
+                      No hostnames
+                    </span>
+                  )}
+                </TableCell>
+                <TableCell>
+                  {host.os?.name ? (
+                    <Badge variant="outline">{host.os.name}</Badge>
+                  ) : (
+                    <span className="text-muted-foreground text-sm">
+                      Unknown
+                    </span>
+                  )}
+                </TableCell>
+                <TableCell>
+                  {host.mac_address ? (
+                    <span className="font-mono text-xs">
+                      {host.mac_address}
+                    </span>
+                  ) : (
+                    <span className="text-muted-foreground text-sm">
+                      Unknown
+                    </span>
+                  )}
+                </TableCell>
+                <TableCell className="text-right">
+                  <div className="flex items-center justify-end space-x-2">
+                    <ServerIcon className="h-4 w-4 text-muted-foreground" />
+                    <Badge variant="secondary">
+                      {host.servicesConnection?.totalCount || 0}
+                    </Badge>
+                  </div>
+                </TableCell>
               </TableRow>
-            </TableHeader>
-            <TableBody>
-              {paginatedHosts.map((host) => (
-                <TableRow
-                  key={host.id}
-                  className="cursor-pointer hover:bg-muted/50"
-                >
-                  <TableCell className="font-medium">
-                    <div className="flex items-center space-x-2">
-                      <ComputerDesktopIcon className="h-4 w-4 text-muted-foreground" />
-                      <span>{host.ip_address}</span>
-                    </div>
-                  </TableCell>
-                  <TableCell>
-                    {host.hostnames?.length > 0 ? (
-                      <div className="space-y-1">
-                        {host.hostnames.slice(0, 2).map((hostname, idx) => (
-                          <div
-                            key={idx}
-                            className="flex items-center space-x-1"
-                          >
-                            <GlobeAltIcon className="h-3 w-3 text-muted-foreground" />
-                            <span className="text-xs">{hostname}</span>
-                          </div>
-                        ))}
-                        {host.hostnames.length > 2 && (
-                          <Badge variant="secondary" className="text-xs">
-                            +{host.hostnames.length - 2} more
-                          </Badge>
-                        )}
-                      </div>
-                    ) : (
-                      <span className="text-muted-foreground text-sm">
-                        No hostnames
-                      </span>
-                    )}
-                  </TableCell>
-                  <TableCell>
-                    {host.os?.name ? (
-                      <Badge variant="outline">{host.os.name}</Badge>
-                    ) : (
-                      <span className="text-muted-foreground text-sm">
-                        Unknown
-                      </span>
-                    )}
-                  </TableCell>
-                  <TableCell>
-                    {host.mac_address ? (
-                      <span className="font-mono text-xs">
-                        {host.mac_address}
-                      </span>
-                    ) : (
-                      <span className="text-muted-foreground text-sm">
-                        Unknown
-                      </span>
-                    )}
-                  </TableCell>
-                  <TableCell className="text-right">
-                    <div className="flex items-center justify-end space-x-2">
-                      <ServerIcon className="h-4 w-4 text-muted-foreground" />
-                      <Badge variant="secondary">
-                        {host.servicesConnection?.totalCount || 0}
-                      </Badge>
-                    </div>
-                  </TableCell>
-                </TableRow>
-              ))}
-            </TableBody>
-          </Table>
-        </CardContent>
-      </Card>
+            ))}
+          </TableBody>
+        </Table>
 
-      {/* Pagination */}
-      <div className="flex items-center justify-between">
-        <div className="flex items-center space-x-2">
-          <span className="text-sm text-muted-foreground">Rows per page:</span>
-          <select
-            value={rowsPerPage}
-            onChange={handleChangeRowsPerPage}
-            className="border border-input bg-background px-2 py-1 text-sm rounded-md"
-          >
-            <option value={5}>5</option>
-            <option value={10}>10</option>
-            <option value={25}>25</option>
-            <option value={50}>50</option>
-          </select>
+        {/* Pagination Footer */}
+        <div className="flex items-center justify-between p-4">
+          <div className="flex items-center space-x-4">
+            <div className="text-sm text-muted-foreground">
+              Rows per page:
+              <select
+                className="ml-2 border border-input rounded px-2 py-1"
+                value={rowsPerPage}
+                onChange={handleChangeRowsPerPage}
+              >
+                <option value={5}>5</option>
+                <option value={10}>10</option>
+                <option value={25}>25</option>
+                <option value={50}>50</option>
+              </select>
+            </div>
+            <div className="text-sm text-muted-foreground">
+              Showing {page * rowsPerPage + 1}-
+              {Math.min(
+                (page + 1) * rowsPerPage,
+                filteredAndSortedHosts.length
+              )}{" "}
+              of {filteredAndSortedHosts.length} hosts
+            </div>
+          </div>
+          <div className="flex items-center space-x-4">
+            <div className="text-sm text-muted-foreground">
+              Page {page + 1} of{" "}
+              {Math.ceil(filteredAndSortedHosts.length / rowsPerPage) || 1}
+            </div>
+            <TablePaginationActions
+              count={filteredAndSortedHosts.length}
+              page={page}
+              rowsPerPage={rowsPerPage}
+              onPageChange={handleChangePage}
+              isLoading={false}
+            />
+          </div>
         </div>
-        <div className="flex items-center space-x-2">
-          <span className="text-sm text-muted-foreground">
-            {page * rowsPerPage + 1}-
-            {Math.min((page + 1) * rowsPerPage, filteredAndSortedHosts.length)}{" "}
-            of {filteredAndSortedHosts.length}
-          </span>
-          <TablePaginationActions
-            count={filteredAndSortedHosts.length}
-            page={page}
-            rowsPerPage={rowsPerPage}
-            onPageChange={handleChangePage}
-          />
-        </div>
-      </div>
-    </div>
+      </CardContent>
+    </Card>
   );
 };
 

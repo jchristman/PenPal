@@ -20,10 +20,11 @@ services:
     pull_policy: never
     working_dir: /penpal
     volumes:
-      - penpal-frontend-npm-cache:/home/node/.npm
+      - penpal-frontend-bun-cache:/home/node/.bun/install/cache
+      - penpal-bun-global-cache:/root/.bun/install/cache
     ports:
       - "3000:3000"
-    command: npm run frontend
+    command: bun run frontend
     networks:
       - penpal
 
@@ -34,7 +35,8 @@ services:
     pull_policy: never
     working_dir: /penpal
     volumes:
-      - penpal-server-npm-cache:/home/node/.npm
+      - penpal-server-bun-cache:/home/node/.bun/install/cache
+      - penpal-bun-global-cache:/root/.bun/install/cache
       - penpal-plugin-share:/penpal-plugin-share
     ports:
       - "3001:3001"
@@ -42,7 +44,7 @@ services:
       - RUN_LOCATION=${RUN_LOCATION}
       - OFFLINE=false
     tty: true
-    command: npm run server
+    command: bun run server
     networks:
       - penpal
       - internal
@@ -61,9 +63,11 @@ services:
       - internal
 
 volumes:
-  penpal-frontend-npm-cache:
+  penpal-frontend-bun-cache:
     external: false
-  penpal-server-npm-cache:
+  penpal-server-bun-cache:
+    external: false
+  penpal-bun-global-cache:
     external: false
   penpal-plugin-share:
     external: false

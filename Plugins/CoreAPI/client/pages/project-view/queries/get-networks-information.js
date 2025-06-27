@@ -13,6 +13,8 @@ export default gql`
               totalCount
               hosts {
                 id
+                ip_address
+                hostnames
                 servicesConnection {
                   totalCount
                 }

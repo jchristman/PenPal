@@ -6,7 +6,6 @@ import { useMutation } from "@apollo/client";
 
 import CreateProjectMutation from "./mutations/create-project.js";
 import GetProjectSummaries from "./queries/get-project-summaries.js";
-import ProjectFieldsFragment from "./queries/project-summary-fragment.js";
 
 const { cn } = Utils;
 const { useToast } = Hooks;
@@ -39,16 +38,7 @@ const ProjectReviewForm = ({
     createProject,
     { loading: create_project_loading, error: create_project_error },
   ] = useMutation(CreateProjectMutation, {
-    update(cache, { data: { createProject: new_project } }) {
-      const current_projects =
-        cache.readQuery({ query: GetProjectSummaries })?.getProjects ?? [];
-      const data = { getProjects: [...current_projects, new_project] };
-      cache.writeQuery({
-        query: GetProjectSummaries,
-        data,
-        overwrite: true,
-      });
-    },
+    refetchQueries: [{ query: GetProjectSummaries, awaitRefetchQueries: true }],
   });
 
   const handleCreateProject = async () => {
@@ -63,11 +53,11 @@ const ProjectReviewForm = ({
           start_date:
             projectStartDate === null
               ? null
-              : projectStartDate.format("YYYY-MM-DD"),
+              : projectStartDate.toISOString().split("T")[0],
           end_date:
             projectEndDate === null
               ? null
-              : projectEndDate.format("YYYY-MM-DD"),
+              : projectEndDate.toISOString().split("T")[0],
           project_ips: projectIPs,
           project_networks: projectNetworks,
         },
@@ -91,12 +81,14 @@ const ProjectReviewForm = ({
     }
   };
 
+  console.log(projectStartDate, projectEndDate);
+
   return (
     <div className="flex flex-col justify-center items-center h-full w-full">
       <div className="flex-1 w-full max-w-2xl flex flex-col justify-center items-center mb-4">
         <Card className="w-full">
           <CardContent className="p-6">
-            <Table>
+            <Table className="w-full">
               <TableBody>
                 <ReviewTableRow
                   title="Customer"
@@ -112,7 +104,7 @@ const ProjectReviewForm = ({
                   data={
                     projectStartDate === null
                       ? "None"
-                      : projectStartDate.format("MM/DD/yyyy")
+                      : projectStartDate.toLocaleDateString()
                   }
                 />
                 <ReviewTableRow
@@ -120,7 +112,7 @@ const ProjectReviewForm = ({
                   data={
                     projectEndDate === null
                       ? "None"
-                      : projectEndDate.format("MM/DD/yyyy")
+                      : projectEndDate.toLocaleDateString()
                   }
                 />
                 <ReviewTableRow title="# Hosts" data={projectIPs.length} />

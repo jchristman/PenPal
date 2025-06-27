@@ -53,7 +53,7 @@ const SelectCustomer = ({
 
   return (
     <div className="w-full h-full flex flex-row justify-evenly items-stretch gap-4">
-      <div className="h-[calc(100%-2rem)] flex flex-col justify-center items-start flex-1 m-4">
+      <div className="flex flex-col justify-start items-start flex-1 pt-2">
         <div className="text-[#555] text-[17px] uppercase w-full text-center mb-2">
           Select Customer
         </div>
@@ -114,11 +114,11 @@ const SelectCustomer = ({
         </div>
       </div>
       <Separator orientation="vertical" className="h-auto" />
-      <div className="h-[calc(100%-2rem)] flex flex-col justify-center items-start flex-1 m-4">
+      <div className="flex flex-col justify-start items-start flex-1 pt-2">
         <div className="text-[#555] text-[17px] uppercase w-full text-center mb-2">
           New Customer
         </div>
-        <div className="flex-1 flex flex-col justify-center items-start w-full">
+        <div className="flex-1 flex flex-col justify-start items-start w-full mb-4">
           <Components.NewCustomerForm newCustomerHook={handleNewCustomer} />
         </div>
       </div>

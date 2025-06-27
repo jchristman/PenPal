@@ -1,4 +1,4 @@
-import React, { useState, useMemo } from "react";
+import React, { useState, useMemo, useEffect } from "react";
 import { Components, registerComponent } from "@penpal/core";
 import {
   ChevronDoubleLeftIcon,
@@ -11,7 +11,6 @@ import {
   GlobeAltIcon,
   ShieldCheckIcon,
   ComputerDesktopIcon,
-  MagnifyingGlassIcon,
 } from "@heroicons/react/24/outline";
 
 const {
@@ -24,17 +23,14 @@ const {
   TableRow,
   Card,
   CardContent,
+  CardDescription,
+  CardHeader,
+  CardTitle,
   Badge,
   Input,
 } = Components;
 
-const TablePaginationActions = ({
-  count,
-  page,
-  rowsPerPage,
-  onPageChange,
-  isLoading,
-}) => {
+const TablePaginationActions = ({ count, page, rowsPerPage, onPageChange }) => {
   const handleFirstPageButtonClick = (event) => {
     onPageChange(event, 0);
   };
@@ -136,16 +132,6 @@ const SortableHeader = ({
   );
 };
 
-const StatBadge = ({ icon: Icon, label, value, variant = "secondary" }) => (
-  <div className="flex items-center space-x-1">
-    <Icon className="h-3 w-3 text-muted-foreground" />
-    <Badge variant={variant} className="text-xs px-1.5 py-0.5">
-      {value}
-    </Badge>
-    <span className="text-xs text-muted-foreground">{label}</span>
-  </div>
-);
-
 const ServiceStatusBadge = ({ status }) => {
   const variant = status === "open" ? "default" : "secondary";
   const color = status === "open" ? "bg-green-100 text-green-700" : "";
@@ -168,15 +154,30 @@ const ProtocolBadge = ({ protocol }) => {
 
 const ProjectViewServicesTable = ({ services = [] }) => {
   const [page, setPage] = useState(0);
-  const [rowsPerPage, setRowsPerPage] = useState(25);
-  const [searchTerm, setSearchTerm] = useState("");
+  const [rowsPerPage, setRowsPerPage] = useState(10);
   const [sort, setSort] = useState({ key: "port", direction: "asc" });
+  const [searchTerm, setSearchTerm] = useState("");
+  const [debouncedSearchTerm, setDebouncedSearchTerm] = useState("");
+
+  // Debounce search term
+  useEffect(() => {
+    const timer = setTimeout(() => {
+      setDebouncedSearchTerm(searchTerm);
+    }, 1000);
+
+    return () => clearTimeout(timer);
+  }, [searchTerm]);
+
+  // Reset page when search term changes
+  useEffect(() => {
+    setPage(0);
+  }, [debouncedSearchTerm]);
 
   // Filter services based on search term
   const filteredServices = useMemo(() => {
-    if (!searchTerm) return services;
+    if (!debouncedSearchTerm) return services;
 
-    const term = searchTerm.toLowerCase();
+    const term = debouncedSearchTerm.toLowerCase();
     return services.filter(
       (service) =>
         service.host?.ip_address?.toLowerCase().includes(term) ||
@@ -185,7 +186,7 @@ const ProjectViewServicesTable = ({ services = [] }) => {
         service.ip_protocol?.toLowerCase().includes(term) ||
         service.status?.toLowerCase().includes(term)
     );
-  }, [services, searchTerm]);
+  }, [services, debouncedSearchTerm]);
 
   // Sort services
   const sortedServices = useMemo(() => {
@@ -300,144 +301,120 @@ const ProjectViewServicesTable = ({ services = [] }) => {
   };
 
   return (
-    <Card className="w-full h-full flex flex-col">
-      <CardContent className="flex-1 flex flex-col p-0">
-        {/* Header with search and stats */}
-        <div className="p-6 border-b">
-          <div className="flex flex-col space-y-4">
-            <div className="flex items-center justify-between">
-              <h3 className="text-lg font-semibold">Services Table</h3>
-              <div className="relative w-64">
-                <MagnifyingGlassIcon className="absolute left-3 top-1/2 transform -translate-y-1/2 h-4 w-4 text-muted-foreground" />
-                <Input
-                  placeholder="Search services..."
-                  value={searchTerm}
-                  onChange={(e) => setSearchTerm(e.target.value)}
-                  className="pl-9"
-                />
-              </div>
-            </div>
-            <div className="flex flex-wrap gap-4">
-              <StatBadge
-                icon={ServerIcon}
-                label="Total"
-                value={stats.totalServices}
-                variant="secondary"
-              />
-              <StatBadge
-                icon={ShieldCheckIcon}
-                label="Open"
-                value={stats.openServices}
-                variant="default"
-              />
-              <StatBadge
-                icon={GlobeAltIcon}
-                label="Enriched"
-                value={stats.enrichedServices}
-                variant="outline"
-              />
-              <StatBadge
-                icon={ComputerDesktopIcon}
-                label="Hosts"
-                value={stats.uniqueHosts}
-                variant="outline"
-              />
-            </div>
+    <Card>
+      <CardHeader>
+        <CardTitle>Services</CardTitle>
+        <CardDescription>
+          A list of all services discovered in this project.
+        </CardDescription>
+        <div className="flex justify-between items-center pt-4">
+          <Input
+            placeholder="Search services..."
+            value={searchTerm}
+            onChange={(e) => setSearchTerm(e.target.value)}
+            className="max-w-sm"
+          />
+          <div className="flex items-center space-x-2">
+            <Badge variant="outline">
+              Total:{" "}
+              <span className="font-bold ml-1">{stats.totalServices}</span>
+            </Badge>
+            <Badge variant="outline">
+              Open: <span className="font-bold ml-1">{stats.openServices}</span>
+            </Badge>
+            <Badge variant="outline">
+              Enriched:{" "}
+              <span className="font-bold ml-1">{stats.enrichedServices}</span>
+            </Badge>
+            <Badge variant="outline">
+              Hosts: <span className="font-bold ml-1">{stats.uniqueHosts}</span>
+            </Badge>
           </div>
         </div>
-
-        {/* Table */}
-        <div className="flex-1 overflow-auto">
-          <Table>
-            <TableHeader>
-              <TableRow>
-                <SortableHeader
-                  sortKey="host"
-                  currentSort={sort}
-                  onSort={setSort}
-                >
-                  Host
-                </SortableHeader>
-                <SortableHeader
-                  sortKey="port"
-                  currentSort={sort}
-                  onSort={setSort}
-                >
-                  Port
-                </SortableHeader>
-                <SortableHeader
-                  sortKey="protocol"
-                  currentSort={sort}
-                  onSort={setSort}
-                >
-                  Protocol
-                </SortableHeader>
-                <SortableHeader
-                  sortKey="name"
-                  currentSort={sort}
-                  onSort={setSort}
-                >
-                  Service
-                </SortableHeader>
-                <SortableHeader
-                  sortKey="status"
-                  currentSort={sort}
-                  onSort={setSort}
-                >
-                  Status
-                </SortableHeader>
-                <SortableHeader
-                  sortKey="enrichments"
-                  currentSort={sort}
-                  onSort={setSort}
-                >
-                  Enrichments
-                </SortableHeader>
+      </CardHeader>
+      <CardContent>
+        <Table className="w-full">
+          <TableHeader>
+            <TableRow>
+              <SortableHeader
+                sortKey="host"
+                currentSort={sort}
+                onSort={setSort}
+              >
+                Host
+              </SortableHeader>
+              <SortableHeader
+                sortKey="port"
+                currentSort={sort}
+                onSort={setSort}
+              >
+                Port
+              </SortableHeader>
+              <SortableHeader
+                sortKey="protocol"
+                currentSort={sort}
+                onSort={setSort}
+              >
+                Protocol
+              </SortableHeader>
+              <SortableHeader
+                sortKey="name"
+                currentSort={sort}
+                onSort={setSort}
+              >
+                Discovery Method
+              </SortableHeader>
+              <SortableHeader
+                sortKey="status"
+                currentSort={sort}
+                onSort={setSort}
+              >
+                Status
+              </SortableHeader>
+              <SortableHeader
+                sortKey="enrichments"
+                currentSort={sort}
+                onSort={setSort}
+              >
+                Enrichments
+              </SortableHeader>
+            </TableRow>
+          </TableHeader>
+          <TableBody>
+            {paginatedServices.map((service, index) => (
+              <TableRow key={service.id || index} className="hover:bg-muted/50">
+                <TableCell className="font-mono">
+                  {service.host?.ip_address || "Unknown"}
+                </TableCell>
+                <TableCell className="font-mono">
+                  {service.port || "—"}
+                </TableCell>
+                <TableCell>
+                  <ProtocolBadge protocol={service.ip_protocol} />
+                </TableCell>
+                <TableCell>
+                  {service.name || (
+                    <span className="text-muted-foreground">Unknown</span>
+                  )}
+                </TableCell>
+                <TableCell>
+                  <ServiceStatusBadge status={service.status} />
+                </TableCell>
+                <TableCell>{formatEnrichments(service.enrichments)}</TableCell>
               </TableRow>
-            </TableHeader>
-            <TableBody>
-              {paginatedServices.map((service, index) => (
-                <TableRow
-                  key={service.id || index}
-                  className="hover:bg-muted/50"
-                >
-                  <TableCell className="font-mono">
-                    {service.host?.ip_address || "Unknown"}
-                  </TableCell>
-                  <TableCell className="font-mono">
-                    {service.port || "—"}
-                  </TableCell>
-                  <TableCell>
-                    <ProtocolBadge protocol={service.ip_protocol} />
-                  </TableCell>
-                  <TableCell>
-                    {service.name || (
-                      <span className="text-muted-foreground">Unknown</span>
-                    )}
-                  </TableCell>
-                  <TableCell>
-                    <ServiceStatusBadge status={service.status} />
-                  </TableCell>
-                  <TableCell>
-                    {formatEnrichments(service.enrichments)}
-                  </TableCell>
-                </TableRow>
-              ))}
-            </TableBody>
-          </Table>
-        </div>
+            ))}
+          </TableBody>
+        </Table>
 
-        {/* Pagination */}
-        <div className="border-t p-4">
-          <div className="flex items-center justify-between">
-            <div className="flex items-center space-x-2">
-              <span className="text-sm text-muted-foreground">
-                Rows per page:
-              </span>
+        {/* Pagination Footer */}
+        <div className="flex items-center justify-between p-4 border-t">
+          <div className="flex items-center space-x-4">
+            <div className="text-sm text-muted-foreground">
+              Rows per page:
               <select
+                className="ml-2 border border-input rounded px-2 py-1"
                 value={rowsPerPage}
                 onChange={handleChangeRowsPerPage}
-                className="border rounded px-2 py-1 text-sm"
               >
                 <option value={10}>10</option>
                 <option value={25}>25</option>
@@ -445,24 +422,23 @@ const ProjectViewServicesTable = ({ services = [] }) => {
                 <option value={100}>100</option>
               </select>
             </div>
-
-            <div className="flex items-center space-x-4">
-              <span className="text-sm text-muted-foreground">
-                {sortedServices.length === 0
-                  ? "0 of 0"
-                  : `${page * rowsPerPage + 1}-${Math.min(
-                      (page + 1) * rowsPerPage,
-                      sortedServices.length
-                    )} of ${sortedServices.length}`}
-              </span>
-
-              <TablePaginationActions
-                count={sortedServices.length}
-                page={page}
-                rowsPerPage={rowsPerPage}
-                onPageChange={handleChangePage}
-              />
+            <div className="text-sm text-muted-foreground">
+              Showing {page * rowsPerPage + 1}-
+              {Math.min((page + 1) * rowsPerPage, sortedServices.length)} of{" "}
+              {sortedServices.length} services
             </div>
+          </div>
+          <div className="flex items-center space-x-4">
+            <div className="text-sm text-muted-foreground">
+              Page {page + 1} of{" "}
+              {Math.ceil(sortedServices.length / rowsPerPage) || 1}
+            </div>
+            <TablePaginationActions
+              count={sortedServices.length}
+              page={page}
+              rowsPerPage={rowsPerPage}
+              onPageChange={handleChangePage}
+            />
           </div>
         </div>
       </CardContent>

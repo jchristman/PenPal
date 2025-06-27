@@ -52,6 +52,20 @@ PenPal.registerRoute = registerRoute;
 
 // ----------------------------------------------------------------------------
 
+export const Badges = [];
+PenPal.Badges = Badges;
+
+// ----------------------------------------------------------------------------
+
+export const registerBadge = (badge) => {
+  const badgeObject = badge.component ? badge : { component: badge, order: 0 };
+  Badges.push(badgeObject);
+  Badges.sort((a, b) => (a.order || 0) - (b.order || 0));
+};
+PenPal.registerBadge = registerBadge;
+
+// ----------------------------------------------------------------------------
+
 export const getRoute = (route_name) =>
   _.find(Routes, (route) => route.name === route_name);
 PenPal.getRoute = getRoute;

@@ -73,7 +73,7 @@ const NewCustomerForm = ({ newCustomerHook = () => null }) => {
   };
 
   return (
-    <div className="flex flex-col justify-center items-start h-full w-full space-y-4">
+    <div className="flex flex-col justify-start items-start h-full w-full space-y-4">
       <div className="w-full max-w-sm space-y-2">
         <Input
           id="customer-name"
@@ -133,15 +133,13 @@ const NewCustomerForm = ({ newCustomerHook = () => null }) => {
         </Popover>
       </div>
 
-      <div className="mt-8">
-        <Button
-          className="w-80"
-          disabled={customerName.length === 0 || customerIndustry === ""}
-          onClick={submitNewCustomer}
-        >
-          Submit
-        </Button>
-      </div>
+      <Button
+        className="w-80"
+        disabled={customerName.length === 0 || customerIndustry === ""}
+        onClick={submitNewCustomer}
+      >
+        Submit
+      </Button>
     </div>
   );
 };

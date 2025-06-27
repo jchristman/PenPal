@@ -55,34 +55,33 @@ const ProjectScopeForm = ({
     0 > subnetMask || 32 < subnetMask || subnetMask.length === 0;
 
   return (
-    <div className="flex flex-col justify-center items-start h-full w-full">
+    <div className="flex flex-col justify-start items-start h-full w-full space-y-4">
       {/* Host/IP Section */}
-      <div className="flex flex-row items-baseline justify-start mb-2 w-full">
-        <div className="mr-2 flex-1">
-          <Label htmlFor="ip-address">IP Address</Label>
+      <div className="w-full">
+        <Label htmlFor="ip-address">IP Address</Label>
+        <div className="flex items-center space-x-2">
           <Input
             id="ip-address"
             value={host}
             onChange={handleHostChange}
             className={cn(
-              "w-full",
+              "flex-1",
               host_error && "border-red-500 focus:border-red-500"
             )}
           />
-          {host_error && (
-            <p className="text-sm text-red-500 mt-1">
-              {Regex.ip_address.test(host) ? "IP already added" : "Invalid IP"}
-            </p>
-          )}
+          <Button
+            variant="default"
+            disabled={host.length === 0 || !host_is_valid}
+            onClick={handleAddHost}
+          >
+            Add Host
+          </Button>
         </div>
-        <Button
-          variant="default"
-          disabled={host.length === 0 || !host_is_valid}
-          onClick={handleAddHost}
-          className="mt-6"
-        >
-          Add Host
-        </Button>
+        {host_error && (
+          <p className="text-sm text-red-500 mt-1">
+            {Regex.ip_address.test(host) ? "IP already added" : "Invalid IP"}
+          </p>
+        )}
       </div>
 
       {/* Host Scope Display */}
@@ -108,50 +107,45 @@ const ProjectScopeForm = ({
         )}
       </div>
 
-      <Separator className="w-[70%] mx-[15%] my-8" />
+      <Separator className="w-[70%] mx-[15%] my-4" />
 
       {/* Network Section */}
-      <div className="flex flex-row items-baseline justify-start mb-2 w-full">
-        <div className="mr-2 flex-1">
-          <Label htmlFor="network-address">Network Address</Label>
+      <div className="w-full">
+        <Label htmlFor="network-address">Network Address</Label>
+        <div className="flex items-center space-x-2">
           <Input
             id="network-address"
             value={network}
             onChange={handleNetworkChange}
             className={cn(
-              "w-full",
+              "flex-1 min-w-[200px] max-w-[100px]",
               network_error && "border-red-500 focus:border-red-500"
             )}
           />
-          {network_error && (
-            <p className="text-sm text-red-500 mt-1">
-              {Regex.ip_address.test(network)
-                ? "Network already added"
-                : "Invalid IP"}
-            </p>
-          )}
+          <span className="">/</span>
+          <Input
+            value={subnetMask}
+            onChange={handleSubnetMaskChange}
+            className={cn(
+              "w-20 text-center",
+              mask_error && "border-red-500 focus:border-red-500"
+            )}
+          />
+          <Button
+            variant="default"
+            disabled={network.length === 0 || mask_error || network_error}
+            onClick={handleAddNetwork}
+          >
+            Add Network
+          </Button>
         </div>
-        <div className="flex items-center mt-6">
-          <span className="mx-2">/</span>
-          <div className="w-16">
-            <Input
-              value={subnetMask}
-              onChange={handleSubnetMaskChange}
-              className={cn(
-                "w-full text-center",
-                mask_error && "border-red-500 focus:border-red-500"
-              )}
-            />
-          </div>
-        </div>
-        <Button
-          variant="default"
-          disabled={network.length === 0 || mask_error || network_error}
-          onClick={handleAddNetwork}
-          className="mt-6 ml-2"
-        >
-          Add Network
-        </Button>
+        {network_error && (
+          <p className="text-sm text-red-500 mt-1">
+            {Regex.ip_address.test(network)
+              ? "Network already added"
+              : "Invalid IP"}
+          </p>
+        )}
       </div>
 
       {/* Network Scope Display */}

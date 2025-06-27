@@ -35,24 +35,14 @@ const ProjectViewNetworks = ({ project, disable_polling }) => {
 
   const tabs = [
     {
-      value: "list",
-      label: "List",
-      content: (
-        <Components.ProjectViewNetworksList
-          project={project}
-          networks={networks}
-        />
-      ),
+      value: "dashboard",
+      label: "Dashboard",
+      content: <Components.ProjectViewNetworksDashboard networks={networks} />,
     },
     {
       value: "table",
       label: "Table",
       content: <Components.ProjectViewNetworksTable networks={networks} />,
-    },
-    {
-      value: "dashboard",
-      label: "Dashboard",
-      content: <Components.ProjectViewNetworksDashboard networks={networks} />,
     },
     {
       value: "graph",
@@ -61,7 +51,7 @@ const ProjectViewNetworks = ({ project, disable_polling }) => {
     },
   ];
 
-  return <Components.VerticalTabs tabs={tabs} defaultTab="list" />;
+  return <Components.VerticalTabs tabs={tabs} defaultTab="dashboard" />;
 };
 
 registerComponent("ProjectViewNetworks", ProjectViewNetworks);

@@ -1,6 +1,6 @@
 import React, { useState } from "react";
 import { Routes, Route } from "react-router-dom";
-import { Components, Hooks, registerComponent } from "@penpal/core";
+import PenPal, { Components, Hooks, registerComponent } from "@penpal/core";
 
 const { useAccount } = Hooks;
 
@@ -51,10 +51,14 @@ const Layout = ({ routes = [] }) => {
             >
               <span className="h-6 w-6">☰</span>
             </Components.Button>
-            <h1 className="text-xl font-semibold">Dashboard</h1>
+            <h1 className="text-xl font-semibold mb-0!">PenPal Dashboard</h1>
           </div>
-          <div className="flex items-center">
+          <div className="flex items-center gap-2">
             <Components.ConnectionStatusChip />
+            {PenPal.Badges.map((badge, index) => {
+              const BadgeComponent = badge.component;
+              return <BadgeComponent key={index} />;
+            })}
           </div>
         </header>
 
