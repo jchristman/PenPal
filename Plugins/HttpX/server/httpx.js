@@ -225,13 +225,7 @@ export const performHttpScan = async ({
     await update_job(20, "HTTP discovery scan in progress...");
 
     // Wait for container to complete with timeout
-    const wait_result = await Promise.race([
-      PenPal.Docker.Wait(container_id),
-      new Promise(
-        (_, reject) =>
-          setTimeout(() => reject(new Error("HttpX scan timeout")), 300000) // 5 minute timeout
-      ),
-    ]);
+    await PenPal.Docker.Wait(container_id, 300000);
 
     await update_job(80, "HTTP scan complete, processing results...");
 

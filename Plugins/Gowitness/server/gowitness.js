@@ -195,7 +195,7 @@ export const performScreenshotScan = async ({
 
     // Create target URLs file for Gowitness
     const targets = http_services.map((service) => service.url);
-    
+
     const targets_file = [outdir, `targets-${PenPal.Utils.Epoch()}.txt`].join(
       path.sep
     );
@@ -248,13 +248,7 @@ export const performScreenshotScan = async ({
     await update_job(20, "Gowitness screenshot capture in progress...");
 
     // Wait for container to complete with timeout
-    const wait_result = await Promise.race([
-      PenPal.Docker.Wait(container_id),
-      new Promise(
-        (_, reject) =>
-          setTimeout(() => reject(new Error("Gowitness scan timeout")), 600000) // 10 minute timeout
-      ),
-    ]);
+    await PenPal.Docker.Wait(container_id, 600000);
 
     await update_job(80, "Screenshot capture complete, processing results...");
 
