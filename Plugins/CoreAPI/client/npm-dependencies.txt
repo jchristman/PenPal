@@ -1,1 +1,7 @@
-d3
+@emotion/react
+@emotion/styled
+@mui/icons-material
+@mui/material
+react-json-view
+react-syntax-highlighter
+@heroicons/react

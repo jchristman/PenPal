@@ -5,6 +5,10 @@ import stable_stringify from "fast-json-stable-stringify";
 
 import { loadGraphQLFiles, resolvers } from "./graphql/index.js";
 import * as API from "./api/index.js";
+import {
+  parseIntrospection,
+  getUIDirectivesForType,
+} from "./api/ui-directives.js";
 import { mocks } from "./test/index.js";
 import {
   FileAttachmentType,
@@ -134,7 +138,7 @@ const CoreAPIPlugin = {
       RemoveFileFromEnrichment: API.removeFileFromEnrichment,
       GenerateEnrichmentFileDownloadUrl: API.generateEnrichmentFileDownloadUrl,
       // File Attachment Helper Functions
-      AttachScreenshotToHttpXEnrichment: API.attachScreenshotToHttpXEnrichment,
+      AttachScreenshotToEnrichment: API.attachScreenshotToEnrichment,
       AttachCertificateToEnrichment: API.attachCertificateToEnrichment,
       AttachLogToEnrichment: API.attachLogToEnrichment,
       AttachJsonReportToEnrichment: API.attachJsonReportToEnrichment,
@@ -142,6 +146,10 @@ const CoreAPIPlugin = {
       GetEnrichmentScreenshots: API.getEnrichmentScreenshots,
       GetEnrichmentCertificates: API.getEnrichmentCertificates,
       GetEnrichmentLogs: API.getEnrichmentLogs,
+    };
+
+    PenPal.API.UIDirectives = {
+      Get: getUIDirectivesForType,
     };
 
     // This builds a unique set of wrapped functions that can utilize the dataloader utility in
@@ -416,8 +424,12 @@ const CoreAPIPlugin = {
       graphql: {
         types,
         resolvers,
+        onSchemaBuilt: (schema) => {
+          parseIntrospection(schema);
+        },
       },
       settings,
+      mocks,
     };
   },
 };

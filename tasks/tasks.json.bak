@@ -307,78 +307,7 @@
       "testStrategy": "Verify the plugin foundation is correctly implemented through the following tests:\n\n1. **Plugin Registration Test**:\n   - Verify the plugin registers successfully with the PenPal framework\n   - Confirm no errors during the registration process\n   - Check that dependencies are correctly specified and loaded\n\n2. **Structure Validation**:\n   - Validate all required files exist (manifest.json, index.js, plugin.js, schema files)\n   - Verify the manifest.json contains correct dependencies on CoreAPI, Docker, and JobsTracker\n   - Ensure the plugin class properly extends the base Plugin class\n\n3. **GraphQL Schema Test**:\n   - Verify the GraphQL schema can be parsed without errors\n   - Test that the schema is properly registered with the GraphQL server\n   - Run a simple introspection query to confirm the schema is accessible\n\n4. **Dependency Injection Test**:\n   - Verify the plugin correctly receives and can access the CoreAPI, Docker, and JobsTracker dependencies\n   - Test that methods from these dependencies can be called from within the E2ETesting plugin\n\n5. **Lifecycle Methods Test**:\n   - Verify the plugin can be started and stopped without errors\n   - Check that resources are properly initialized during start and cleaned up during stop",
       "status": "pending",
       "dependencies": [],
-      "priority": "high",
-      "subtasks": [
-        {
-          "id": 1,
-          "title": "Create plugin directory structure and manifest.json",
-          "description": "Set up the initial directory structure for the E2ETesting plugin and create the manifest.json file with required metadata and dependencies.",
-          "dependencies": [],
-          "details": "Implementation steps:\n1. Create the main plugin directory: `plugins/E2ETesting`\n2. Create subdirectories: `schema`, `lib`, `tests`\n3. Create manifest.json with:\n   - Plugin name: 'E2ETesting'\n   - Version: '1.0.0'\n   - Dependencies: CoreAPI, Docker, and JobsTracker\n   - Required permissions\n4. Ensure the manifest follows the same format as other plugins\n\nTesting approach:\n- Validate the manifest.json structure against the project's schema\n- Verify all required directories exist\n- Confirm dependencies are correctly specified",
-          "status": "pending",
-          "parentTaskId": 17
-        },
-        {
-          "id": 2,
-          "title": "Implement plugin.js with lifecycle methods",
-          "description": "Create the main plugin class with proper lifecycle methods and dependency injection for required plugins.",
-          "dependencies": [
-            1
-          ],
-          "details": "Implementation steps:\n1. Create `plugin.js` in the root of the E2ETesting directory\n2. Define the E2ETesting class that extends the base Plugin class\n3. Implement required lifecycle methods:\n   - register(): Register plugin with the system\n   - load(): Load dependencies and prepare resources\n   - start(): Initialize and start plugin functionality\n   - stop(): Clean up resources and stop plugin\n4. Set up dependency injection for CoreAPI, Docker, and JobsTracker\n5. Add proper error handling for missing dependencies\n\nTesting approach:\n- Create unit tests for each lifecycle method\n- Test dependency injection with mock objects\n- Verify error handling for missing dependencies",
-          "status": "pending",
-          "parentTaskId": 17
-        },
-        {
-          "id": 3,
-          "title": "Create index.js for module exports",
-          "description": "Implement the index.js file to properly export the plugin class and follow module export patterns.",
-          "dependencies": [
-            2
-          ],
-          "details": "Implementation steps:\n1. Create `index.js` in the root of the E2ETesting directory\n2. Import the E2ETesting plugin class from plugin.js\n3. Set up proper module exports following project patterns:\n   - Export the plugin class as default\n   - Add any additional named exports if needed\n4. Ensure compatibility with both CommonJS and ES modules if required by the project\n\nTesting approach:\n- Verify the module can be imported correctly\n- Test that the exported plugin class is properly accessible\n- Confirm it follows the same pattern as other plugins in the system",
-          "status": "pending",
-          "parentTaskId": 17
-        },
-        {
-          "id": 4,
-          "title": "Implement GraphQL schema structure",
-          "description": "Set up the GraphQL schema files with basic type definitions and resolvers for the E2ETesting plugin.",
-          "dependencies": [
-            1
-          ],
-          "details": "Implementation steps:\n1. Create `schema/typeDefs.js` with:\n   - Basic type definitions for E2E testing entities\n   - Query definitions for retrieving test data\n   - Mutation definitions for managing tests\n2. Create `schema/resolvers.js` with:\n   - Query resolvers (stubs initially)\n   - Mutation resolvers (stubs initially)\n3. Create `schema/index.js` to export combined schema\n4. Ensure schema follows the project's GraphQL patterns\n\nTesting approach:\n- Validate GraphQL schema syntax\n- Test schema registration with mock GraphQL server\n- Verify resolver stubs return expected placeholder values",
-          "status": "pending",
-          "parentTaskId": 17
-        },
-        {
-          "id": 5,
-          "title": "Integrate plugin with CoreAPI's GraphQL server",
-          "description": "Update the plugin.js to register the GraphQL schema with CoreAPI's GraphQL server during plugin initialization.",
-          "dependencies": [
-            2,
-            4
-          ],
-          "details": "Implementation steps:\n1. Modify the plugin.js file to import the GraphQL schema\n2. Update the register() or start() method to register the schema with CoreAPI\n3. Add code to properly merge the schema with the existing GraphQL schema\n4. Implement error handling for schema registration failures\n5. Add cleanup code in stop() method to unregister the schema if needed\n\nTesting approach:\n- Test schema registration with mock CoreAPI\n- Verify schema is properly merged\n- Test error handling for registration failures\n- Confirm schema is unregistered during plugin shutdown",
-          "status": "pending",
-          "parentTaskId": 17
-        },
-        {
-          "id": 6,
-          "title": "Create README.md and documentation",
-          "description": "Create comprehensive documentation for the E2ETesting plugin including purpose, dependencies, and usage instructions.",
-          "dependencies": [
-            1,
-            2,
-            3,
-            4,
-            5
-          ],
-          "details": "Implementation steps:\n1. Create README.md in the plugin root directory\n2. Document the plugin's purpose and main features\n3. List all dependencies and their versions\n4. Provide basic usage instructions including:\n   - How to configure the plugin\n   - Available GraphQL queries and mutations\n   - Integration with other plugins\n5. Add examples of common operations\n6. Include development and testing instructions\n\nTesting approach:\n- Review documentation for completeness\n- Verify all listed features are implemented\n- Confirm examples are accurate and functional\n- Check that dependency information is correct",
-          "status": "pending",
-          "parentTaskId": 17
-        }
-      ]
+      "priority": "high"
     },
     {
       "id": 18,

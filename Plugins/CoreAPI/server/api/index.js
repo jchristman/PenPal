@@ -84,7 +84,7 @@ export {
 
 // Enrichment File Helper Functions
 export {
-  attachScreenshotToHttpXEnrichment,
+  attachScreenshotToEnrichment,
   attachCertificateToEnrichment,
   attachLogToEnrichment,
   attachJsonReportToEnrichment,

@@ -3,6 +3,9 @@ import { Components, registerComponent, Utils } from "@penpal/core";
 import PenPal from "@penpal/core";
 import { ChevronDownIcon } from "@heroicons/react/24/outline";
 
+// Import the new enhanced display
+import EnhancedEnrichmentDisplay from "../../components/ui-directive-components/EnhancedEnrichmentDisplay";
+
 const { cn } = Utils;
 const {
   Card,
@@ -37,53 +40,6 @@ const registerEnrichmentDisplay = (pluginName, component) => {
 
 // Make the registration function available on PenPal.API
 PenPal.API.registerEnrichmentDisplay = registerEnrichmentDisplay;
-
-// Default enrichment display component for plugins without custom displays
-const DefaultEnrichmentDisplay = ({ enrichment }) => {
-  // Show all top-level properties except plugin_name
-  const topLevelEntries = Object.entries(enrichment).filter(
-    ([key]) => key !== "plugin_name"
-  );
-
-  // If there's a data field, also show its contents
-  const dataEntries = enrichment.data ? Object.entries(enrichment.data) : [];
-
-  return (
-    <div className="space-y-2">
-      {topLevelEntries.map(([key, value]) => (
-        <div key={key} className="flex justify-between items-start">
-          <span className="text-sm font-medium text-muted-foreground min-w-0 mr-4">
-            {key.replace(/_/g, " ").replace(/\b\w/g, (l) => l.toUpperCase())}:
-          </span>
-          <span className="text-sm text-right break-all">
-            {typeof value === "object" ? JSON.stringify(value) : String(value)}
-          </span>
-        </div>
-      ))}
-
-      {dataEntries.length > 0 && (
-        <>
-          <div className="text-xs text-primary font-medium mt-4 mb-2">
-            Data Field Contents:
-          </div>
-          {dataEntries.map(([key, value]) => (
-            <div key={key} className="flex justify-between items-start">
-              <span className="text-sm font-medium text-muted-foreground min-w-0 mr-4">
-                {key
-                  .replace(/_/g, " ")
-                  .replace(/\b\w/g, (l) => l.toUpperCase())}
-                :
-              </span>
-              <span className="text-sm text-right break-all">
-                {Array.isArray(value) ? value.join(", ") : String(value)}
-              </span>
-            </div>
-          ))}
-        </>
-      )}
-    </div>
-  );
-};
 
 const ProjectViewServicesEnrichments = ({ services }) => {
   const [openEnrichments, setOpenEnrichments] = useState(new Set());
@@ -123,11 +79,11 @@ const ProjectViewServicesEnrichments = ({ services }) => {
                   const key = `${service.id}-${index}`;
                   const isOpen = openEnrichments.has(key);
 
-                  // Use registered component or fallback to default
+                  // Use registered component or fallback to the new enhanced default
                   const DisplayComponent =
                     PenPal.API.EnrichmentDisplayRegistry?.get(
                       enrichment.plugin_name
-                    ) || DefaultEnrichmentDisplay;
+                    ) || EnhancedEnrichmentDisplay;
 
                   return (
                     <Collapsible

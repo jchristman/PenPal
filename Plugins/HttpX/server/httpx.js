@@ -273,3 +273,22 @@ export const performHttpScan = async ({
     };
   }
 };
+
+/**
+ * Attach a screenshot to an HttpX enrichment
+ * This is a convenience function for HttpX-specific screenshot attachments
+ */
+export const attachScreenshotToHttpXEnrichment = async (
+  service_selector,
+  screenshot_buffer,
+  screenshot_filename,
+  metadata = {}
+) => {
+  return await PenPal.API.Services.AttachScreenshotToEnrichment(
+    service_selector,
+    "HttpX",
+    screenshot_buffer,
+    screenshot_filename,
+    metadata
+  );
+};

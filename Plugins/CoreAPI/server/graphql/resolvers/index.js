@@ -7,21 +7,24 @@ import configuration_mutation_resolvers from "./configuration.mutations.js";
 import configuration_query_resolvers from "./configuration.queries.js";
 import customer_default_resolvers from "./customer.default.js";
 import customer_mutation_resolvers from "./customer.mutations.js";
-import customer_query_resolvers from "./customer.queries.js";
+import customer_query_resolvers from "./customers.queries.js";
 import enrichable_default_resolvers from "./enrichable.default.js";
 import file_attachments_query_resolvers from "./file-attachments.queries.js";
 import file_attachments_mutation_resolvers from "./file-attachments.mutations.js";
 import host_default_resolvers from "./host.default.js";
-import host_query_resolvers from "./host.queries.js";
+import host_query_resolvers from "./hosts.queries.js";
 import host_mutation_resolvers from "./host.mutations.js";
 import network_default_resolvers from "./network.default.js";
+import network_query_resolvers from "./networks.queries.js";
 import project_default_resolvers from "./project.default.js";
 import project_mutation_resolvers from "./project.mutations.js";
-import project_query_resolvers from "./project.queries.js";
+import project_query_resolvers from "./projects.queries.js";
 import service_default_resolvers from "./service.default.js";
-import service_query_resolvers from "./service.queries.js";
+import service_query_resolvers from "./services.queries.js";
 import network_service_default_resolvers from "./service-network.default.js";
 import scalar_resolvers from "./scalars.js";
+import ui_directives_default_resolvers from "./ui-directives.default.js";
+import ui_directive_query_resolvers from "./ui-directives.queries.js";
 
 export default {
   queries: {
@@ -30,8 +33,10 @@ export default {
     ...customer_query_resolvers,
     ...file_attachments_query_resolvers,
     ...host_query_resolvers,
+    ...network_query_resolvers,
     ...project_query_resolvers,
     ...service_query_resolvers,
+    ...ui_directive_query_resolvers,
   },
   mutations: {
     ...customer_mutation_resolvers,
@@ -52,6 +57,7 @@ export default {
     network_service_default_resolvers,
     project_default_resolvers,
     service_default_resolvers,
+    ui_directives_default_resolvers,
   ],
   scalars: scalar_resolvers,
 };

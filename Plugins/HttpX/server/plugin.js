@@ -153,6 +153,7 @@ const HttpXPlugin = {
     PenPal.HttpX = {
       PerformScan: HttpX.performHttpScan,
       ParseResults: HttpX.parseAndUpsertResults,
+      AttachScreenshot: HttpX.attachScreenshotToHttpXEnrichment,
     };
 
     // Register test handlers if Tester plugin is available
