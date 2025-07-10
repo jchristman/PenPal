@@ -1,5 +1,5 @@
 import React from "react";
-import ReactJson from "react-json-view";
+import { JsonView } from "react-json-view-lite";
 import { Components, registerComponent } from "@penpal/core";
 
 const { Card } = Components;
@@ -10,15 +10,9 @@ const JsonTree = ({ value, maxDepth = 2, collapsed = false }) => {
   }
 
   return (
-    <Card>
-      <ReactJson
-        src={value}
-        theme="monokai"
-        collapsed={collapsed ? maxDepth : false}
-        collapseStringsAfterLength={50}
-        displayObjectSize={true}
-        displayDataTypes={false}
-        name={false}
+    <Card className="p-4">
+      <JsonView
+        data={value}
         style={{
           background: "transparent",
           padding: "8px",

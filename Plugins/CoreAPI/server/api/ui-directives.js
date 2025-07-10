@@ -1,4 +1,6 @@
 import { getDirectives } from "@graphql-tools/utils";
+import PenPal from "#penpal/core";
+import { CoreAPILogger } from "../plugin.js";
 
 const DIRECTIVE_NAMES = {
   UI_COMPONENT: "uiComponent",
@@ -79,5 +81,13 @@ export function parseIntrospection(schema) {
  * @returns {object|undefined} - The UI configuration for the type.
  */
 export function getUIDirectivesForType(typeName) {
+  // Defensive: If cache is empty, try to parse the schema now
+  if (directiveCache.size === 0 && PenPal?.GraphQL?.schema) {
+    CoreAPILogger.info("Parsing schema for UI directives");
+    parseIntrospection(PenPal.GraphQL.schema);
+    CoreAPILogger.info(
+      `Schema parsed for UI directives. ${directiveCache.size} types found.`
+    );
+  }
   return directiveCache.get(typeName);
 }

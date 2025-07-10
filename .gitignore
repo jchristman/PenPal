@@ -135,7 +135,9 @@ node_modules/
 .DS_Store
 
 # Heap snapshots
+heap-snapshots
 heap-snapshots/*
 
 # Docker Stats
+docker_stats_logs
 docker_stats_logs/*

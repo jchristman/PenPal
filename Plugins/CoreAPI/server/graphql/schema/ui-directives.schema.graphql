@@ -220,7 +220,7 @@ directive @uiGroup(
   Priority/order for group display
   """
   priority: Int = 0
-) on OBJECT
+) repeatable on OBJECT
 
 """
 Directive for configuring the overall enrichment display

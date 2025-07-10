@@ -33,11 +33,15 @@ const startGraphQLServer = async (
   // Make PubSub available globally for plugins
   PenPal.PubSub = pubsub;
 
-  const schema = makeExecutableSchema({
+  let schema = makeExecutableSchema({
     typeDefs: _typeDefs,
     resolvers: _resolvers,
     inheritResolversFromInterfaces: true,
   });
+
+  PenPal.GraphQL = {
+    schema,
+  };
 
   const server = new ApolloServer({
     schema,
@@ -106,7 +110,6 @@ const startGraphQLServer = async (
         // FIXME: Ensure API is loaded before accessing CachingAPI
         const PenPalCachingAPI =
           PenPal.API && PenPal.API.CachingAPI ? PenPal.API.CachingAPI() : {};
-
         if (!PenPal.API || !PenPal.API.CachingAPI) {
           logger.warn(
             "PenPal.API.CachingAPI not available yet, using empty fallback"

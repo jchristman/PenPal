@@ -20,6 +20,7 @@ if [ "$CONTAINER_TYPE" = "frontend" ]; then
     find /penpal/plugins -path "*/client/npm-dependencies.txt" -type f -print0 | while read -d $'\0' file; do
         if [ -f "$file" ]; then
             echo "Installing dependencies from $file"
+            echo Running \`bun add $(cat $file)\`
             bun add $(cat $file) > /dev/null
         fi
     done

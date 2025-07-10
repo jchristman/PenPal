@@ -1,7 +1,7 @@
 import React from "react";
 import { Components, registerComponent } from "@penpal/core";
 
-const { Badge: Component } = Components;
+const { Badge: _Badge } = Components;
 
 const Badge = ({
   label,
@@ -12,6 +12,7 @@ const Badge = ({
   items,
   maxItems = 5,
   expandable = false,
+  value = null,
 }) => {
   if (Array.isArray(items)) {
     const displayedItems = expandable ? items.slice(0, maxItems) : items;
@@ -20,34 +21,40 @@ const Badge = ({
     return (
       <>
         {displayedItems.map((item, index) => (
-          <Component
+          <_Badge
             key={index}
             label={item}
             color={color}
             size={size}
             variant={variant}
             icon={icon}
-          />
+          >
+            {item}
+          </_Badge>
         ))}
         {expandable && remainingCount > 0 && (
-          <Component
+          <_Badge
             label={`+${remainingCount} more`}
             size={size}
             variant="outlined"
-          />
+          >
+            {`+${remainingCount} more`}
+          </_Badge>
         )}
       </>
     );
   }
 
   return (
-    <Component
+    <_Badge
       label={label}
       color={color}
       size={size}
       variant={variant}
       icon={icon}
-    />
+    >
+      {value}
+    </_Badge>
   );
 };
 

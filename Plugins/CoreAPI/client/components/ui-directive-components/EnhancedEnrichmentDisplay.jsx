@@ -1,8 +1,6 @@
 import React, { useState } from "react";
 import { Components, registerComponent } from "@penpal/core";
 
-const { UIDirectiveRenderer, UIDirectiveJsonTree, Switch, Label } = Components;
-
 const EnhancedEnrichmentDisplay = ({ enrichment }) => {
   const [showRaw, setShowRaw] = useState(false);
 
@@ -11,11 +9,31 @@ const EnhancedEnrichmentDisplay = ({ enrichment }) => {
     return null;
   }
 
+  // Flatten enrichment: spread data fields to top-level if present, with data fields taking precedence
+  const { data: enrichmentData, ...rest } = enrichment;
+  const flatEnrichment =
+    enrichmentData && typeof enrichmentData === "object"
+      ? { ...rest, ...enrichmentData }
+      : enrichment;
+
+  // DEBUG: Log enrichment flattening and service value
+  // if (process.env.NODE_ENV !== "production") {
+  //   console.log("[EnhancedEnrichmentDisplay] Original enrichment:", enrichment);
+  //   console.log(
+  //     "[EnhancedEnrichmentDisplay] Flattened enrichment:",
+  //     flatEnrichment
+  //   );
+  //   console.log(
+  //     "[EnhancedEnrichmentDisplay] Service value:",
+  //     flatEnrichment.service
+  //   );
+  // }
+
   return (
     <div>
       <div className="flex items-center justify-end space-x-2 my-2">
-        <Label htmlFor="raw-toggle">Raw Data</Label>
-        <Switch
+        <Components.Label htmlFor="raw-toggle">Raw Data</Components.Label>
+        <Components.Switch
           id="raw-toggle"
           checked={showRaw}
           onCheckedChange={setShowRaw}
@@ -23,9 +41,9 @@ const EnhancedEnrichmentDisplay = ({ enrichment }) => {
       </div>
 
       {showRaw ? (
-        <UIDirectiveJsonTree value={enrichment} />
+        <Components.UIDirectiveJsonTree value={enrichment} />
       ) : (
-        <UIDirectiveRenderer enrichment={enrichment} />
+        <Components.UIDirectiveRenderer enrichment={flatEnrichment} />
       )}
     </div>
   );

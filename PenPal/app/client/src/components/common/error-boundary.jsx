@@ -19,21 +19,46 @@ class ErrorBoundary extends React.Component {
   }
 
   componentDidCatch(error, errorInfo) {
-    // You can also log the error to an error reporting service
-    //const serialized_error = serializeError(error);
-    //Meteor.call(
-    //  "logErrorToServerConsole",
-    //  serialized_error,
-    //  errorInfo,
-    //  (err, res) => {
-    //    this.setState({
-    //      err_number: res,
-    //      err_message: serialized_error.message,
-    //      err_stack: serialized_error.stack,
-    //    });
-    //  }
-    //);
-    console.error(error);
+    // Try to extract message and stack from error
+    let err_message = "";
+    let err_stack = "";
+    let err_number = -1;
+
+    if (error) {
+      if (typeof error === "string") {
+        err_message = error;
+      } else if (error.message) {
+        err_message = error.message;
+      } else {
+        try {
+          err_message = JSON.stringify(error);
+        } catch (e) {
+          err_message = String(error);
+        }
+      }
+      if (error.stack) {
+        err_stack = error.stack;
+      }
+    }
+
+    // errorInfo is React's component stack
+    if (errorInfo && errorInfo.componentStack) {
+      err_stack += (err_stack ? "\n\n" : "") + errorInfo.componentStack;
+    }
+
+    // Optionally use serializeError for more detail
+    // const serialized = serializeError(error);
+    // if (serialized && serialized.stack) err_stack = serialized.stack;
+    // if (serialized && serialized.message) err_message = serialized.message;
+
+    this.setState({
+      hasError: true,
+      err_number,
+      err_message,
+      err_stack,
+    });
+    // Optionally log to server here
+    console.error("[ErrorBoundary] Caught error:", error, errorInfo);
   }
 
   render() {

@@ -75,49 +75,19 @@ const ProjectViewServicesEnrichments = ({ services }) => {
           <CardContent className="p-0">
             {service.enrichments && service.enrichments.length > 0 ? (
               <div className="divide-y">
-                {service.enrichments.map((enrichment, index) => {
-                  const key = `${service.id}-${index}`;
-                  const isOpen = openEnrichments.has(key);
-
-                  // Use registered component or fallback to the new enhanced default
-                  const DisplayComponent =
-                    PenPal.API.EnrichmentDisplayRegistry?.get(
-                      enrichment.plugin_name
-                    ) || EnhancedEnrichmentDisplay;
-
-                  return (
-                    <Collapsible
-                      key={index}
-                      open={isOpen}
-                      onOpenChange={() => toggleEnrichment(service.id, index)}
-                    >
-                      <CollapsibleTrigger asChild>
-                        <Button
-                          variant="ghost"
-                          className="w-full justify-between p-4 h-auto bg-muted/10 hover:bg-muted/20"
-                        >
-                          <div className="flex items-center space-x-2">
-                            <span className="font-medium">
-                              {enrichment.plugin_name} Enrichment
-                            </span>
-                            <Badge variant="default" className="text-xs">
-                              {enrichment.plugin_name}
-                            </Badge>
-                          </div>
-                          <ChevronDownIcon
-                            className={cn(
-                              "h-4 w-4 transition-transform duration-200",
-                              isOpen && "transform rotate-180"
-                            )}
-                          />
-                        </Button>
-                      </CollapsibleTrigger>
-                      <CollapsibleContent className="p-4 border-t bg-background">
-                        <DisplayComponent enrichment={enrichment} />
-                      </CollapsibleContent>
-                    </Collapsible>
-                  );
-                })}
+                {service.enrichments.map((enrichment, index) => (
+                  <div key={index} className="p-4">
+                    <div className="flex items-center mb-2">
+                      <span className="font-medium mr-2">
+                        {enrichment.plugin_name} Enrichment
+                      </span>
+                      <Badge variant="default" className="text-xs">
+                        {enrichment.plugin_name}
+                      </Badge>
+                    </div>
+                    <EnhancedEnrichmentDisplay enrichment={enrichment} />
+                  </div>
+                ))}
               </div>
             ) : (
               <div className="p-8 text-center text-muted-foreground">

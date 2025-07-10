@@ -7,28 +7,6 @@ import { ChevronDownIcon } from "@heroicons/react/24/solid";
 const { Spinner, Collapsible, CollapsibleTrigger, CollapsibleContent } =
   Components;
 
-// --- Component Mapper ---
-// Maps UIComponentType string to the actual React component
-const componentMap = {
-  TEXT: Components.UIDirectiveText,
-  BADGE: Components.UIDirectiveBadge,
-  URL_LINK: Components.UIDirectiveUrlLink,
-  STATUS_INDICATOR: Components.UIDirectiveStatusIndicator,
-  PROGRESS_BAR: Components.UIDirectiveProgressBar,
-  RATING: Components.UIDirectiveRating,
-  METRIC: Components.UIDirectiveMetric,
-  TIMESTAMP: Components.UIDirectiveTimestamp,
-  LIST: Components.UIDirectiveList,
-  TABLE: Components.UIDirectiveTable,
-  JSON_TREE: Components.UIDirectiveJsonTree,
-  CODE_BLOCK: Components.UIDirectiveCodeBlock,
-  IMAGE: Components.UIDirectiveImage,
-  COPYABLE_TEXT: Components.UIDirectiveCopyableText,
-  ALERT: Components.UIDirectiveAlert,
-  KEY_VALUE: Components.UIDirectiveKeyValue,
-  COLLAPSIBLE: Components.UIDirectiveCollapsible,
-};
-
 const DefaultFieldRenderer = ({ fieldName, fieldData }) => (
   <div className="flex justify-between mb-1">
     <p className="text-sm capitalize text-muted-foreground">
@@ -41,6 +19,30 @@ const DefaultFieldRenderer = ({ fieldName, fieldData }) => (
 );
 
 const renderField = (fieldName, fieldData, fieldConfig) => {
+  // Skip null/undefined fields
+  if (fieldData == null) return null;
+
+  // Define the mapping here so it always uses the latest Components
+  const componentMap = {
+    TEXT: Components.UIDirectiveText,
+    BADGE: Components.UIDirectiveBadge,
+    URL_LINK: Components.UIDirectiveUrlLink,
+    STATUS_INDICATOR: Components.UIDirectiveStatusIndicator,
+    PROGRESS_BAR: Components.UIDirectiveProgressBar,
+    RATING: Components.UIDirectiveRating,
+    METRIC: Components.UIDirectiveMetric,
+    TIMESTAMP: Components.UIDirectiveTimestamp,
+    LIST: Components.UIDirectiveList,
+    TABLE: Components.UIDirectiveTable,
+    JSON_TREE: Components.UIDirectiveJsonTree,
+    CODE_BLOCK: Components.UIDirectiveCodeBlock,
+    IMAGE: Components.UIDirectiveImage,
+    COPYABLE_TEXT: Components.UIDirectiveCopyableText,
+    ALERT: Components.UIDirectiveAlert,
+    KEY_VALUE: Components.UIDirectiveKeyValue,
+    COLLAPSIBLE: Components.UIDirectiveCollapsible,
+  };
+
   if (!fieldConfig?.uiComponent) {
     return (
       <DefaultFieldRenderer
@@ -53,6 +55,16 @@ const renderField = (fieldName, fieldData, fieldConfig) => {
 
   const { type, config } = fieldConfig.uiComponent;
   const Component = componentMap[type];
+
+  // DEBUG: Log the component for status_code
+  if (process.env.NODE_ENV !== "production" && fieldName === "status_code") {
+    console.log(
+      `[renderField] status_code Component:`,
+      Component,
+      `type:`,
+      typeof Component
+    );
+  }
 
   if (!Component) {
     console.warn(`No component mapping found for type: ${type}`);
@@ -106,6 +118,31 @@ const DirectiveRenderer = ({ enrichment }) => {
 
   const uiConfig = directiveData?.getUIDirectives;
 
+  // Normalize uiGroup to always be an array
+  let uiGroups = uiConfig.typeDirectives?.uiGroup;
+  if (uiGroups && !Array.isArray(uiGroups)) {
+    uiGroups = [uiGroups];
+  }
+
+  // DEBUG: Log UI Directives and field names
+  if (process.env.NODE_ENV !== "production") {
+    // console.log("UI Directives for", __typename, uiConfig);
+    // console.log("Enrichment fields:", Object.keys(data));
+  }
+
+  // DEBUG: Log UI Directives fields and status_code value
+  if (process.env.NODE_ENV !== "production") {
+    console.log("[DirectiveRenderer] uiConfig.fields:", uiConfig.fields);
+    console.log("[DirectiveRenderer] status_code value:", data.status_code);
+    if (Object.keys(data).includes("status_code")) {
+      console.log(
+        "[DirectiveRenderer] status_code is present in data and will be considered for rendering."
+      );
+    } else {
+      console.log("[DirectiveRenderer] status_code is NOT present in data.");
+    }
+  }
+
   if (!uiConfig || !uiConfig.fields) {
     return (
       <div>
@@ -120,23 +157,22 @@ const DirectiveRenderer = ({ enrichment }) => {
     );
   }
 
-  const fieldsByGroup = Object.keys(data).reduce((acc, fieldName) => {
-    const groupName =
-      uiConfig.fields[fieldName]?.uiComponent?.config?.group || "default";
-    if (!acc[groupName]) {
-      acc[groupName] = [];
-    }
-    acc[groupName].push(fieldName);
-    return acc;
-  }, {});
+  // When rendering fields, skip the 'data' field
+  const fieldsByGroup = Object.keys(data)
+    .filter((fieldName) => fieldName !== "data")
+    .reduce((acc, fieldName) => {
+      const groupName =
+        uiConfig.fields[fieldName]?.uiComponent?.config?.group || "default";
+      if (!acc[groupName]) {
+        acc[groupName] = [];
+      }
+      acc[groupName].push(fieldName);
+      return acc;
+    }, {});
 
   const sortedGroups = Object.keys(fieldsByGroup).sort((a, b) => {
-    const groupAConfig = uiConfig.typeDirectives?.uiGroup?.find(
-      (g) => g.name === a
-    );
-    const groupBConfig = uiConfig.typeDirectives?.uiGroup?.find(
-      (g) => g.name === b
-    );
+    const groupAConfig = uiGroups?.find((g) => g.name === a);
+    const groupBConfig = uiGroups?.find((g) => g.name === b);
     const priorityA = groupAConfig?.priority ?? (a === "default" ? 99 : 50);
     const priorityB = groupBConfig?.priority ?? (b === "default" ? 99 : 50);
     return priorityA - priorityB;
@@ -153,38 +189,16 @@ const DirectiveRenderer = ({ enrichment }) => {
           return priorityA - priorityB;
         });
 
-        const groupConfig = uiConfig.typeDirectives?.uiGroup?.find(
-          (g) => g.name === groupName
-        );
+        const groupConfig = uiGroups?.find((g) => g.name === groupName);
 
-        if (groupName !== "default" && groupConfig) {
-          return (
-            <Collapsible
-              key={groupName}
-              defaultOpen={!groupConfig.collapsible}
-              className="group"
-            >
-              <CollapsibleTrigger className="flex items-center justify-between w-full">
-                <p className="text-sm font-medium">
-                  {groupConfig.label || groupName}
-                </p>
-                <ChevronDownIcon className="h-5 w-5 transition-transform duration-200 group-data-[state=open]:rotate-180" />
-              </CollapsibleTrigger>
-              <CollapsibleContent>
-                {groupFields.map((fieldName) =>
-                  renderField(
-                    fieldName,
-                    data[fieldName],
-                    uiConfig.fields[fieldName]
-                  )
-                )}
-              </CollapsibleContent>
-            </Collapsible>
-          );
-        }
-
+        // Always render groups expanded, never as Collapsible
         return (
-          <div key={groupName}>
+          <div key={groupName} className="mb-2">
+            {groupName !== "default" && groupConfig && (
+              <p className="text-sm font-medium mb-1">
+                {groupConfig.label || groupName}
+              </p>
+            )}
             {groupFields.map((fieldName) =>
               renderField(
                 fieldName,

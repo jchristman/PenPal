@@ -2,8 +2,6 @@ import React from "react";
 import { Components, registerComponent } from "@penpal/core";
 import { ChevronDownIcon, ChevronRightIcon } from "@heroicons/react/24/outline";
 
-const { JsonTree } = Components;
-
 const CollapsibleField = ({
   value,
   title,
@@ -47,7 +45,7 @@ const CollapsibleField = ({
     }
 
     if (typeof value === "object" && value !== null) {
-      return <JsonTree value={value} />;
+      return <Components.UIDirectiveJsonTree value={value} />;
     }
 
     return <div className="text-sm">{String(value)}</div>;

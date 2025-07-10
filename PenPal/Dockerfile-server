@@ -7,6 +7,10 @@ WORKDIR /penpal
 # Now copy all of the src into /penpal
 COPY --chown=node:node PenPal/app/server/ /penpal/
 
+# Remove node_modules if it exists, this might cause problems with different architectures
+RUN rm -rf /penpal/node_modules
+RUN rm -f /penpal/package-lock.json
+
 # We do this because we will mount over the package-tmp.json, then copy it to package.json so it
 # it will not update the host when we install plugin dependencies
 RUN mv /penpal/package.json /penpal/package-tmp.json

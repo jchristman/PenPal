@@ -14,6 +14,7 @@ const StatusIndicator = ({
   color = "default",
   label,
   size = "small",
+  value,
 }) => {
   const getIcon = () => {
     const iconProps = { className: "h-5 w-5" };
@@ -32,13 +33,9 @@ const StatusIndicator = ({
   };
 
   return (
-    <Badge
-      label={label || status}
-      color={color}
-      size={size}
-      icon={getIcon()}
-      variant="filled"
-    />
+    <Badge color={color} size={size} icon={getIcon()} variant="filled">
+      {label || value}
+    </Badge>
   );
 };
 

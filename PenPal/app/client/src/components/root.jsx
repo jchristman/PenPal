@@ -2,6 +2,7 @@ import React, { useState, useEffect, useCallback } from "react";
 import { Components, Routes, registerComponent } from "@penpal/core";
 import { BrowserRouter } from "react-router-dom";
 import { ApolloProvider } from "@apollo/client";
+import { TooltipProvider } from "@radix-ui/react-tooltip";
 
 import.meta.glob("./*/*.jsx", { eager: true });
 import.meta.glob("./*/*.js", { eager: true });
@@ -128,20 +129,22 @@ const Root = () => {
   return (
     <BrowserRouter>
       <ApolloProvider client={apolloClient}>
-        <Components.ErrorBoundary>
-          <Components.IntrospectionProvider>
-            <Components.AccountProvider>
-              <Components.Layout routes={Routes} />
-            </Components.AccountProvider>
-          </Components.IntrospectionProvider>
-        </Components.ErrorBoundary>
-        {/* WebSocket connection status notifications */}
-        <ConnectionStatusNotification
-          showOnConnect={true}
-          showOnDisconnect={true}
-          showOnReconnecting={true}
-        />
-        <Components.Toaster />
+        <TooltipProvider>
+          <Components.ErrorBoundary>
+            <Components.IntrospectionProvider>
+              <Components.AccountProvider>
+                <Components.Layout routes={Routes} />
+              </Components.AccountProvider>
+            </Components.IntrospectionProvider>
+          </Components.ErrorBoundary>
+          {/* WebSocket connection status notifications */}
+          <ConnectionStatusNotification
+            showOnConnect={true}
+            showOnDisconnect={true}
+            showOnReconnecting={true}
+          />
+          <Components.Toaster />
+        </TooltipProvider>
       </ApolloProvider>
     </BrowserRouter>
   );

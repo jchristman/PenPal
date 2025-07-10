@@ -1,25 +1,25 @@
 import React from "react";
-import { Link, Box } from "@mui/material";
-import { OpenInNew } from "@mui/icons-material";
-import { registerComponent } from "@penpal/core";
+import { Components, registerComponent } from "@penpal/core";
+import { ArrowTopRightOnSquareIcon } from "@heroicons/react/24/outline";
 
-const UrlLink = ({ href, label }) => {
-  if (!href) {
-    return null;
-  }
+const { Tooltip } = Components;
 
+const UrlLink = ({ value, label, className = "", ...props }) => {
+  if (!value) return null;
+  const display = label || value;
   return (
-    <Box display="flex" alignItems="center">
-      <Link
-        href={href}
+    <Tooltip content={value}>
+      <a
+        href={value}
         target="_blank"
         rel="noopener noreferrer"
-        variant="body2"
+        className={`inline-flex items-center gap-1 text-blue-600 hover:underline ${className}`}
+        {...props}
       >
-        {label || href}
-      </Link>
-      <OpenInNew fontSize="inherit" sx={{ ml: 0.5 }} />
-    </Box>
+        {display}
+        <ArrowTopRightOnSquareIcon className="ml-1 h-4 w-4 text-blue-400" />
+      </a>
+    </Tooltip>
   );
 };
 

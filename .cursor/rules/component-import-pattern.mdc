@@ -1,8 +1,3 @@
----
-description: 
-globs: *.tsx,*.jsx
-alwaysApply: false
----
 # PenPal Component Import Pattern
 
 **✅ CRITICAL: Use the `Components` Registry for all UI Elements**
@@ -78,11 +73,33 @@ export default MyBrokenComponent;
 
 ### Why This is Important
 
--   **Extensibility**: Allows the core application or other plugins to override or extend base components.
--   **Theming**: Ensures all components receive the correct theme and styling from the central theme provider.
--   **Consistency**: Maintains a single, consistent source for all UI components, reducing bugs and improving maintainability.
--   **Decoupling**: Keeps plugins decoupled from the specific UI library implementation (e.g., Shadcn UI).
+- **Extensibility**: Allows the core application or other plugins to override or extend base components.
+- **Theming**: Ensures all components receive the correct theme and styling from the central theme provider.
+- **Consistency**: Maintains a single, consistent source for all UI components, reducing bugs and improving maintainability.
+- **Decoupling**: Keeps plugins decoupled from the specific UI library implementation (e.g., Shadcn UI).
 
 ### How to Fix
 
 If you see aliased imports like `from "@/components/ui/..."`, replace them with the destructuring pattern from the `Components` registry as shown in the correct example.
+
+### ⚠️ Load Order & Destructuring Edge Case
+
+**Warning:**
+If you destructure components from the `Components` registry at the top of your file (e.g., `const { UIDirectiveJsonTree } = Components;`), you may get `undefined` if the component is registered later in the load order. This is because destructuring happens before all components are registered by the plugin system. This mostly happens within a single plugin, because all files for a plugin that you depend on are guaranteed to be loaded correctly beforehand
+
+**Correct Pattern:**
+Always reference components as `Components.ComponentName` inside your render function or component body. This ensures the component is available after registration.
+
+**Example:**
+
+```jsx
+// ❌ INCORRECT (may be undefined)
+const { UIDirectiveJsonTree } = Components;
+// ...later...
+return <UIDirectiveJsonTree value={data} />;
+
+// ✅ CORRECT
+return <Components.UIDirectiveJsonTree value={data} />;
+```
+
+This is especially important when using `import.meta.glob` or any dynamic/eager import system for component registration, where registration order is not guaranteed.

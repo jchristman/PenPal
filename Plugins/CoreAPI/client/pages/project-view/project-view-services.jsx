@@ -31,8 +31,6 @@ const ProjectViewServices = ({ project, disable_polling }) => {
 
   const { getServices: services = [] } = data || {};
 
-  console.log(services);
-
   const tabs = [
     {
       value: "dashboard",
