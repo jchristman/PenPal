@@ -1,13 +1,51 @@
 # Gowitness Plugin Enrichment Type
-type GowitnessPluginEnrichment implements PluginEnrichment {
+type GowitnessPluginEnrichment implements PluginEnrichment
+  @uiGroup(name: "details", label: "Capture Details", priority: 0)
+  @uiGroup(
+    name: "screenshot"
+    label: "Screenshot"
+    priority: 10
+    collapsible: true
+  )
+  @enrichmentDisplay(layout: "card", title: "Gowitness Screenshot") {
   plugin_name: String!
   data: JSON
   files: [EnrichmentFileAttachment]
   screenshot_url: String
+    @uiComponent(
+      type: IMAGE
+      config: {
+        group: "screenshot"
+        priority: 0
+        maxWidth: "100%"
+        thumbnail: false
+      }
+    )
   screenshot_bucket: String
+    @uiComponent(
+      type: TEXT
+      config: { group: "details", priority: 4, label: "Bucket" }
+    )
   screenshot_key: String
+    @uiComponent(
+      type: TEXT
+      config: { group: "details", priority: 5, label: "Key" }
+    )
   captured_at: String
+    @uiComponent(
+      type: TIMESTAMP
+      config: { group: "details", priority: 3, format: "relative" }
+    )
   url: String
+    @uiComponent(type: URL_LINK, config: { group: "details", priority: 2 })
   title: String
+    @uiComponent(
+      type: TEXT
+      config: { group: "details", priority: 0, size: "large" }
+    )
   status_code: Int
+    @uiComponent(
+      type: BADGE
+      config: { group: "details", priority: 1, color: "primary" }
+    )
 }
