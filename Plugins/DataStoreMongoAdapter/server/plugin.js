@@ -5,11 +5,11 @@ import * as url from "url";
 const __dirname = url.fileURLToPath(new URL(".", import.meta.url));
 
 const settings = {
-  configuration: {
-    schema_root: "MongoDataStoreConfiguration",
-    getter: "getMongoDataStoreConfiguration",
-    setter: "setMongoDataStoreConfiguration",
-  },
+  // configuration: {
+  //   schema_root: "MongoDataStoreConfiguration",
+  //   getter: "getMongoDataStoreConfiguration",
+  //   setter: "setMongoDataStoreConfiguration",
+  // },
 };
 
 // We have to hold the configuration for database connection string in memory or on-disk,

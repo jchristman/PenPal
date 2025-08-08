@@ -305,7 +305,7 @@
       "description": "Create the basic structure for the E2ETesting plugin following PenPal's plugin architecture patterns, with dependencies on CoreAPI, Docker, and JobsTracker plugins.",
       "details": "Implement the foundation for the E2ETesting plugin with the following components:\n\n1. Create `manifest.json` with:\n   - Plugin name: 'E2ETesting'\n   - Version information\n   - Dependencies explicitly listed: CoreAPI, Docker, and JobsTracker\n   - Any required permissions\n\n2. Create `index.js` that:\n   - Exports the plugin class\n   - Handles proper module exports\n\n3. Create `plugin.js` that:\n   - Defines the E2ETesting plugin class\n   - Implements the standard plugin lifecycle methods (register, load, start, stop)\n   - Sets up proper dependency injection for CoreAPI, Docker, and JobsTracker\n   - Follows PenPal's established plugin registration pattern\n\n4. Set up the GraphQL schema structure:\n   - Create a `schema` directory\n   - Implement basic type definitions in `schema/typeDefs.js`\n   - Implement basic resolvers in `schema/resolvers.js`\n   - Ensure the schema is properly exported and registered with the GraphQL server\n\n5. Create a basic README.md documenting:\n   - The plugin's purpose\n   - Dependencies\n   - Basic usage instructions\n\nEnsure all files follow the project's coding standards and patterns established in other plugins.",
       "testStrategy": "Verify the plugin foundation is correctly implemented through the following tests:\n\n1. **Plugin Registration Test**:\n   - Verify the plugin registers successfully with the PenPal framework\n   - Confirm no errors during the registration process\n   - Check that dependencies are correctly specified and loaded\n\n2. **Structure Validation**:\n   - Validate all required files exist (manifest.json, index.js, plugin.js, schema files)\n   - Verify the manifest.json contains correct dependencies on CoreAPI, Docker, and JobsTracker\n   - Ensure the plugin class properly extends the base Plugin class\n\n3. **GraphQL Schema Test**:\n   - Verify the GraphQL schema can be parsed without errors\n   - Test that the schema is properly registered with the GraphQL server\n   - Run a simple introspection query to confirm the schema is accessible\n\n4. **Dependency Injection Test**:\n   - Verify the plugin correctly receives and can access the CoreAPI, Docker, and JobsTracker dependencies\n   - Test that methods from these dependencies can be called from within the E2ETesting plugin\n\n5. **Lifecycle Methods Test**:\n   - Verify the plugin can be started and stopped without errors\n   - Check that resources are properly initialized during start and cleaned up during stop",
-      "status": "pending",
+      "status": "done",
       "dependencies": [],
       "priority": "high",
       "subtasks": [
@@ -315,7 +315,7 @@
           "description": "Set up the initial directory structure for the E2ETesting plugin and create the manifest.json file with required metadata and dependencies.",
           "dependencies": [],
           "details": "Implementation steps:\n1. Create the main plugin directory: `plugins/E2ETesting`\n2. Create subdirectories: `schema`, `lib`, `tests`\n3. Create manifest.json with:\n   - Plugin name: 'E2ETesting'\n   - Version: '1.0.0'\n   - Dependencies: CoreAPI, Docker, and JobsTracker\n   - Required permissions\n4. Ensure the manifest follows the same format as other plugins\n\nTesting approach:\n- Validate the manifest.json structure against the project's schema\n- Verify all required directories exist\n- Confirm dependencies are correctly specified",
-          "status": "pending",
+          "status": "done",
           "parentTaskId": 17
         },
         {
@@ -326,7 +326,7 @@
             1
           ],
           "details": "Implementation steps:\n1. Create `plugin.js` in the root of the E2ETesting directory\n2. Define the E2ETesting class that extends the base Plugin class\n3. Implement required lifecycle methods:\n   - register(): Register plugin with the system\n   - load(): Load dependencies and prepare resources\n   - start(): Initialize and start plugin functionality\n   - stop(): Clean up resources and stop plugin\n4. Set up dependency injection for CoreAPI, Docker, and JobsTracker\n5. Add proper error handling for missing dependencies\n\nTesting approach:\n- Create unit tests for each lifecycle method\n- Test dependency injection with mock objects\n- Verify error handling for missing dependencies",
-          "status": "pending",
+          "status": "done",
           "parentTaskId": 17
         },
         {
@@ -337,7 +337,7 @@
             2
           ],
           "details": "Implementation steps:\n1. Create `index.js` in the root of the E2ETesting directory\n2. Import the E2ETesting plugin class from plugin.js\n3. Set up proper module exports following project patterns:\n   - Export the plugin class as default\n   - Add any additional named exports if needed\n4. Ensure compatibility with both CommonJS and ES modules if required by the project\n\nTesting approach:\n- Verify the module can be imported correctly\n- Test that the exported plugin class is properly accessible\n- Confirm it follows the same pattern as other plugins in the system",
-          "status": "pending",
+          "status": "done",
           "parentTaskId": 17
         },
         {
@@ -348,7 +348,7 @@
             1
           ],
           "details": "Implementation steps:\n1. Create `schema/typeDefs.js` with:\n   - Basic type definitions for E2E testing entities\n   - Query definitions for retrieving test data\n   - Mutation definitions for managing tests\n2. Create `schema/resolvers.js` with:\n   - Query resolvers (stubs initially)\n   - Mutation resolvers (stubs initially)\n3. Create `schema/index.js` to export combined schema\n4. Ensure schema follows the project's GraphQL patterns\n\nTesting approach:\n- Validate GraphQL schema syntax\n- Test schema registration with mock GraphQL server\n- Verify resolver stubs return expected placeholder values",
-          "status": "pending",
+          "status": "done",
           "parentTaskId": 17
         },
         {
@@ -360,7 +360,7 @@
             4
           ],
           "details": "Implementation steps:\n1. Modify the plugin.js file to import the GraphQL schema\n2. Update the register() or start() method to register the schema with CoreAPI\n3. Add code to properly merge the schema with the existing GraphQL schema\n4. Implement error handling for schema registration failures\n5. Add cleanup code in stop() method to unregister the schema if needed\n\nTesting approach:\n- Test schema registration with mock CoreAPI\n- Verify schema is properly merged\n- Test error handling for registration failures\n- Confirm schema is unregistered during plugin shutdown",
-          "status": "pending",
+          "status": "done",
           "parentTaskId": 17
         },
         {
@@ -375,7 +375,7 @@
             5
           ],
           "details": "Implementation steps:\n1. Create README.md in the plugin root directory\n2. Document the plugin's purpose and main features\n3. List all dependencies and their versions\n4. Provide basic usage instructions including:\n   - How to configure the plugin\n   - Available GraphQL queries and mutations\n   - Integration with other plugins\n5. Add examples of common operations\n6. Include development and testing instructions\n\nTesting approach:\n- Review documentation for completeness\n- Verify all listed features are implemented\n- Confirm examples are accurate and functional\n- Check that dependency information is correct",
-          "status": "pending",
+          "status": "done",
           "parentTaskId": 17
         }
       ]
@@ -552,6 +552,183 @@
         30
       ],
       "priority": "low"
+    },
+    {
+      "id": 32,
+      "title": "Implement ICMP Ping Plugin for Network Host Discovery",
+      "description": "Develop a containerized Ping plugin that performs fast ICMP sweeps to discover hosts in a network, integrating with PenPal's existing architecture and services.",
+      "details": "Create a new Ping plugin that leverages ICMP protocol for efficient host discovery across network ranges. The plugin should:\n\n1. Be containerized using Docker with a Dockerfile that includes necessary dependencies for ICMP operations\n2. Subscribe to MQTT topics for new network discoveries (e.g., 'penpal/discoveries/networks')\n3. Upon receiving network information, queue scans using the ScanQueue service\n4. Implement fast ICMP sweep functionality that can handle various network sizes efficiently\n5. Track scan jobs using the JobsTracker service, updating status as appropriate\n6. Process scan results and upsert discovered hosts to CoreAPI\n7. Extend the GraphQL schema to support:\n   - Querying ping results by network, IP range, or specific hosts\n   - Checking scan status and history\n   - Retrieving latency statistics for discovered hosts\n8. Implement proper error handling and logging\n9. Include configuration options for scan parameters (timeout, retry count, parallel scan limit)\n10. Follow PenPal's plugin architecture patterns for consistency\n\nThe plugin should be optimized for performance, especially when scanning large networks, and should handle rate limiting to prevent network flooding.",
+      "testStrategy": "Testing should verify both functionality and integration with PenPal's ecosystem:\n\n1. Unit tests:\n   - Test ICMP sweep functionality with mock network responses\n   - Verify proper parsing and handling of ICMP responses\n   - Test error handling for various failure scenarios\n\n2. Integration tests:\n   - Verify MQTT subscription and message handling\n   - Test ScanQueue integration for job submission\n   - Validate JobsTracker updates during scan lifecycle\n   - Confirm CoreAPI upsert operations work correctly\n\n3. End-to-end tests:\n   - Deploy the plugin in a test environment with known hosts\n   - Trigger a network discovery and verify hosts are correctly identified\n   - Test GraphQL queries to retrieve ping results and status\n   - Verify latency measurements are accurate using controlled test hosts\n\n4. Performance tests:\n   - Measure scan performance on networks of various sizes\n   - Test concurrent scanning capabilities\n   - Verify resource usage remains within acceptable limits\n\n5. Security tests:\n   - Ensure the plugin handles permissions correctly for ICMP operations\n   - Verify no sensitive information is exposed in logs or responses\n\nAll tests should be automated where possible and included in CI/CD pipeline.",
+      "status": "done",
+      "dependencies": [],
+      "priority": "high",
+      "subtasks": [
+        {
+          "id": 1,
+          "title": "Implement Core ICMP Ping Sweep Functionality",
+          "description": "Develop the core ICMP ping sweep engine that efficiently discovers hosts across network ranges using asynchronous, non-blocking operations for optimal performance.",
+          "dependencies": [],
+          "details": "1. Create a Python module using aioping or scapy for asynchronous ICMP operations\n2. Implement worker pool pattern with configurable concurrency limits\n3. Build network range parser to convert CIDR notation to individual IPs\n4. Add rate limiting mechanism to prevent network flooding\n5. Implement timeout and retry logic with configurable parameters\n6. Create structured result format with host status and latency metrics\n7. Add proper error handling for network issues and permission errors\n8. Test with various network sizes to verify performance\n9. Testing approach: Unit test individual components and perform integration tests against test networks of varying sizes",
+          "status": "done",
+          "parentTaskId": 32
+        },
+        {
+          "id": 2,
+          "title": "Containerize the Ping Plugin with Docker",
+          "description": "Package the ICMP ping functionality into a Docker container with appropriate permissions and minimal footprint, following security best practices.",
+          "dependencies": [
+            1
+          ],
+          "details": "1. Create a Dockerfile using Python Alpine as base image\n2. Install necessary dependencies for ICMP operations\n3. Configure container with CAP_NET_RAW capability for raw socket access\n4. Implement proper user permissions (non-root user when possible)\n5. Add health check endpoint to verify plugin status\n6. Optimize container size by removing unnecessary packages\n7. Include proper logging configuration\n8. Document required Docker run parameters\n9. Testing approach: Build container and verify it can perform ICMP operations with correct permissions, validate security using container scanning tools",
+          "status": "done",
+          "parentTaskId": 32
+        },
+        {
+          "id": 3,
+          "title": "Integrate with PenPal's MQTT and ScanQueue Services",
+          "description": "Connect the plugin to PenPal's messaging infrastructure to receive scan requests and queue network discovery jobs.",
+          "dependencies": [
+            1,
+            2
+          ],
+          "details": "1. Implement MQTT client to subscribe to 'penpal/discoveries/networks' topic\n2. Create message parser to extract network information from MQTT messages\n3. Develop integration with ScanQueue service to queue ping sweep jobs\n4. Implement JobsTracker service integration to update scan status\n5. Add retry mechanism for failed service connections\n6. Create configuration for MQTT broker connection details\n7. Implement proper error handling for messaging failures\n8. Add logging for all service interactions\n9. Testing approach: Create mock MQTT broker and service endpoints to test integration, verify message handling and job tracking",
+          "status": "done",
+          "parentTaskId": 32
+        },
+        {
+          "id": 4,
+          "title": "Implement Results Processing and CoreAPI Integration",
+          "description": "Process scan results and integrate with PenPal's CoreAPI to store discovered hosts and their metadata.",
+          "dependencies": [
+            3
+          ],
+          "details": "1. Create result processor to format ping sweep findings\n2. Implement CoreAPI client for host data upsert operations\n3. Add data transformation logic to match CoreAPI schema\n4. Implement batch processing for efficient API usage\n5. Add conflict resolution for existing host records\n6. Create error handling for API failures with retry logic\n7. Implement transaction logging for audit purposes\n8. Add performance metrics collection\n9. Testing approach: Use mock CoreAPI endpoints to verify correct data transformation and upsert operations, test with various result scenarios",
+          "status": "done",
+          "parentTaskId": 32
+        },
+        {
+          "id": 5,
+          "title": "Extend GraphQL Schema and Implement Query Handlers",
+          "description": "Extend PenPal's GraphQL schema to support ping-related queries and implement the corresponding resolvers.",
+          "dependencies": [
+            4
+          ],
+          "details": "1. Define GraphQL schema extensions for ping operations\n2. Implement query resolvers for retrieving ping results by network/IP range\n3. Create mutation resolvers for triggering new ping scans\n4. Add subscription resolvers for real-time scan status updates\n5. Implement filtering and pagination for large result sets\n6. Create latency statistics aggregation functions\n7. Add proper error handling and validation\n8. Implement authentication and authorization checks\n9. Testing approach: Create GraphQL test suite to verify schema extensions, test queries with sample data, verify authorization controls",
+          "status": "done",
+          "parentTaskId": 32
+        }
+      ]
+    },
+    {
+      "id": 33,
+      "title": "Implement MQTT-Triggered Gobuster Plugin for HTTP Service Enumeration",
+      "description": "Develop a plugin that uses Gobuster to automatically enumerate directories and files on HTTP services when triggered by MQTT messages, utilizing SecLists wordlists and adding enrichments for discovered items.",
+      "details": "Create a plugin that integrates with our existing architecture to perform automated directory and file enumeration on HTTP services. The plugin should:\n\n1. Subscribe to relevant MQTT topics to receive triggers for scanning (e.g., when new HTTP services are discovered)\n2. Upon receiving a trigger, launch Gobuster with appropriate parameters to scan the target HTTP service\n3. Utilize SecLists wordlists for comprehensive enumeration (include directory-list-2.3-medium.txt for directories and web-extensions.txt for file types)\n4. Implement intelligent wordlist selection based on the target (e.g., different wordlists for different web technologies if detected)\n5. Process Gobuster results to identify interesting files and directories (status codes 200, 301, 302, 403 should be considered interesting)\n6. For each discovered item, create enrichments including:\n   - File/directory path\n   - Status code\n   - Size (if available)\n   - Content type\n   - Last modified date (if available)\n   - A brief assessment of potential security implications\n7. Publish results back to MQTT with appropriate topics for other components to consume\n8. Implement rate limiting and respect target limitations to avoid overwhelming services\n9. Include proper error handling for timeouts, connection issues, and other potential failures\n10. Log all activities with appropriate verbosity levels\n11. Ensure the plugin can be configured via environment variables or a configuration file\n\nThe plugin should be containerized for easy deployment and should follow our existing plugin architecture patterns.",
+      "testStrategy": "Testing should verify both functionality and reliability of the plugin:\n\n1. Unit Tests:\n   - Test MQTT message parsing and validation\n   - Test Gobuster command construction with various parameters\n   - Test result parsing and enrichment generation\n   - Test error handling for various failure scenarios\n\n2. Integration Tests:\n   - Set up a test HTTP server with known directories and files\n   - Trigger the plugin via MQTT and verify it correctly discovers the known items\n   - Verify enrichments are correctly generated and contain accurate information\n   - Test with different HTTP server configurations (Apache, Nginx, IIS)\n\n3. Performance Tests:\n   - Verify the plugin handles large wordlists efficiently\n   - Test memory usage during scanning of large targets\n   - Verify rate limiting functionality works as expected\n\n4. Edge Cases:\n   - Test behavior with malformed MQTT messages\n   - Test with unreachable HTTP services\n   - Test with HTTP services that return unusual status codes\n   - Test with extremely slow HTTP services\n\n5. End-to-End Tests:\n   - Verify the plugin integrates correctly with other components in the system\n   - Confirm MQTT messages are properly published and can be consumed by other components\n\nAll tests should be automated and included in the CI/CD pipeline. Documentation should include examples of expected MQTT messages and plugin outputs.",
+      "status": "done",
+      "dependencies": [
+        32
+      ],
+      "priority": "high",
+      "subtasks": [
+        {
+          "id": 1,
+          "title": "Set up MQTT client with subscription and reconnection logic",
+          "description": "Implement a robust MQTT client that subscribes to relevant topics for HTTP service discovery and maintains connection reliability",
+          "dependencies": [],
+          "details": "1. Use paho-mqtt library for Python implementation\n2. Configure client with broker connection parameters from environment variables\n3. Implement proper connection handling with automatic reconnection\n4. Set up subscription to topics like 'discovery/http/+' and 'scan/request/http/+'\n5. Create message queue for handling incoming scan requests\n6. Implement message validation to ensure payloads contain required fields (target URL, scan ID)\n7. Add logging for all MQTT events with configurable verbosity\n8. Test with simulated connection drops to verify reconnection logic",
+          "status": "done",
+          "parentTaskId": 33
+        },
+        {
+          "id": 2,
+          "title": "Create Gobuster execution wrapper with parameter handling",
+          "description": "Develop a module to execute Gobuster with appropriate parameters based on scan requirements",
+          "dependencies": [
+            1
+          ],
+          "details": "1. Create a GobusterRunner class that handles subprocess execution\n2. Implement parameter validation and sanitization to prevent command injection\n3. Support configurable Gobuster modes (dir, dns, vhost) with dir as default\n4. Add wordlist selection logic with SecLists paths configurable via environment variables\n5. Implement timeout handling and process management\n6. Create structured output parsing for Gobuster results\n7. Add resource limiting to prevent system overload\n8. Test with various parameter combinations to ensure proper execution",
+          "status": "done",
+          "parentTaskId": 33
+        },
+        {
+          "id": 3,
+          "title": "Implement intelligent wordlist selection based on target",
+          "description": "Create a system to select appropriate wordlists from SecLists based on target characteristics",
+          "dependencies": [
+            2
+          ],
+          "details": "1. Implement initial target analysis to detect web server type and technologies\n2. Create mapping of web technologies to appropriate SecLists wordlists\n3. Support fallback to directory-list-2.3-medium.txt as default for directories\n4. Add logic to combine web-extensions.txt with directory wordlists for file discovery\n5. Implement wordlist caching to improve performance for repeated scans\n6. Add configuration options to override automatic selection\n7. Create test cases with different web servers (Apache, Nginx, IIS) to verify selection logic\n8. Document wordlist selection strategy for maintainability",
+          "status": "done",
+          "parentTaskId": 33
+        },
+        {
+          "id": 4,
+          "title": "Develop result processing and enrichment module",
+          "description": "Create a module to process Gobuster results and enrich them with additional metadata",
+          "dependencies": [
+            2
+          ],
+          "details": "1. Parse Gobuster output to extract discovered paths and status codes\n2. Implement HTTP requests to gather additional metadata for each discovery\n3. Collect enrichment data: status code, content type, size, last modified date\n4. Add content analysis for basic security implication assessment\n5. Implement concurrent processing with rate limiting to respect target limitations\n6. Create structured data format for enriched results\n7. Add error handling for failed enrichment requests\n8. Test with various HTTP responses to ensure proper enrichment",
+          "status": "done",
+          "parentTaskId": 33
+        },
+        {
+          "id": 5,
+          "title": "Implement MQTT result publishing with appropriate topics",
+          "description": "Create a module to publish enriched scan results back to MQTT with well-structured topics and payloads",
+          "dependencies": [
+            1,
+            4
+          ],
+          "details": "1. Design topic structure for publishing results (e.g., 'results/http/enumeration/{scan_id}')\n2. Create JSON schema for result payloads including all enrichment data\n3. Implement batched publishing to avoid message size limitations\n4. Add QoS configuration for reliable message delivery\n5. Include scan metadata (timestamp, duration, parameters used) in results\n6. Implement progress updates during long-running scans\n7. Add completion notification with summary statistics\n8. Test with large result sets to verify proper handling",
+          "status": "done",
+          "parentTaskId": 33
+        },
+        {
+          "id": 6,
+          "title": "Add rate limiting and target protection mechanisms",
+          "description": "Implement safeguards to prevent overwhelming target services with too many requests",
+          "dependencies": [
+            2,
+            4
+          ],
+          "details": "1. Implement configurable request rate limiting for Gobuster execution\n2. Add concurrent scan limiting to prevent multiple scans against same target\n3. Create backoff mechanism for failed requests\n4. Implement scan duration limits with graceful termination\n5. Add target blacklist/whitelist functionality\n6. Create monitoring for target response times to dynamically adjust scan intensity\n7. Implement emergency stop capability via MQTT command\n8. Test with various rate limits to verify protection effectiveness",
+          "status": "done",
+          "parentTaskId": 33
+        },
+        {
+          "id": 7,
+          "title": "Implement configuration management and environment variable support",
+          "description": "Create a flexible configuration system supporting environment variables and configuration files",
+          "dependencies": [
+            1,
+            2,
+            3,
+            6
+          ],
+          "details": "1. Define comprehensive configuration schema covering all plugin parameters\n2. Implement environment variable parsing with appropriate prefixes (e.g., GOBUSTER_PLUGIN_*)\n3. Add support for configuration file in YAML/JSON format\n4. Implement configuration validation with sensible defaults\n5. Create dynamic configuration reloading capability\n6. Add secure handling of sensitive configuration (e.g., credentials)\n7. Implement configuration documentation generation\n8. Test with various configuration methods to ensure proper precedence",
+          "status": "done",
+          "parentTaskId": 33
+        },
+        {
+          "id": 8,
+          "title": "Create containerization and deployment package",
+          "description": "Package the plugin as a container with appropriate documentation and integration examples",
+          "dependencies": [
+            1,
+            2,
+            3,
+            4,
+            5,
+            6,
+            7
+          ],
+          "details": "1. Create Dockerfile optimized for size and security\n2. Add health check endpoint for container monitoring\n3. Implement proper signal handling for graceful shutdown\n4. Create docker-compose example for easy deployment\n5. Add comprehensive README with usage examples and configuration reference\n6. Implement integration tests for the containerized plugin\n7. Create CI/CD pipeline configuration for automated builds\n8. Package SecLists wordlists efficiently within the container",
+          "status": "done",
+          "parentTaskId": 33
+        }
+      ]
     }
   ],
   "metadata": {

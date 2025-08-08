@@ -78,11 +78,11 @@ export const parseAndUpsertResults = async (project_id, xml_data) => {
     const ip = host.address[0].$.addr;
     const hostname = host.hostnames?.[0]?.hostname?.[0]?.$?.name ?? null;
     const closed =
-      host.ports?.[0].extraports.find(
+      host.ports?.[0]?.extraports?.find(
         (extra_port) => extra_port.$.state === "closed"
       )?.$?.count ?? 0;
     const filtered =
-      host.ports?.[0].extraports.find(
+      host.ports?.[0]?.extraports?.find(
         (extra_port) => extra_port.$.state === "filtered"
       )?.$?.count ?? 0;
 
@@ -256,6 +256,27 @@ export const performScan = async ({
     } catch (e) {
       // Check if it's a timeout error or actual failure
       if (e.message && e.message.includes("timed out")) {
+        // Respect cancellation requests
+        if (job_id) {
+          const currentJob = await PenPal.Jobs.Get(job_id);
+          if (currentJob?.cancellation_request) {
+            try {
+              await PenPal.Docker.Stop(container_id);
+            } catch (stopErr) {
+              logger.warn(
+                `Error stopping container on cancellation: ${stopErr.message}`
+              );
+            }
+            await PenPal.Jobs.Cancel(job_id);
+            // Cleanup container if still exists
+            try {
+              await PenPal.Docker.RemoveContainer(container_id);
+            } catch (rmErr) {
+              // ignore
+            }
+            return; // exit early
+          }
+        }
         // This is expected - get progress and continue monitoring
         let stats = await getNmapProgress(container_id);
         if (stats !== null) {

@@ -20,6 +20,16 @@ const registerRoutes = () => {
     icon: Cog6ToothIcon,
   };
   registerRoute(Configuration);
+
+  const ConfigurationPlugin = {
+    name: "configuration-plugin",
+    path: "/configure/:plugin_name",
+    componentName: "Configuration",
+    prettyName: "Configure Plugin",
+    icon: Cog6ToothIcon,
+    hideFromNav: true,
+  };
+  registerRoute(ConfigurationPlugin);
 };
 
 export default registerRoutes;

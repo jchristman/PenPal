@@ -14,6 +14,12 @@ export const settings = {
     name: "penpal:gowitness",
     dockercontext: `${__dirname}/docker-context`,
   },
+  configuration: {
+    schema_root: "GowitnessConfiguration",
+    getter: "getGowitnessConfiguration",
+    setter: "setGowitnessConfiguration",
+  },
+  datastores: [{ name: "Configuration" }],
 };
 
 const start_gowitness_scan_batch = async (batchedArgs) => {

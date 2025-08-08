@@ -84,6 +84,7 @@ export const insertJob = async (job) => {
     statusText: "",
     progress: 0,
     status: JobStatus.PENDING,
+    cancellation_request: false,
     // Then override with provided values
     ...job,
     // Always set timestamps
@@ -210,6 +211,55 @@ export const updateJob = async (job_id, updates) => {
   }
 
   return result;
+};
+
+// Cancellation helpers
+export const requestCancellation = async (job_id) => {
+  await updateJob(job_id, { cancellation_request: true });
+  return await getJob(job_id);
+};
+
+export const confirmCancelled = async (
+  job_id,
+  statusText = "Cancelled by user"
+) => {
+  const job = await getJob(job_id);
+  const updatedStages = (job?.stages || []).map((stage) => ({
+    ...stage,
+    status: JobStatus.CANCELLED,
+    progress: 100,
+    statusText: stage.statusText || "Cancelled",
+  }));
+
+  await updateJob(job_id, {
+    status: JobStatus.CANCELLED,
+    progress: 100,
+    statusText,
+    stages: updatedStages,
+    cancellation_request: false,
+  });
+  return await getJob(job_id);
+};
+
+export const cancelJob = async (job_id, statusText = "Cancelled by user") => {
+  const job = await getJob(job_id);
+  if (!job) throw new Error(`Job with id ${job_id} not found`);
+
+  const updatedStages = (job.stages || []).map((stage) => ({
+    ...stage,
+    status: JobStatus.CANCELLED,
+    progress: 100,
+    statusText: stage.statusText || "Cancelled",
+  }));
+
+  await updateJob(job_id, {
+    cancellation_request: false,
+    status: JobStatus.CANCELLED,
+    progress: 100,
+    statusText,
+    stages: updatedStages,
+  });
+  return await getJob(job_id);
 };
 
 export const updateJobs = async (updates_array, update_updated_at = true) => {

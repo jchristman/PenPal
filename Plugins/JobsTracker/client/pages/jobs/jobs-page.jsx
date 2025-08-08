@@ -171,7 +171,17 @@ const StageCard = ({ stage, index, isActive, jobStatus }) => {
   );
 };
 
+const REQUEST_CANCEL_MUTATION = gql`
+  mutation RequestCancel($id: ID!) {
+    requestJobCancellation(id: $id) {
+      id
+      cancellation_request
+    }
+  }
+`;
+
 const JobCard = ({ job, isExpanded, onToggleExpand }) => {
+  const [requestCancel] = useMutation(REQUEST_CANCEL_MUTATION);
   const activeStageIndex = useMemo(
     () => findActiveStageIndex(job.stages),
     [job.stages]
@@ -217,6 +227,19 @@ const JobCard = ({ job, isExpanded, onToggleExpand }) => {
                 ? `${completedStages} / ${job.stages.length} stages`
                 : `${job.progress}%`}
             </span>
+            {!COMPLETED_STATUSES.includes(job.status) && (
+              <Components.Button
+                variant={job.cancellation_request ? "secondary" : "destructive"}
+                size="sm"
+                disabled={job.cancellation_request}
+                onClick={(e) => {
+                  e.stopPropagation();
+                  requestCancel({ variables: { id: job.id } });
+                }}
+              >
+                {job.cancellation_request ? "Cancellation Requested" : "Cancel"}
+              </Components.Button>
+            )}
             {job.stages.length > 0 && (
               <Components.Button
                 variant="ghost"

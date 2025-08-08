@@ -1,0 +1,27 @@
+type PingConfigurationUI {
+  STATUS_SLEEP: Int
+}
+
+type PingConfiguration {
+  ui: PingConfigurationUI
+  _ui: JSON
+}
+
+input PingConfigurationUIInput {
+  STATUS_SLEEP: Int
+}
+
+input PingConfigurationInput {
+  ui: PingConfigurationUIInput
+  _ui: JSON
+}
+
+extend type Query {
+  getPingConfiguration: PingConfiguration
+}
+
+extend type Mutation {
+  setPingConfiguration(
+    configuration: PingConfigurationInput!
+  ): PingConfiguration
+}

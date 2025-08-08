@@ -1,6 +1,8 @@
 extend type Mutation {
   createJob(input: JobInput!): Job!
   updateJob(id: ID!, input: JobUpdateInput!): Job!
+  requestJobCancellation(id: ID!): Job!
+  confirmJobCancelled(id: ID!, statusText: String): Job!
   updateJobStage(
     jobId: ID!
     stageIndex: Int!

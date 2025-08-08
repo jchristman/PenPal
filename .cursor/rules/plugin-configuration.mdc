@@ -1,0 +1,145 @@
+---
+description: Generic plugin configuration system for PenPal Base UI with metadata-driven rendering
+globs: Plugins/**/server/graphql/**/*, Plugins/Base/client/pages/configuration/**/*
+alwaysApply: true
+---
+
+- **Overview**
+
+  - Plugins expose configuration through GraphQL and a tiny metadata object the Base UI consumes to render forms.
+  - The Base UI is plugin-agnostic: it renders sections/fields from your schema and the `_ui` metadata only.
+
+- **Add configuration to a plugin (server)**
+
+  - **Declare configuration endpoints in `plugin.js`**
+    ```javascript
+    // Plugins/YourPlugin/server/plugin.js
+    export const settings = {
+      configuration: {
+        schema_root: "YourPluginConfiguration",
+        getter: "getYourPluginConfiguration",
+        setter: "setYourPluginConfiguration",
+      },
+      datastores: [{ name: "Configuration" }],
+    };
+    ```
+  - **Define GraphQL types and IO**
+
+    ```graphql
+    # Plugins/YourPlugin/server/graphql/schema/your.config.graphql
+    type YourPluginConfiguration {
+      sectionA: SectionA
+      sectionB: SectionB
+      _ui: JSON # metadata used only by UI
+    }
+
+    input YourPluginConfigurationInput {
+      sectionA: SectionAInput
+      sectionB: SectionBInput
+      _ui: JSON # optional in mutation input; ignored by persistence
+    }
+
+    extend type Query {
+      getYourPluginConfiguration: YourPluginConfiguration
+    }
+    extend type Mutation {
+      setYourPluginConfiguration(
+        configuration: YourPluginConfigurationInput!
+      ): YourPluginConfiguration
+    }
+    ```
+
+    - ⚠ Do not use names starting with `__` in GraphQL fields. Use `_ui`, not `__ui`.
+
+  - **Resolvers**
+    - Return the saved config merged with defaults and attach `_ui` metadata on both getter and setter responses.
+    - Strip `_ui` before saving; enforce any invariants (e.g., mutually exclusive fields) server-side.
+    ```javascript
+    // Plugins/YourPlugin/server/graphql/resolvers/your.config.js
+    export default {
+      queries: {
+        async getYourPluginConfiguration() {
+          const cfg = await loadOrDefault();
+          return { ...cfg, _ui: buildUiMeta() };
+        },
+      },
+      mutations: {
+        async setYourPluginConfiguration(parent, { configuration }) {
+          const next = coerceAndValidate(configuration); // strip _ui, coerce types
+          const saved = await save(next);
+          return { ...saved, _ui: buildUiMeta() };
+        },
+      },
+    };
+    ```
+
+- **UI Metadata contract**
+
+  - **`_ui.sections`**: order and labels for cards
+    ```json
+    {
+      "sections": [
+        { "path": "ui", "label": "General" },
+        { "path": "scan.fast", "label": "Fast Scan" },
+        { "path": "scan.detailed", "label": "Detailed Scan" }
+      ]
+    }
+    ```
+  - **`_ui.conditional`**: show/hide fields based on a boolean controller inside that object
+    ```json
+    {
+      "conditional": [
+        {
+          "path": "scan.fast",
+          "controller": "use_top_ports",
+          "showWhenTrue": ["top_ports"],
+          "showWhenFalse": ["tcp_ports", "udp_ports"]
+        }
+      ]
+    }
+    ```
+  - **`_ui.mutuallyExclusive`**: optional data enforcement hints (still enforced server-side)
+    ```json
+    {
+      "mutuallyExclusive": [
+        {
+          "path": "scan.fast",
+          "fields": ["top_ports", "tcp_ports", "udp_ports"]
+        }
+      ]
+    }
+    ```
+
+- **Base UI behavior**
+
+  - Renders each top-level section as a card. If `_ui.sections` is present, it uses that order and labels.
+  - Applies `_ui.conditional` per section to show/hide fields dynamically.
+  - Strips `_ui` from the payload before saving.
+  - After saving, it uses the mutation response to refresh local state (including `_ui`) without a hard reload.
+  - File references: [configuration.jsx](mdc:Plugins/Base/client/pages/configuration.jsx), [configuration-page.jsx](mdc:Plugins/Base/client/pages/configuration/configuration-page.jsx)
+
+- **Nmap example (reference only)**
+
+  - Schema: [nmap.configuration.graphql](mdc:Plugins/Nmap/server/graphql/schema/nmap.configuration.graphql)
+  - Resolvers: [nmap.config.js](mdc:Plugins/Nmap/server/graphql/resolvers/nmap.config.js)
+  - Behavior:
+    - General → `STATUS_SLEEP`
+    - Fast/Detailed → `use_top_ports` toggles between `top_ports` and manual `tcp_ports`/`udp_ports`.
+    - `_ui` metadata declares sections and conditional logic; server enforces exclusivity on save.
+
+- **DO**
+
+  - **Return `_ui`** from both getter and setter.
+  - **Coerce types** server-side (e.g., strings to numbers), and validate invariants.
+  - **Update in-memory settings** after saving so new scans use updated values without restart.
+  - **Keep Base UI plugin-agnostic**; all plugin behavior belongs in `_ui` and server logic.
+
+- **DON'T**
+
+  - Don’t add plugin-specific branches to Base.
+  - Don’t use `__ui` (GraphQL reserves `__*`).
+
+- **Testing & Tips**
+  - After saving, confirm values persist (DataStore update) and UI reflects sections immediately.
+  - For runtime usage, ensure your plugin reads saved settings on startup and also updates in-memory settings after save.
+  - Use Jobs/ScanQueue as usual; configuration is orthogonal.

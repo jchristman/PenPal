@@ -23,11 +23,11 @@ import {
 export const CoreAPILogger = PenPal.Utils.BuildLogger("CoreAPI");
 
 const settings = {
-  configuration: {
-    schema_root: "CoreAPIConfiguration",
-    getter: "getCoreAPIConfiguration",
-    setter: "setCoreAPIConfiguration",
-  },
+  // configuration: {
+  //   schema_root: "CoreAPIConfiguration",
+  //   getter: "getCoreAPIConfiguration",
+  //   setter: "setCoreAPIConfiguration",
+  // },
   dashboard: {
     schema_root: "CoreAPIAnalytics",
     getter: "getCoreAPIAnalytics",

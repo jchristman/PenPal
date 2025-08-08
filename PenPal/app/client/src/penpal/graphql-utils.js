@@ -11,6 +11,11 @@ export const process_schema = (types, schema_root, depth = 0) => {
   let query = {};
 
   query.fields = [];
+  // Guard: if schema_root is missing or has no fields (e.g., SCALAR types), return empty fields
+  if (!schema_root || !Array.isArray(schema_root.fields)) {
+    return depth === 0 ? query : query.fields;
+  }
+
   for (let field of schema_root.fields) {
     if (field.type.kind === "SCALAR" || field.type.ofType?.kind === "SCALAR") {
       query.fields.push(field.name);
@@ -83,6 +88,37 @@ export const generateQueryFromSchemas = (types, schemas = []) => {
   }`;
 };
 
+// Helper: unwrap nested type to base named type
+const unwrapTypeName = (typeNode) => {
+  if (!typeNode) return undefined;
+  if (typeNode.kind === "NON_NULL" || typeNode.kind === "LIST") {
+    return unwrapTypeName(typeNode.ofType);
+  }
+  return typeNode.name;
+};
+
+// Helper: unwrap kind (for root return kinds when name points to object)
+const unwrapKind = (typeNode) => {
+  if (!typeNode) return undefined;
+  if (typeNode.kind === "NON_NULL" || typeNode.kind === "LIST") {
+    return unwrapKind(typeNode.ofType);
+  }
+  return typeNode.kind;
+};
+
+// Helper: build GraphQL type string from type node (handles NON_NULL/LIST nesting)
+const buildTypeString = (typeNode) => {
+  if (!typeNode) return "String"; // fallback
+  if (typeNode.kind === "NON_NULL") {
+    return `${buildTypeString(typeNode.ofType)}!`;
+  }
+  if (typeNode.kind === "LIST") {
+    return `[${buildTypeString(typeNode.ofType)}]`;
+  }
+  // If name missing at this level, try ofType (some servers omit at top-level)
+  return typeNode.name || buildTypeString(typeNode.ofType) || "String";
+};
+
 export const generateMutationFromSchema = (types, mutations, mutation_name) => {
   if (types === false || mutations === false || mutation_name === false) {
     return gql`
@@ -96,17 +132,23 @@ export const generateMutationFromSchema = (types, mutations, mutation_name) => {
   const variables = _.chain(mutation_schema.args)
     .keyBy("name")
     .mapValues((variable) => ({
-      value: "",
-      type: variable.type.name,
+      value: null,
+      type: buildTypeString(variable.type),
     }))
     .value();
 
-  const { fields } = process_schema(types, types[mutation_schema.type.name]);
+  // Determine fields for return type. If scalar, request no fields
+  const returnTypeName = unwrapTypeName(mutation_schema.type);
+  const returnKind = unwrapKind(mutation_schema.type);
+  const selection =
+    returnKind === "SCALAR"
+      ? { fields: [] }
+      : process_schema(types, types[returnTypeName]);
 
   const mutation_config = {
     operation: mutation_name,
     variables,
-    fields,
+    fields: selection.fields,
   };
 
   const { query: mutation } = mutationBuilder(mutation_config);

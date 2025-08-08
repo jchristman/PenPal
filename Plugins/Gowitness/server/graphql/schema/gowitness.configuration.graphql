@@ -1,0 +1,27 @@
+type GowitnessConfigurationUI {
+  STATUS_SLEEP: Int
+}
+
+type GowitnessConfiguration {
+  ui: GowitnessConfigurationUI
+  _ui: JSON
+}
+
+input GowitnessConfigurationUIInput {
+  STATUS_SLEEP: Int
+}
+
+input GowitnessConfigurationInput {
+  ui: GowitnessConfigurationUIInput
+  _ui: JSON
+}
+
+extend type Query {
+  getGowitnessConfiguration: GowitnessConfiguration
+}
+
+extend type Mutation {
+  setGowitnessConfiguration(
+    configuration: GowitnessConfigurationInput!
+  ): GowitnessConfiguration
+}

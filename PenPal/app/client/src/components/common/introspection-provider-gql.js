@@ -44,6 +44,18 @@ export default gql`
               name
               description
               kind
+              ofType {
+                name
+                kind
+                ofType {
+                  name
+                  kind
+                  ofType {
+                    name
+                    kind
+                  }
+                }
+              }
             }
           }
         }

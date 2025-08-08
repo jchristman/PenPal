@@ -1,0 +1,54 @@
+# File: gobuster-plugin-enrichment.schema.graphql
+"""
+Gobuster Plugin Enrichment Type
+Provides directory enumeration results from Gobuster scans
+"""
+type GobusterPluginEnrichment implements PluginEnrichment
+  @uiGroup(
+    name: "directories"
+    label: "Discovered Directories"
+    collapsible: true
+    priority: 10
+  )
+  @enrichmentDisplay(
+    layout: "card"
+    title: "Gobuster Directory Enumeration"
+    summaryFields: ["directories"]
+  ) {
+  "This allows the type resolver to determine if the PluginEnrichment"
+  plugin_name: String!
+  "Generic data field that holds all plugin-specific enrichment data"
+  data: JSON
+  "List of discovered directories and files"
+  directories: [GobusterDirectory!]
+    @uiComponent(
+      type: LIST
+      config: {
+        group: "directories"
+        priority: 1
+        itemComponent: { type: GOBUSTER_DIRECTORY_ITEM }
+      }
+    )
+  "Timestamp when the scan was performed"
+  scan_time: String
+    @uiComponent(type: TIMESTAMP, config: { priority: 2, label: "Scan Time" })
+}
+
+"""
+Individual directory or file discovered by Gobuster
+"""
+type GobusterDirectory {
+  "Path of the discovered directory or file"
+  path: String! @uiComponent(type: TEXT, config: { priority: 1, label: "Path" })
+  "HTTP status code returned"
+  status: Int! @uiComponent(type: STATUS_INDICATOR, config: { priority: 2 })
+  "Size of the response in bytes"
+  size: Int
+    @uiComponent(
+      type: METRIC
+      config: { priority: 3, unit: "bytes", label: "Size" }
+    )
+  "Redirect URL if status is 301/302"
+  redirect: String
+    @uiComponent(type: URL_LINK, config: { priority: 4, label: "Redirects to" })
+}

@@ -1,0 +1,26 @@
+type GobusterConfigurationUI {
+  STATUS_SLEEP: Int
+}
+
+type GobusterConfiguration {
+  ui: GobusterConfigurationUI
+  _ui: JSON
+}
+
+input GobusterConfigurationUIInput {
+  STATUS_SLEEP: Int
+}
+
+input GobusterConfigurationInput {
+  ui: GobusterConfigurationUIInput
+  _ui: JSON
+}
+
+extend type Query {
+  getGobusterConfiguration: GobusterConfiguration
+}
+extend type Mutation {
+  setGobusterConfiguration(
+    configuration: GobusterConfigurationInput!
+  ): GobusterConfiguration
+}

@@ -11,11 +11,11 @@ export const FileStoreMinIOAdapterLogger = PenPal.Utils.BuildLogger(
 const __dirname = url.fileURLToPath(new URL(".", import.meta.url));
 
 const settings = {
-  configuration: {
-    schema_root: "MinIOFileStoreConfiguration",
-    getter: "getMinIOFileStoreConfiguration",
-    setter: "setMinIOFileStoreConfiguration",
-  },
+  // configuration: {
+  //   schema_root: "MinIOFileStoreConfiguration",
+  //   getter: "getMinIOFileStoreConfiguration",
+  //   setter: "setMinIOFileStoreConfiguration",
+  // },
 };
 
 // We have to hold the configuration for MinIO connection string in memory or on-disk,
