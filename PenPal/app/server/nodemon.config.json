@@ -1,0 +1,4 @@
+{
+  "watch": ["./src", "./plugins"],
+  "ext": "js,graphql"
+}

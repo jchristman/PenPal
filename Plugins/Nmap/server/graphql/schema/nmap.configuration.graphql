@@ -1,0 +1,55 @@
+type NmapUIConfig {
+  STATUS_SLEEP: Int
+}
+
+type NmapScanModeConfig {
+  use_top_ports: Boolean
+  top_ports: Int
+  tcp_ports: [String]
+  udp_ports: [String]
+  fast_scan: Boolean
+}
+
+type NmapScanConfig {
+  fast: NmapScanModeConfig
+  detailed: NmapScanModeConfig
+}
+
+type NmapConfiguration {
+  ui: NmapUIConfig
+  scan: NmapScanConfig
+  _ui: JSON
+}
+
+input NmapUIConfigInput {
+  STATUS_SLEEP: Int
+}
+
+input NmapScanModeConfigInput {
+  use_top_ports: Boolean
+  top_ports: Int
+  tcp_ports: String
+  udp_ports: String
+  fast_scan: Boolean
+}
+
+input NmapScanConfigInput {
+  fast: NmapScanModeConfigInput
+  detailed: NmapScanModeConfigInput
+}
+
+input NmapConfigurationInput {
+  ui: NmapUIConfigInput
+  scan: NmapScanConfigInput
+  _ui: JSON
+}
+
+extend type Query {
+  getNmapConfiguration: NmapConfiguration
+}
+
+extend type Mutation {
+  setNmapConfiguration(
+    configuration: NmapConfigurationInput!
+  ): NmapConfiguration
+}

@@ -1,0 +1,253 @@
+# UI Component Directives for Enrichment Fields
+# This file defines GraphQL directives that allow plugins to annotate their enrichment fields
+# with UI component information for automatic rich display generation
+
+"""
+Enum defining the types of UI components that can be used to render enrichment fields
+"""
+enum UIComponentType {
+  """
+  Basic text display - default for string fields
+  """
+  TEXT
+
+  """
+  Badge/chip display for technology stacks, tags, categories
+  """
+  BADGE
+
+  """
+  Clickable URL link with external link indicator
+  """
+  URL_LINK
+
+  """
+  Status indicator with colored state (success, warning, error, info)
+  """
+  STATUS_INDICATOR
+
+  """
+  Progress bar or gauge for numeric percentages/scores
+  """
+  PROGRESS_BAR
+
+  """
+  Metric display with unit formatting (file sizes, durations, etc.)
+  """
+  METRIC
+
+  """
+  Key-value pair display for structured data
+  """
+  KEY_VALUE
+
+  """
+  Code snippet with syntax highlighting
+  """
+  CODE_BLOCK
+
+  """
+  Image display with zoom/preview capabilities
+  """
+  IMAGE
+
+  """
+  List of items with custom formatting
+  """
+  LIST
+
+  """
+  Table display for structured arrays
+  """
+  TABLE
+
+  """
+  JSON tree viewer for complex objects
+  """
+  JSON_TREE
+
+  """
+  Timestamp with relative time display
+  """
+  TIMESTAMP
+
+  """
+  Copy-to-clipboard text field
+  """
+  COPYABLE_TEXT
+
+  """
+  Alert/notification style display for important information
+  """
+  ALERT
+
+  """
+  Collapsible section for grouped content
+  """
+  COLLAPSIBLE
+
+  """
+  Rating display (stars, numeric score, etc.)
+  """
+  RATING
+}
+
+"""
+Configuration options for UI component rendering
+"""
+input UIComponentConfig {
+  """
+  Color theme for the component (primary, secondary, success, warning, error, info)
+  """
+  color: String
+
+  """
+  Size variant (small, medium, large)
+  """
+  size: String
+
+  """
+  Icon to display with the component
+  """
+  icon: String
+
+  """
+  Tooltip text to show on hover
+  """
+  tooltip: String
+
+  """
+  Additional CSS classes to apply
+  """
+  className: String
+
+  """
+  Unit label for metric components (KB, MB, seconds, etc.)
+  """
+  unit: String
+
+  """
+  Format pattern for text/number formatting
+  """
+  format: String
+
+  """
+  Whether the component should be clickable/interactive
+  """
+  interactive: Boolean
+
+  """
+  Maximum number of items to display (for lists/arrays)
+  """
+  maxItems: Int
+
+  """
+  Whether to show a "show more" link for truncated content
+  """
+  expandable: Boolean
+
+  """
+  Custom label to display instead of field name
+  """
+  label: String
+
+  """
+  Whether to hide the field label entirely
+  """
+  hideLabel: Boolean
+
+  """
+  Priority/order for display (lower numbers show first)
+  """
+  priority: Int
+
+  """
+  Group name for organizing related fields
+  """
+  group: String
+}
+
+"""
+Directive for annotating enrichment fields with UI component information
+"""
+directive @uiComponent(
+  """
+  The type of UI component to use for rendering this field
+  """
+  type: UIComponentType!
+
+  """
+  Configuration options for the component
+  """
+  config: UIComponentConfig
+
+  """
+  Description of what this field represents for documentation
+  """
+  description: String
+) on FIELD_DEFINITION
+
+"""
+Directive for grouping related fields together in the UI
+"""
+directive @uiGroup(
+  """
+  Name of the group
+  """
+  name: String!
+
+  """
+  Display label for the group
+  """
+  label: String
+
+  """
+  Description of the group
+  """
+  description: String
+
+  """
+  Whether the group should be collapsible
+  """
+  collapsible: Boolean = false
+
+  """
+  Whether the group starts collapsed
+  """
+  collapsed: Boolean = false
+
+  """
+  Priority/order for group display
+  """
+  priority: Int = 0
+) repeatable on OBJECT
+
+"""
+Directive for configuring the overall enrichment display
+"""
+directive @enrichmentDisplay(
+  """
+  Layout style for the enrichment (card, list, table, compact)
+  """
+  layout: String = "card"
+
+  """
+  Whether to show a summary view by default
+  """
+  showSummary: Boolean = true
+
+  """
+  Fields to include in the summary view
+  """
+  summaryFields: [String]
+
+  """
+  Maximum height before showing scroll/expand
+  """
+  maxHeight: String
+
+  """
+  Custom title for the enrichment section
+  """
+  title: String
+) on OBJECT

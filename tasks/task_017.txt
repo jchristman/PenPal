@@ -1,0 +1,179 @@
+# Task ID: 17
+# Title: Set up E2ETesting Plugin Foundation with Required Dependencies
+# Status: done
+# Dependencies: None
+# Priority: high
+# Description: Create the basic structure for the E2ETesting plugin following PenPal's plugin architecture patterns, with dependencies on CoreAPI, Docker, and JobsTracker plugins.
+# Details:
+Implement the foundation for the E2ETesting plugin with the following components:
+
+1. Create `manifest.json` with:
+   - Plugin name: 'E2ETesting'
+   - Version information
+   - Dependencies explicitly listed: CoreAPI, Docker, and JobsTracker
+   - Any required permissions
+
+2. Create `index.js` that:
+   - Exports the plugin class
+   - Handles proper module exports
+
+3. Create `plugin.js` that:
+   - Defines the E2ETesting plugin class
+   - Implements the standard plugin lifecycle methods (register, load, start, stop)
+   - Sets up proper dependency injection for CoreAPI, Docker, and JobsTracker
+   - Follows PenPal's established plugin registration pattern
+
+4. Set up the GraphQL schema structure:
+   - Create a `schema` directory
+   - Implement basic type definitions in `schema/typeDefs.js`
+   - Implement basic resolvers in `schema/resolvers.js`
+   - Ensure the schema is properly exported and registered with the GraphQL server
+
+5. Create a basic README.md documenting:
+   - The plugin's purpose
+   - Dependencies
+   - Basic usage instructions
+
+Ensure all files follow the project's coding standards and patterns established in other plugins.
+
+# Test Strategy:
+Verify the plugin foundation is correctly implemented through the following tests:
+
+1. **Plugin Registration Test**:
+   - Verify the plugin registers successfully with the PenPal framework
+   - Confirm no errors during the registration process
+   - Check that dependencies are correctly specified and loaded
+
+2. **Structure Validation**:
+   - Validate all required files exist (manifest.json, index.js, plugin.js, schema files)
+   - Verify the manifest.json contains correct dependencies on CoreAPI, Docker, and JobsTracker
+   - Ensure the plugin class properly extends the base Plugin class
+
+3. **GraphQL Schema Test**:
+   - Verify the GraphQL schema can be parsed without errors
+   - Test that the schema is properly registered with the GraphQL server
+   - Run a simple introspection query to confirm the schema is accessible
+
+4. **Dependency Injection Test**:
+   - Verify the plugin correctly receives and can access the CoreAPI, Docker, and JobsTracker dependencies
+   - Test that methods from these dependencies can be called from within the E2ETesting plugin
+
+5. **Lifecycle Methods Test**:
+   - Verify the plugin can be started and stopped without errors
+   - Check that resources are properly initialized during start and cleaned up during stop
+
+# Subtasks:
+## 1. Create plugin directory structure and manifest.json [done]
+### Dependencies: None
+### Description: Set up the initial directory structure for the E2ETesting plugin and create the manifest.json file with required metadata and dependencies.
+### Details:
+Implementation steps:
+1. Create the main plugin directory: `plugins/E2ETesting`
+2. Create subdirectories: `schema`, `lib`, `tests`
+3. Create manifest.json with:
+   - Plugin name: 'E2ETesting'
+   - Version: '1.0.0'
+   - Dependencies: CoreAPI, Docker, and JobsTracker
+   - Required permissions
+4. Ensure the manifest follows the same format as other plugins
+
+Testing approach:
+- Validate the manifest.json structure against the project's schema
+- Verify all required directories exist
+- Confirm dependencies are correctly specified
+
+## 2. Implement plugin.js with lifecycle methods [done]
+### Dependencies: 17.1
+### Description: Create the main plugin class with proper lifecycle methods and dependency injection for required plugins.
+### Details:
+Implementation steps:
+1. Create `plugin.js` in the root of the E2ETesting directory
+2. Define the E2ETesting class that extends the base Plugin class
+3. Implement required lifecycle methods:
+   - register(): Register plugin with the system
+   - load(): Load dependencies and prepare resources
+   - start(): Initialize and start plugin functionality
+   - stop(): Clean up resources and stop plugin
+4. Set up dependency injection for CoreAPI, Docker, and JobsTracker
+5. Add proper error handling for missing dependencies
+
+Testing approach:
+- Create unit tests for each lifecycle method
+- Test dependency injection with mock objects
+- Verify error handling for missing dependencies
+
+## 3. Create index.js for module exports [done]
+### Dependencies: 17.2
+### Description: Implement the index.js file to properly export the plugin class and follow module export patterns.
+### Details:
+Implementation steps:
+1. Create `index.js` in the root of the E2ETesting directory
+2. Import the E2ETesting plugin class from plugin.js
+3. Set up proper module exports following project patterns:
+   - Export the plugin class as default
+   - Add any additional named exports if needed
+4. Ensure compatibility with both CommonJS and ES modules if required by the project
+
+Testing approach:
+- Verify the module can be imported correctly
+- Test that the exported plugin class is properly accessible
+- Confirm it follows the same pattern as other plugins in the system
+
+## 4. Implement GraphQL schema structure [done]
+### Dependencies: 17.1
+### Description: Set up the GraphQL schema files with basic type definitions and resolvers for the E2ETesting plugin.
+### Details:
+Implementation steps:
+1. Create `schema/typeDefs.js` with:
+   - Basic type definitions for E2E testing entities
+   - Query definitions for retrieving test data
+   - Mutation definitions for managing tests
+2. Create `schema/resolvers.js` with:
+   - Query resolvers (stubs initially)
+   - Mutation resolvers (stubs initially)
+3. Create `schema/index.js` to export combined schema
+4. Ensure schema follows the project's GraphQL patterns
+
+Testing approach:
+- Validate GraphQL schema syntax
+- Test schema registration with mock GraphQL server
+- Verify resolver stubs return expected placeholder values
+
+## 5. Integrate plugin with CoreAPI's GraphQL server [done]
+### Dependencies: 17.2, 17.4
+### Description: Update the plugin.js to register the GraphQL schema with CoreAPI's GraphQL server during plugin initialization.
+### Details:
+Implementation steps:
+1. Modify the plugin.js file to import the GraphQL schema
+2. Update the register() or start() method to register the schema with CoreAPI
+3. Add code to properly merge the schema with the existing GraphQL schema
+4. Implement error handling for schema registration failures
+5. Add cleanup code in stop() method to unregister the schema if needed
+
+Testing approach:
+- Test schema registration with mock CoreAPI
+- Verify schema is properly merged
+- Test error handling for registration failures
+- Confirm schema is unregistered during plugin shutdown
+
+## 6. Create README.md and documentation [done]
+### Dependencies: 17.1, 17.2, 17.3, 17.4, 17.5
+### Description: Create comprehensive documentation for the E2ETesting plugin including purpose, dependencies, and usage instructions.
+### Details:
+Implementation steps:
+1. Create README.md in the plugin root directory
+2. Document the plugin's purpose and main features
+3. List all dependencies and their versions
+4. Provide basic usage instructions including:
+   - How to configure the plugin
+   - Available GraphQL queries and mutations
+   - Integration with other plugins
+5. Add examples of common operations
+6. Include development and testing instructions
+
+Testing approach:
+- Review documentation for completeness
+- Verify all listed features are implemented
+- Confirm examples are accurate and functional
+- Check that dependency information is correct
+

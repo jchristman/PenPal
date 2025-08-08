@@ -1,0 +1,1 @@
+react-json-view-lite react-syntax-highlighter @heroicons/react d3

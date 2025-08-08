@@ -10,7 +10,7 @@ export const settings = {
     name: "penpal:nmap",
     dockercontext: `${__dirname}/docker-context`,
   },
-  STATUS_SLEEP: 500,
+  STATUS_SLEEP: 900,
   scan_configurations: {
     fast: {
       name: "Fast Scan",
@@ -25,6 +25,16 @@ export const settings = {
       udp_ports: [53, 111, 135, "137-139", "161-162"],
     },
   },
+  configuration: {
+    schema_root: "NmapConfiguration",
+    getter: "getNmapConfiguration",
+    setter: "setNmapConfiguration",
+  },
+  datastores: [
+    {
+      name: "Configuration",
+    },
+  ],
 };
 
 // push and pop out of this work queue for if a job is running. To be implemented
@@ -79,12 +89,29 @@ const start_detailed_hosts_scan = async ({ project, host_ids }) => {
   const hosts = (await PenPal.API.Hosts.GetMany(host_ids)) ?? [];
   const ips = hosts.map((host) => host.ip_address);
   if (ips.length > 0) {
+    // Determine effective detailed scan config from saved configuration if present
+    const existing = await PenPal.DataStore.fetch("Nmap", "Configuration", {});
+    const detCfg = existing?.[0]?.scan?.detailed;
+    const effectiveDetailed = detCfg
+      ? detCfg.use_top_ports
+        ? {
+            top_ports: detCfg.top_ports ?? 1000,
+            tcp_ports: [],
+            udp_ports: [],
+          }
+        : {
+            top_ports: null,
+            tcp_ports: detCfg.tcp_ports ?? ["1-65535"],
+            udp_ports: detCfg.udp_ports ?? [],
+          }
+      : settings.scan_configurations.detailed;
+
     await Nmap.performScan({
       project_id: project,
       ips,
       update_job,
       job_id: job.id,
-      ...settings.scan_configurations.detailed,
+      ...effectiveDetailed,
     });
   }
 };
@@ -114,13 +141,32 @@ const start_initial_networks_scan = async ({ project, network_ids }) => {
     ) ?? [];
 
   if (networks.length > 0) {
+    // Determine effective fast scan config from saved configuration if present
+    const existing = await PenPal.DataStore.fetch("Nmap", "Configuration", {});
+    const fastCfg = existing?.[0]?.scan?.fast;
+    const effectiveFast = fastCfg
+      ? fastCfg.use_top_ports
+        ? {
+            top_ports: fastCfg.top_ports ?? 1000,
+            tcp_ports: [],
+            udp_ports: [],
+            fast_scan: fastCfg.fast_scan ?? true,
+          }
+        : {
+            top_ports: null,
+            tcp_ports: fastCfg.tcp_ports ?? [],
+            udp_ports: fastCfg.udp_ports ?? [],
+            fast_scan: fastCfg.fast_scan ?? true,
+          }
+      : settings.scan_configurations.fast;
+
     for (let network of networks) {
       await Nmap.performScan({
         project_id: project,
         networks: [network],
         update_job,
         job_id: job.id,
-        ...settings.scan_configurations.fast,
+        ...effectiveFast,
       });
     }
   }
@@ -130,13 +176,66 @@ const NmapPlugin = {
   async loadPlugin() {
     const MQTT = await PenPal.MQTT.NewClient();
 
+    // Apply any saved configuration from the datastore at startup
+    try {
+      const existing = await PenPal.DataStore.fetch(
+        "Nmap",
+        "Configuration",
+        {}
+      );
+      if (existing?.[0]) {
+        const cfg = existing[0];
+        if (cfg?.ui?.STATUS_SLEEP !== undefined) {
+          settings.STATUS_SLEEP = cfg.ui.STATUS_SLEEP;
+        }
+        if (cfg?.scan) {
+          if (cfg.scan.fast) {
+            const fast = cfg.scan.fast;
+            // Toggle logic: if use_top_ports true, honor top_ports; otherwise use manual ports
+            if (fast.use_top_ports) {
+              settings.scan_configurations.fast.top_ports =
+                fast.top_ports ?? 1000;
+              settings.scan_configurations.fast.tcp_ports = [];
+              settings.scan_configurations.fast.udp_ports = [];
+            } else {
+              settings.scan_configurations.fast.top_ports = null;
+              settings.scan_configurations.fast.tcp_ports =
+                fast.tcp_ports ?? [];
+              settings.scan_configurations.fast.udp_ports =
+                fast.udp_ports ?? [];
+            }
+            if (fast.fast_scan !== undefined) {
+              settings.scan_configurations.fast.fast_scan = !!fast.fast_scan;
+            }
+          }
+          if (cfg.scan.detailed) {
+            const det = cfg.scan.detailed;
+            if (det.use_top_ports) {
+              settings.scan_configurations.detailed.top_ports =
+                det.top_ports ?? 1000;
+              settings.scan_configurations.detailed.tcp_ports = [];
+              settings.scan_configurations.detailed.udp_ports = [];
+            } else {
+              settings.scan_configurations.detailed.top_ports = null;
+              settings.scan_configurations.detailed.tcp_ports =
+                det.tcp_ports ?? ["1-65535"];
+              settings.scan_configurations.detailed.udp_ports =
+                det.udp_ports ?? [];
+            }
+          }
+        }
+      }
+    } catch (e) {
+      // ignore configuration loading errors at startup
+    }
+
     // Wrap scan functions in ScanQueue
     const queueHostsScan = async (args) => {
       const { project, host_ids } = args;
       const queueName = `Nmap Detailed Host Scan (${host_ids.length} hosts), Project: ${project}`;
 
       // Be polite and wait 10 seconds before adding to the queue
-      await PenPal.Utils.Sleep(10000);
+      await PenPal.Utils.Sleep(30000);
 
       PenPal.ScanQueue.Add(
         async () => await start_detailed_hosts_scan(args),

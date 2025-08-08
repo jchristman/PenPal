@@ -1,0 +1,127 @@
+# Task ID: 32
+# Title: Implement ICMP Ping Plugin for Network Host Discovery
+# Status: done
+# Dependencies: None
+# Priority: high
+# Description: Develop a containerized Ping plugin that performs fast ICMP sweeps to discover hosts in a network, integrating with PenPal's existing architecture and services.
+# Details:
+Create a new Ping plugin that leverages ICMP protocol for efficient host discovery across network ranges. The plugin should:
+
+1. Be containerized using Docker with a Dockerfile that includes necessary dependencies for ICMP operations
+2. Subscribe to MQTT topics for new network discoveries (e.g., 'penpal/discoveries/networks')
+3. Upon receiving network information, queue scans using the ScanQueue service
+4. Implement fast ICMP sweep functionality that can handle various network sizes efficiently
+5. Track scan jobs using the JobsTracker service, updating status as appropriate
+6. Process scan results and upsert discovered hosts to CoreAPI
+7. Extend the GraphQL schema to support:
+   - Querying ping results by network, IP range, or specific hosts
+   - Checking scan status and history
+   - Retrieving latency statistics for discovered hosts
+8. Implement proper error handling and logging
+9. Include configuration options for scan parameters (timeout, retry count, parallel scan limit)
+10. Follow PenPal's plugin architecture patterns for consistency
+
+The plugin should be optimized for performance, especially when scanning large networks, and should handle rate limiting to prevent network flooding.
+
+# Test Strategy:
+Testing should verify both functionality and integration with PenPal's ecosystem:
+
+1. Unit tests:
+   - Test ICMP sweep functionality with mock network responses
+   - Verify proper parsing and handling of ICMP responses
+   - Test error handling for various failure scenarios
+
+2. Integration tests:
+   - Verify MQTT subscription and message handling
+   - Test ScanQueue integration for job submission
+   - Validate JobsTracker updates during scan lifecycle
+   - Confirm CoreAPI upsert operations work correctly
+
+3. End-to-end tests:
+   - Deploy the plugin in a test environment with known hosts
+   - Trigger a network discovery and verify hosts are correctly identified
+   - Test GraphQL queries to retrieve ping results and status
+   - Verify latency measurements are accurate using controlled test hosts
+
+4. Performance tests:
+   - Measure scan performance on networks of various sizes
+   - Test concurrent scanning capabilities
+   - Verify resource usage remains within acceptable limits
+
+5. Security tests:
+   - Ensure the plugin handles permissions correctly for ICMP operations
+   - Verify no sensitive information is exposed in logs or responses
+
+All tests should be automated where possible and included in CI/CD pipeline.
+
+# Subtasks:
+## 1. Implement Core ICMP Ping Sweep Functionality [done]
+### Dependencies: None
+### Description: Develop the core ICMP ping sweep engine that efficiently discovers hosts across network ranges using asynchronous, non-blocking operations for optimal performance.
+### Details:
+1. Create a Python module using aioping or scapy for asynchronous ICMP operations
+2. Implement worker pool pattern with configurable concurrency limits
+3. Build network range parser to convert CIDR notation to individual IPs
+4. Add rate limiting mechanism to prevent network flooding
+5. Implement timeout and retry logic with configurable parameters
+6. Create structured result format with host status and latency metrics
+7. Add proper error handling for network issues and permission errors
+8. Test with various network sizes to verify performance
+9. Testing approach: Unit test individual components and perform integration tests against test networks of varying sizes
+
+## 2. Containerize the Ping Plugin with Docker [done]
+### Dependencies: 32.1
+### Description: Package the ICMP ping functionality into a Docker container with appropriate permissions and minimal footprint, following security best practices.
+### Details:
+1. Create a Dockerfile using Python Alpine as base image
+2. Install necessary dependencies for ICMP operations
+3. Configure container with CAP_NET_RAW capability for raw socket access
+4. Implement proper user permissions (non-root user when possible)
+5. Add health check endpoint to verify plugin status
+6. Optimize container size by removing unnecessary packages
+7. Include proper logging configuration
+8. Document required Docker run parameters
+9. Testing approach: Build container and verify it can perform ICMP operations with correct permissions, validate security using container scanning tools
+
+## 3. Integrate with PenPal's MQTT and ScanQueue Services [done]
+### Dependencies: 32.1, 32.2
+### Description: Connect the plugin to PenPal's messaging infrastructure to receive scan requests and queue network discovery jobs.
+### Details:
+1. Implement MQTT client to subscribe to 'penpal/discoveries/networks' topic
+2. Create message parser to extract network information from MQTT messages
+3. Develop integration with ScanQueue service to queue ping sweep jobs
+4. Implement JobsTracker service integration to update scan status
+5. Add retry mechanism for failed service connections
+6. Create configuration for MQTT broker connection details
+7. Implement proper error handling for messaging failures
+8. Add logging for all service interactions
+9. Testing approach: Create mock MQTT broker and service endpoints to test integration, verify message handling and job tracking
+
+## 4. Implement Results Processing and CoreAPI Integration [done]
+### Dependencies: 32.3
+### Description: Process scan results and integrate with PenPal's CoreAPI to store discovered hosts and their metadata.
+### Details:
+1. Create result processor to format ping sweep findings
+2. Implement CoreAPI client for host data upsert operations
+3. Add data transformation logic to match CoreAPI schema
+4. Implement batch processing for efficient API usage
+5. Add conflict resolution for existing host records
+6. Create error handling for API failures with retry logic
+7. Implement transaction logging for audit purposes
+8. Add performance metrics collection
+9. Testing approach: Use mock CoreAPI endpoints to verify correct data transformation and upsert operations, test with various result scenarios
+
+## 5. Extend GraphQL Schema and Implement Query Handlers [done]
+### Dependencies: 32.4
+### Description: Extend PenPal's GraphQL schema to support ping-related queries and implement the corresponding resolvers.
+### Details:
+1. Define GraphQL schema extensions for ping operations
+2. Implement query resolvers for retrieving ping results by network/IP range
+3. Create mutation resolvers for triggering new ping scans
+4. Add subscription resolvers for real-time scan status updates
+5. Implement filtering and pagination for large result sets
+6. Create latency statistics aggregation functions
+7. Add proper error handling and validation
+8. Implement authentication and authorization checks
+9. Testing approach: Create GraphQL test suite to verify schema extensions, test queries with sample data, verify authorization controls
+

@@ -5,6 +5,7 @@ type Job {
   progress: Float!
   statusText: String!
   status: String
+  cancellation_request: Boolean
   stages: [JobStage!]
   created_at: String!
   updated_at: String!
@@ -34,6 +35,7 @@ input JobInput {
   progress: Float = 0.0
   statusText: String = ""
   status: String = "pending"
+  cancellation_request: Boolean = false
   stages: [JobStageInput!]
   project_id: String
   metadata: JSON
@@ -54,6 +56,7 @@ input JobUpdateInput {
   progress: Float
   statusText: String
   status: String
+  cancellation_request: Boolean
   stages: [JobStageInput!]
   metadata: JSON
 }

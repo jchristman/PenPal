@@ -1,0 +1,73 @@
+# Task ID: 22
+# Title: Implement E2E Tests for CoreAPI Plugin User Workflows
+# Status: pending
+# Dependencies: 20, 21
+# Priority: medium
+# Description: Develop comprehensive end-to-end tests for the CoreAPI plugin that validate all critical user workflows from project creation through service discovery to results viewing.
+# Details:
+Implement Cypress or similar E2E testing framework to test the following CoreAPI plugin workflows:
+
+1. Project Creation Workflow:
+   - Test creating new projects with various configurations
+   - Validate all form fields and validation rules
+   - Verify project appears in project list after creation
+   - Test error handling for invalid inputs
+
+2. Customer Management:
+   - Test adding new customers to projects
+   - Test editing customer information
+   - Test removing customers from projects
+   - Verify customer data persistence
+
+3. Project View Navigation:
+   - Test navigation between different project views
+   - Verify correct loading of project data in each view
+   - Test filtering and sorting functionality
+   - Verify breadcrumb navigation works correctly
+
+4. Service Discovery Workflow:
+   - Test initiating service discovery process
+   - Verify service discovery configuration options
+   - Test cancellation and resumption of discovery
+   - Validate progress indicators and status updates
+
+5. Data Management Operations:
+   - Test data import/export functionality
+   - Verify data visualization components
+   - Test data filtering and search capabilities
+   - Validate data persistence across sessions
+
+Each test should simulate real user interactions including clicks, form submissions, and page navigation. Tests should be resilient to UI changes by using data attributes rather than CSS selectors where possible. Include appropriate assertions to verify expected outcomes at each step.
+
+# Test Strategy:
+Testing approach should include:
+
+1. Setup and Teardown:
+   - Create isolated test environments for each test run
+   - Implement proper cleanup after tests to prevent test pollution
+   - Use mock data where appropriate to ensure consistent test conditions
+
+2. Test Coverage Verification:
+   - Create a test coverage matrix mapping each user workflow to specific test cases
+   - Ensure edge cases and error scenarios are covered
+   - Implement visual regression testing for UI components
+
+3. Test Execution Strategy:
+   - Configure tests to run in CI/CD pipeline
+   - Implement test reporting with screenshots/videos of failures
+   - Set up parallel test execution for faster feedback
+
+4. Validation Methods:
+   - For Project Creation: Verify project ID is generated, project appears in list, and details match input
+   - For Customer Management: Verify customer data is correctly stored and displayed
+   - For Navigation: Verify correct page content loads and state is maintained
+   - For Service Discovery: Verify discovered services match expected results
+   - For Data Management: Verify data integrity through the complete workflow
+
+5. Specific Test Cases:
+   - Happy path: Complete end-to-end workflow from project creation to viewing results
+   - Error handling: Test system response to network failures, invalid inputs
+   - Performance: Measure and assert on response times for critical operations
+   - Accessibility: Verify core workflows meet accessibility standards
+
+Tests should be documented with clear descriptions of what they're validating and why.

@@ -1,0 +1,166 @@
+# Task ID: 33
+# Title: Implement MQTT-Triggered Gobuster Plugin for HTTP Service Enumeration
+# Status: done
+# Dependencies: 32
+# Priority: high
+# Description: Develop a plugin that uses Gobuster to automatically enumerate directories and files on HTTP services when triggered by MQTT messages, utilizing SecLists wordlists and adding enrichments for discovered items.
+# Details:
+Create a plugin that integrates with our existing architecture to perform automated directory and file enumeration on HTTP services. The plugin should:
+
+1. Subscribe to relevant MQTT topics to receive triggers for scanning (e.g., when new HTTP services are discovered)
+2. Upon receiving a trigger, launch Gobuster with appropriate parameters to scan the target HTTP service
+3. Utilize SecLists wordlists for comprehensive enumeration (include directory-list-2.3-medium.txt for directories and web-extensions.txt for file types)
+4. Implement intelligent wordlist selection based on the target (e.g., different wordlists for different web technologies if detected)
+5. Process Gobuster results to identify interesting files and directories (status codes 200, 301, 302, 403 should be considered interesting)
+6. For each discovered item, create enrichments including:
+   - File/directory path
+   - Status code
+   - Size (if available)
+   - Content type
+   - Last modified date (if available)
+   - A brief assessment of potential security implications
+7. Publish results back to MQTT with appropriate topics for other components to consume
+8. Implement rate limiting and respect target limitations to avoid overwhelming services
+9. Include proper error handling for timeouts, connection issues, and other potential failures
+10. Log all activities with appropriate verbosity levels
+11. Ensure the plugin can be configured via environment variables or a configuration file
+
+The plugin should be containerized for easy deployment and should follow our existing plugin architecture patterns.
+
+# Test Strategy:
+Testing should verify both functionality and reliability of the plugin:
+
+1. Unit Tests:
+   - Test MQTT message parsing and validation
+   - Test Gobuster command construction with various parameters
+   - Test result parsing and enrichment generation
+   - Test error handling for various failure scenarios
+
+2. Integration Tests:
+   - Set up a test HTTP server with known directories and files
+   - Trigger the plugin via MQTT and verify it correctly discovers the known items
+   - Verify enrichments are correctly generated and contain accurate information
+   - Test with different HTTP server configurations (Apache, Nginx, IIS)
+
+3. Performance Tests:
+   - Verify the plugin handles large wordlists efficiently
+   - Test memory usage during scanning of large targets
+   - Verify rate limiting functionality works as expected
+
+4. Edge Cases:
+   - Test behavior with malformed MQTT messages
+   - Test with unreachable HTTP services
+   - Test with HTTP services that return unusual status codes
+   - Test with extremely slow HTTP services
+
+5. End-to-End Tests:
+   - Verify the plugin integrates correctly with other components in the system
+   - Confirm MQTT messages are properly published and can be consumed by other components
+
+All tests should be automated and included in the CI/CD pipeline. Documentation should include examples of expected MQTT messages and plugin outputs.
+
+# Subtasks:
+## 1. Set up MQTT client with subscription and reconnection logic [done]
+### Dependencies: None
+### Description: Implement a robust MQTT client that subscribes to relevant topics for HTTP service discovery and maintains connection reliability
+### Details:
+1. Use paho-mqtt library for Python implementation
+2. Configure client with broker connection parameters from environment variables
+3. Implement proper connection handling with automatic reconnection
+4. Set up subscription to topics like 'discovery/http/+' and 'scan/request/http/+'
+5. Create message queue for handling incoming scan requests
+6. Implement message validation to ensure payloads contain required fields (target URL, scan ID)
+7. Add logging for all MQTT events with configurable verbosity
+8. Test with simulated connection drops to verify reconnection logic
+
+## 2. Create Gobuster execution wrapper with parameter handling [done]
+### Dependencies: 33.1
+### Description: Develop a module to execute Gobuster with appropriate parameters based on scan requirements
+### Details:
+1. Create a GobusterRunner class that handles subprocess execution
+2. Implement parameter validation and sanitization to prevent command injection
+3. Support configurable Gobuster modes (dir, dns, vhost) with dir as default
+4. Add wordlist selection logic with SecLists paths configurable via environment variables
+5. Implement timeout handling and process management
+6. Create structured output parsing for Gobuster results
+7. Add resource limiting to prevent system overload
+8. Test with various parameter combinations to ensure proper execution
+
+## 3. Implement intelligent wordlist selection based on target [done]
+### Dependencies: 33.2
+### Description: Create a system to select appropriate wordlists from SecLists based on target characteristics
+### Details:
+1. Implement initial target analysis to detect web server type and technologies
+2. Create mapping of web technologies to appropriate SecLists wordlists
+3. Support fallback to directory-list-2.3-medium.txt as default for directories
+4. Add logic to combine web-extensions.txt with directory wordlists for file discovery
+5. Implement wordlist caching to improve performance for repeated scans
+6. Add configuration options to override automatic selection
+7. Create test cases with different web servers (Apache, Nginx, IIS) to verify selection logic
+8. Document wordlist selection strategy for maintainability
+
+## 4. Develop result processing and enrichment module [done]
+### Dependencies: 33.2
+### Description: Create a module to process Gobuster results and enrich them with additional metadata
+### Details:
+1. Parse Gobuster output to extract discovered paths and status codes
+2. Implement HTTP requests to gather additional metadata for each discovery
+3. Collect enrichment data: status code, content type, size, last modified date
+4. Add content analysis for basic security implication assessment
+5. Implement concurrent processing with rate limiting to respect target limitations
+6. Create structured data format for enriched results
+7. Add error handling for failed enrichment requests
+8. Test with various HTTP responses to ensure proper enrichment
+
+## 5. Implement MQTT result publishing with appropriate topics [done]
+### Dependencies: 33.1, 33.4
+### Description: Create a module to publish enriched scan results back to MQTT with well-structured topics and payloads
+### Details:
+1. Design topic structure for publishing results (e.g., 'results/http/enumeration/{scan_id}')
+2. Create JSON schema for result payloads including all enrichment data
+3. Implement batched publishing to avoid message size limitations
+4. Add QoS configuration for reliable message delivery
+5. Include scan metadata (timestamp, duration, parameters used) in results
+6. Implement progress updates during long-running scans
+7. Add completion notification with summary statistics
+8. Test with large result sets to verify proper handling
+
+## 6. Add rate limiting and target protection mechanisms [done]
+### Dependencies: 33.2, 33.4
+### Description: Implement safeguards to prevent overwhelming target services with too many requests
+### Details:
+1. Implement configurable request rate limiting for Gobuster execution
+2. Add concurrent scan limiting to prevent multiple scans against same target
+3. Create backoff mechanism for failed requests
+4. Implement scan duration limits with graceful termination
+5. Add target blacklist/whitelist functionality
+6. Create monitoring for target response times to dynamically adjust scan intensity
+7. Implement emergency stop capability via MQTT command
+8. Test with various rate limits to verify protection effectiveness
+
+## 7. Implement configuration management and environment variable support [done]
+### Dependencies: 33.1, 33.2, 33.3, 33.6
+### Description: Create a flexible configuration system supporting environment variables and configuration files
+### Details:
+1. Define comprehensive configuration schema covering all plugin parameters
+2. Implement environment variable parsing with appropriate prefixes (e.g., GOBUSTER_PLUGIN_*)
+3. Add support for configuration file in YAML/JSON format
+4. Implement configuration validation with sensible defaults
+5. Create dynamic configuration reloading capability
+6. Add secure handling of sensitive configuration (e.g., credentials)
+7. Implement configuration documentation generation
+8. Test with various configuration methods to ensure proper precedence
+
+## 8. Create containerization and deployment package [done]
+### Dependencies: 33.1, 33.2, 33.3, 33.4, 33.5, 33.6, 33.7
+### Description: Package the plugin as a container with appropriate documentation and integration examples
+### Details:
+1. Create Dockerfile optimized for size and security
+2. Add health check endpoint for container monitoring
+3. Implement proper signal handling for graceful shutdown
+4. Create docker-compose example for easy deployment
+5. Add comprehensive README with usage examples and configuration reference
+6. Implement integration tests for the containerized plugin
+7. Create CI/CD pipeline configuration for automated builds
+8. Package SecLists wordlists efficiently within the container
+

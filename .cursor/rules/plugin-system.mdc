@@ -1,18 +1,21 @@
 ---
-description: 
-globs: 
+description:
+globs:
 alwaysApply: true
 ---
+
 # PenPal Plugin System Guide
 
 PenPal uses a sophisticated plugin architecture that allows dynamic loading of cybersecurity tools and integrations.
 
 ## Plugin Loading System
+
 - **Server Plugin Loader**: [Plugins/plugins-loader-server.js](mdc:Plugins/plugins-loader-server.js)
 - **Client Plugin Loader**: [Plugins/plugins-loader-client.js](mdc:Plugins/plugins-loader-client.js)
 - **Plugin Development Script**: [penpal-plugin-develop.py](mdc:penpal-plugin-develop.py)
 
 ## Core Plugins
+
 - **Base Plugin**: [Plugins/Base/server/manifest.json](mdc:Plugins/Base/server/manifest.json) - Foundation plugin
 - **CoreAPI Plugin**: [Plugins/CoreAPI/server/manifest.json](mdc:Plugins/CoreAPI/server/manifest.json) - Data standardization
 - **DataStore Plugin**: [Plugins/DataStore/server/plugin.js](mdc:Plugins/DataStore/server/plugin.js) - Data abstraction layer
@@ -22,7 +25,9 @@ PenPal uses a sophisticated plugin architecture that allows dynamic loading of c
 - **Docker Plugin**: [Plugins/Docker/server/plugin.js](mdc:Plugins/Docker/server/plugin.js) - Container orchestration
 
 ## Plugin Structure Requirements
+
 Each plugin must have:
+
 1. **manifest.json** - Plugin metadata, dependencies, and versioning
 2. **index.js** - Plugin registration with PenPal core
 3. **plugin.js** - Plugin implementation and GraphQL integration
@@ -30,6 +35,7 @@ Each plugin must have:
 5. **docker-context/** (optional) - Docker build context for containerized tools
 
 ## Security Tool Plugins
+
 - **Nmap**: [Plugins/Nmap/server/plugin.js](mdc:Plugins/Nmap/server/plugin.js) - Network scanning
 - **Rustscan**: [Plugins/Rustscan/server/plugin.js](mdc:Plugins/Rustscan/server/plugin.js) - Fast port scanning
 - **HttpX**: [Plugins/HttpX/server/plugin.js](mdc:Plugins/HttpX/server/plugin.js) - HTTP service discovery
@@ -42,6 +48,7 @@ The ScanQueue plugin solves bandwidth conflicts where multiple security tools tr
 ### Problem Statement
 
 **Bandwidth Bottleneck Issues:**
+
 - **Multiple MQTT Subscribers**: Different plugins (HttpX, Nmap, etc.) trigger scans simultaneously
 - **Network Congestion**: Concurrent scans overwhelm network capacity
 - **False Negative Timeouts**: Legitimate services appear unreachable due to network saturation
@@ -51,6 +58,7 @@ The ScanQueue plugin solves bandwidth conflicts where multiple security tools tr
 ### ScanQueue Architecture
 
 **Core Components:**
+
 - **Sequential Processing**: Ensures only one scan operation runs at a time
 - **FIFO Queue**: First-in-first-out operation ordering
 - **Job Integration**: Creates JobsTracker jobs for queue visibility
@@ -58,6 +66,7 @@ The ScanQueue plugin solves bandwidth conflicts where multiple security tools tr
 - **Error Handling**: Graceful failure handling with proper job status updates
 
 **Dependencies:**
+
 - **Base Plugin**: Foundation functionality
 - **JobsTracker**: Job creation and progress tracking
 
@@ -80,15 +89,18 @@ PenPal.ScanQueue.Add(
 ```
 
 **API Signature:**
+
 ```javascript
 PenPal.ScanQueue.Add(asyncFunction, queueName?)
 ```
 
 **Parameters:**
+
 - `asyncFunction` - Async function to execute sequentially
 - `queueName` - Optional descriptive name for the operation (recommended)
 
 **Return Value:**
+
 - No return value (fire-and-forget operation)
 
 ### Plugin Integration Patterns
@@ -125,6 +137,7 @@ await MQTT.Subscribe(
 ```
 
 **✅ Nmap Plugin Integration:**
+
 ```javascript
 // ✅ CORRECT: Nmap Plugin Integration
 const queueHostsScan = (args) => {
@@ -152,11 +165,13 @@ const queueNetworksScan = (args) => {
 ScanQueue creates jobs only when there's actual queuing happening to avoid unnecessary job overhead:
 
 **Job Creation Rules:**
+
 - **Single Operation**: No job created (executes immediately)
 - **Queuing Detected**: Job created when processing is active and new items are added
 - **Dynamic Stages**: New stages added to existing jobs as more operations are queued
 
 **Job Progress Tracking:**
+
 - **Current Stage**: Shows "Busy" with animated stripes (100% progress)
 - **Pending Stages**: Show 0% progress with "Pending" status
 - **Completed Stages**: Show 100% progress with "Completed" status
@@ -168,11 +183,13 @@ ScanQueue creates jobs only when there's actual queuing happening to avoid unnec
 ScanQueue jobs appear in the JobsTracker UI with rich progress visualization:
 
 **Progress Bar Types:**
+
 - **Blue Progress Bar**: Real progress with actual percentage (0-99%)
 - **Orange Striped Bar**: Busy waiting (100% with animated stripes)
 - **Green Progress Bar**: Completed operations (100% solid)
 
 **Status Text:**
+
 - **"Processing..."**: Currently executing operation
 - **"Pending"**: Waiting in queue
 - **"Busy"**: Busy waiting without detailed progress
@@ -181,6 +198,7 @@ ScanQueue jobs appear in the JobsTracker UI with rich progress visualization:
 ### ScanQueue Implementation Details
 
 **Queue Processing Logic:**
+
 ```javascript
 class ScanQueue {
   constructor() {
@@ -194,7 +212,7 @@ class ScanQueue {
 
   async add(asyncFunction, queueName = null) {
     const scanName = queueName || `Scan Operation ${Date.now()}`;
-    
+
     this.queue.push({
       function: asyncFunction,
       name: scanName,
@@ -216,14 +234,17 @@ class ScanQueue {
 ```
 
 **Keep-Alive Mechanism:**
+
 ```javascript
 // Prevent job timeout during long operations
 this.keepAliveInterval = setInterval(async () => {
   if (this.currentJob) {
     const currentProgress = Math.round(
-      (this.completedOperationsInCurrentJob / this.totalOperationsInCurrentJob) * 100
+      (this.completedOperationsInCurrentJob /
+        this.totalOperationsInCurrentJob) *
+        100
     );
-    
+
     await PenPal.Jobs.Update(this.currentJob.id, {
       progress: currentProgress,
       statusText: `Processing scan operations sequentially... (${this.completedOperationsInCurrentJob}/${this.totalOperationsInCurrentJob} completed)`,
@@ -235,18 +256,21 @@ this.keepAliveInterval = setInterval(async () => {
 ### Benefits and Use Cases
 
 **Bandwidth Management:**
+
 - **Eliminates Conflicts**: No more concurrent scan competition
 - **Consistent Results**: Repeatable scan outcomes
 - **Network Stability**: Prevents network saturation
 - **Resource Optimization**: Efficient use of Docker containers
 
 **Operational Benefits:**
+
 - **User Visibility**: Clear queue progress in JobsTracker UI
 - **Error Isolation**: Failed operations don't affect queued items
 - **Graceful Degradation**: System remains responsive during heavy scanning
 - **Queue Transparency**: Users see exactly what's running and what's pending
 
 **Use Cases:**
+
 - **MQTT Event Bursts**: Service discovery triggering multiple scans
 - **Batch Operations**: Large-scale network assessments
 - **Multi-Tool Workflows**: Sequential tool execution (Nmap → HttpX → others)
@@ -258,6 +282,7 @@ this.keepAliveInterval = setInterval(async () => {
 To migrate existing plugins to use ScanQueue:
 
 **Step 1: Add ScanQueue Dependency**
+
 ```json
 {
   "name": "YourPlugin",
@@ -267,6 +292,7 @@ To migrate existing plugins to use ScanQueue:
 ```
 
 **Step 2: Wrap Scan Functions**
+
 ```javascript
 // ❌ OLD: Direct scan execution
 await MQTT.Subscribe(
@@ -292,11 +318,12 @@ await MQTT.Subscribe(
 ```
 
 **Step 3: Add Descriptive Names**
+
 ```javascript
 // Generate meaningful queue names
 const generateQueueName = (args) => {
   const { project, host_ids, network_ids, service_ids } = args;
-  
+
   if (host_ids) {
     return `${pluginName} Host Scan (${host_ids.length} hosts), Project: ${project}`;
   } else if (network_ids) {
@@ -304,7 +331,7 @@ const generateQueueName = (args) => {
   } else if (service_ids) {
     return `${pluginName} Service Scan (${service_ids.length} services), Project: ${project}`;
   }
-  
+
   return `${pluginName} Scan, Project: ${project}`;
 };
 ```
@@ -312,6 +339,7 @@ const generateQueueName = (args) => {
 ### Error Handling
 
 **✅ Proper Error Handling Pattern**
+
 ```javascript
 PenPal.ScanQueue.Add(async () => {
   try {
@@ -325,6 +353,7 @@ PenPal.ScanQueue.Add(async () => {
 ```
 
 **Error Behavior:**
+
 - **Failed Operations**: Marked as failed in job stages
 - **Queue Continuation**: Failures don't stop subsequent operations
 - **Error Propagation**: Original errors are preserved and logged
@@ -333,12 +362,14 @@ PenPal.ScanQueue.Add(async () => {
 ### Performance Considerations
 
 **Queue Efficiency:**
+
 - **Minimal Overhead**: Queue operations are lightweight
 - **No Blocking**: Adding to queue never blocks calling code
 - **Background Processing**: Queue processing happens asynchronously
 - **Memory Management**: Completed operations are removed from memory
 
 **Scalability:**
+
 - **Linear Performance**: Processing time scales linearly with queue size
 - **No Limits**: Queue can handle hundreds of operations
 - **Resource Aware**: Respects system bandwidth and container limits
@@ -346,6 +377,7 @@ PenPal.ScanQueue.Add(async () => {
 ### Monitoring and Debugging
 
 **Logging Output:**
+
 ```
 [ScanQueue] Adding function to scan queue. Queue length: 1
 [ScanQueue] Creating scan queue job with stages
@@ -359,6 +391,7 @@ PenPal.ScanQueue.Add(async () => {
 ```
 
 **JobsTracker Integration:**
+
 - **Real-time Updates**: Live progress tracking in web UI
 - **Stage Details**: Detailed view of each queued operation
 - **Time Tracking**: Start time, duration, completion time
@@ -374,6 +407,7 @@ PenPal provides a powerful service enrichment system that allows plugins to add 
 ### Enrichment Architecture
 
 **Core Components:**
+
 - **PluginEnrichment Interface**: GraphQL interface for standardized enrichment data
 - **Service Enrichments Array**: Each service can have multiple enrichments from different plugins
 - **Plugin-Specific Resolvers**: Custom GraphQL resolvers for each plugin's enrichment type
@@ -382,11 +416,12 @@ PenPal provides a powerful service enrichment system that allows plugins to add 
 ### Server-Side Enrichment Implementation
 
 **GraphQL Interface Definition:**
+
 ```graphql
 # CoreAPI defines the base PluginEnrichment interface
 interface PluginEnrichment {
   plugin_name: String!
-  data: JSON  # Generic field containing all plugin-specific data
+  data: JSON # Generic field containing all plugin-specific data
 }
 
 # Plugin-specific enrichment types implement the interface
@@ -413,6 +448,7 @@ type NmapPluginEnrichment implements PluginEnrichment {
 ```
 
 **Interface Resolver Registration:**
+
 ```javascript
 // ✅ CORRECT: Plugin registers its enrichment resolver
 import PenPal from "#penpal/core";
@@ -434,9 +470,15 @@ PenPal.Utils.RunAfterImport(() => {
 
 export default {
   HttpXPluginEnrichment: {
-    url(obj) { return obj.url; },
-    status_code(obj) { return obj.status_code; },
-    content_type(obj) { return obj.content_type; },
+    url(obj) {
+      return obj.url;
+    },
+    status_code(obj) {
+      return obj.status_code;
+    },
+    content_type(obj) {
+      return obj.content_type;
+    },
     // ... other field resolvers
     data(obj) {
       // Return all properties except plugin_name as the data object
@@ -455,20 +497,21 @@ The CoreAPI plugin now provides dedicated enrichment management functions that h
 #### Available Enrichment Functions
 
 **Add Enrichments (Recommended):**
+
 ```javascript
 // ✅ CORRECT: Use CoreAPI enrichment functions
 const enrichment_updates = results.map((result) => ({
   // Service identification - use either approach:
-  
+
   // Option 1: Natural host/port/protocol identification (RECOMMENDED)
-  host: result.host,                    // IP address from tool output
-  port: result.port,                    // Port number from tool output  
-  ip_protocol: "TCP",                   // Protocol (TCP/UDP)
-  project_id: project_id,               // Required for multi-project isolation
-  
+  host: result.host, // IP address from tool output
+  port: result.port, // Port number from tool output
+  ip_protocol: "TCP", // Protocol (TCP/UDP)
+  project_id: project_id, // Required for multi-project isolation
+
   // Option 2: Direct service ID (for backward compatibility)
   // service_id: "known_service_id",
-  
+
   // Enrichment data
   enrichment: {
     plugin_name: "YourPlugin",
@@ -476,31 +519,35 @@ const enrichment_updates = results.map((result) => ({
     status_code: result.status_code,
     tech: result.tech,
     // ... other tool-specific data
-  }
+  },
 }));
 
 // Add enrichments using CoreAPI function
 const result = await PenPal.API.Services.AddEnrichments(enrichment_updates);
-console.log(`Successfully added ${result.accepted.length} enrichments, ${result.rejected.length} failed`);
+console.log(
+  `Successfully added ${result.accepted.length} enrichments, ${result.rejected.length} failed`
+);
 ```
 
 **Single Enrichment:**
+
 ```javascript
 // Add single enrichment
 await PenPal.API.Services.AddEnrichment({
   host: "192.168.1.100",
   port: 80,
-  ip_protocol: "TCP", 
+  ip_protocol: "TCP",
   project_id: project_id,
   enrichment: {
     plugin_name: "HttpX",
     url: "http://192.168.1.100",
-    status_code: 200
-  }
+    status_code: 200,
+  },
 });
 ```
 
 **Update Existing Enrichment:**
+
 ```javascript
 // Update specific enrichment by plugin name
 await PenPal.API.Services.UpdateEnrichment({
@@ -511,16 +558,17 @@ await PenPal.API.Services.UpdateEnrichment({
   plugin_name: "HttpX",
   updates: {
     status_code: 404,
-    last_checked: new Date().toISOString()
-  }
+    last_checked: new Date().toISOString(),
+  },
 });
 ```
 
 **Upsert Enrichment (Add or Update):**
+
 ```javascript
 // Smart add-or-update logic
 await PenPal.API.Services.UpsertEnrichment({
-  host: "192.168.1.100", 
+  host: "192.168.1.100",
   port: 80,
   ip_protocol: "TCP",
   project_id: project_id,
@@ -528,20 +576,21 @@ await PenPal.API.Services.UpsertEnrichment({
     plugin_name: "HttpX",
     url: "http://192.168.1.100",
     status_code: 200,
-    title: "Web Server"
-  }
+    title: "Web Server",
+  },
 });
 ```
 
 **Remove Enrichment:**
+
 ```javascript
 // Remove enrichment by plugin name
 await PenPal.API.Services.RemoveEnrichment({
   host: "192.168.1.100",
-  port: 80, 
+  port: 80,
   ip_protocol: "TCP",
   project_id: project_id,
-  plugin_name: "HttpX"
+  plugin_name: "HttpX",
 });
 ```
 
@@ -549,11 +598,12 @@ await PenPal.API.Services.RemoveEnrichment({
 
 **Method 1: Host/Port/Protocol (RECOMMENDED)**
 Use natural identifiers that plugins already have from tool output:
+
 ```javascript
 {
   host: "192.168.1.100",        // IP address (string)
   port: 80,                     // Port number (integer)
-  ip_protocol: "TCP",           // Protocol: "TCP" or "UDP" 
+  ip_protocol: "TCP",           // Protocol: "TCP" or "UDP"
   project_id: project_id,       // Project ID for isolation
   enrichment: { /* ... */ }
 }
@@ -561,6 +611,7 @@ Use natural identifiers that plugins already have from tool output:
 
 **Method 2: Service ID (Backward Compatibility)**
 Use when you already have the service ID:
+
 ```javascript
 {
   service_id: "service_123456",  // Known service ID
@@ -571,16 +622,19 @@ Use when you already have the service ID:
 #### Enrichment API Benefits
 
 **Data Safety:**
+
 - **Atomic Operations**: Uses MongoDB atomic operators ($push, $set, $pull)
 - **Concurrent Safe**: Prevents race conditions during bulk updates
 - **Data Preservation**: Existing enrichments from other plugins are preserved
 
 **Plugin Simplicity:**
+
 - **No Manual Matching**: CoreAPI handles service lookup internally
 - **Natural Identifiers**: Work with host/port data plugins already have
 - **Error Handling**: Comprehensive validation and error reporting
 
 **Architectural Decoupling:**
+
 - **No Service ID Tracking**: Plugins don't need to maintain service ID mappings
 - **Consistent Pattern**: Matches existing service upsert behavior
 - **Multi-Project Support**: Automatic project isolation
@@ -588,13 +642,14 @@ Use when you already have the service ID:
 #### Error Handling and Validation
 
 **Response Structure:**
+
 ```javascript
 const result = await PenPal.API.Services.AddEnrichments(enrichment_updates);
 
 // Result contains:
 {
   accepted: [                          // Successfully processed enrichments
-    { 
+    {
       selector: { host, port, ip_protocol, project_id },
       enrichment: { /* enrichment data */ }
     }
@@ -610,6 +665,7 @@ const result = await PenPal.API.Services.AddEnrichments(enrichment_updates);
 ```
 
 **Common Error Scenarios:**
+
 - **Service Not Found**: No service matches the host/port/protocol in the project
 - **Multiple Services Found**: Ambiguous match (should not happen with proper data)
 - **Missing Parameters**: Required fields (host, port, ip_protocol, project_id) not provided
@@ -618,32 +674,38 @@ const result = await PenPal.API.Services.AddEnrichments(enrichment_updates);
 #### Migration from Manual Matching
 
 **Before (Manual Service Matching):**
+
 ```javascript
 // ❌ OLD: Complex manual matching logic
-export const parseAndUpsertResults = async (project_id, services_data, output_data) => {
+export const parseAndUpsertResults = async (
+  project_id,
+  services_data,
+  output_data
+) => {
   const results = parseToolOutput(output_data);
   const service_updates = [];
-  
+
   for (const result of results) {
     // Manual service matching
-    const matching_service = services_data.find(service => 
-      service.host_ip === result.host && service.port === result.port
+    const matching_service = services_data.find(
+      (service) =>
+        service.host_ip === result.host && service.port === result.port
     );
-    
+
     if (matching_service) {
       // Manual enrichment array management
       const updated_enrichments = [
         ...(matching_service.enrichments || []),
-        { plugin_name: "YourPlugin", ...result }
+        { plugin_name: "YourPlugin", ...result },
       ];
-      
+
       service_updates.push({
         id: matching_service.id,
-        enrichments: updated_enrichments
+        enrichments: updated_enrichments,
       });
     }
   }
-  
+
   // Manual bulk update
   if (service_updates.length > 0) {
     await PenPal.API.Services.UpsertMany(service_updates);
@@ -652,11 +714,16 @@ export const parseAndUpsertResults = async (project_id, services_data, output_da
 ```
 
 **After (CoreAPI Enrichment Functions):**
+
 ```javascript
 // ✅ NEW: Simple enrichment API usage
-export const parseAndUpsertResults = async (project_id, services_data, output_data) => {
+export const parseAndUpsertResults = async (
+  project_id,
+  services_data,
+  output_data
+) => {
   const results = parseToolOutput(output_data);
-  
+
   // Convert results to enrichment format
   const enrichment_updates = results.map((result) => ({
     host: result.host,
@@ -669,24 +736,28 @@ export const parseAndUpsertResults = async (project_id, services_data, output_da
       status_code: result.status_code,
       tech: result.tech,
       // ... other tool-specific data
-    }
+    },
   }));
 
   // Add enrichments using CoreAPI
   const result = await PenPal.API.Services.AddEnrichments(enrichment_updates);
   console.log(`Successfully added ${result.accepted.length} enrichments`);
-  
+
   if (result.rejected?.length > 0) {
-    console.log("Some enrichments were rejected:", 
-      result.rejected.map(r => `${r.selector.host}:${r.selector.port} - ${r.error}`)
+    console.log(
+      "Some enrichments were rejected:",
+      result.rejected.map(
+        (r) => `${r.selector.host}:${r.selector.port} - ${r.error}`
+      )
     );
   }
 };
 ```
 
 **Key Migration Benefits:**
+
 1. **Eliminated ~40 lines** of complex matching logic
-2. **Removed dependency** on `services_data` parameter structure  
+2. **Removed dependency** on `services_data` parameter structure
 3. **Improved error handling** with detailed rejection reasons
 4. **Enhanced data safety** with atomic database operations
 5. **Simplified plugin architecture** with natural identifier usage
@@ -698,33 +769,38 @@ The old pattern of manually updating service enrichments is deprecated but still
 
 ```javascript
 // ❌ DEPRECATED: Manual enrichment management
-export const parseAndUpsertResults = async (project_id, services_data, output_data) => {
+export const parseAndUpsertResults = async (
+  project_id,
+  services_data,
+  output_data
+) => {
   const results = parseToolOutput(output_data);
   const service_updates = [];
-  
+
   for (const result of results) {
-    const matching_service = services_data.find(service => 
-      service.host_ip === result.host && service.port === result.port
+    const matching_service = services_data.find(
+      (service) =>
+        service.host_ip === result.host && service.port === result.port
     );
-    
+
     if (matching_service) {
       const enrichment = {
         plugin_name: "YourPlugin",
         // Tool-specific fields...
       };
-      
+
       const updated_enrichments = [
         ...(matching_service.enrichments || []),
-        enrichment
+        enrichment,
       ];
-      
+
       service_updates.push({
         id: matching_service.id,
-        enrichments: updated_enrichments
+        enrichments: updated_enrichments,
       });
     }
   }
-  
+
   if (service_updates.length > 0) {
     await PenPal.API.Services.UpsertMany(service_updates);
   }
@@ -732,11 +808,13 @@ export const parseAndUpsertResults = async (project_id, services_data, output_da
 ```
 
 **Migration Recommendations:**
+
 - **New Plugins**: Always use the new enrichment API functions
 - **Existing Plugins**: Migrate to new API for better maintainability
 - **Legacy Support**: Old pattern continues working but is not recommended
 
 **Key Enrichment Principles:**
+
 - **Plugin Identification**: Always include `plugin_name` field for proper GraphQL resolution
 - **Project Isolation**: Always include `project_id` for multi-project support
 - **Natural Identifiers**: Use host/port/protocol that tools naturally provide
@@ -746,6 +824,7 @@ export const parseAndUpsertResults = async (project_id, services_data, output_da
 ### Client-Side Enrichment Display System
 
 **Component Registration Pattern:**
+
 ```javascript
 // ✅ CORRECT: Plugin registers custom enrichment display component
 import PenPal from "@penpal/core";
@@ -755,134 +834,6 @@ import HttpXEnrichmentDisplay from "./components/httpx-enrichment-display.jsx";
 PenPal.API.registerEnrichmentDisplay("HttpX", HttpXEnrichmentDisplay);
 
 console.log("HttpX enrichment display component registered");
-```
-
-**Custom Enrichment Display Component:**
-```javascript
-// ✅ CORRECT: Rich custom display for HttpX enrichments
-import React from "react";
-import { Box, Typography, Chip, Link } from "@mui/material";
-import { OpenInNew, CheckCircle, Error } from "@mui/icons-material";
-
-const HttpXEnrichmentDisplay = ({ enrichment }) => {
-  const getStatusColor = (status_code) => {
-    if (status_code >= 200 && status_code < 300) return "success";
-    if (status_code >= 400) return "error";
-    return "default";
-  };
-
-  const formatContentLength = (bytes) => {
-    if (!bytes) return "Unknown";
-    if (bytes < 1024) return `${bytes} B`;
-    if (bytes < 1024 * 1024) return `${(bytes / 1024).toFixed(1)} KB`;
-    return `${(bytes / (1024 * 1024)).toFixed(1)} MB`;
-  };
-
-  return (
-    <Box>
-      {/* Clickable URL with external link icon */}
-      {enrichment.url && (
-        <Box display="flex" alignItems="center" mb={2}>
-          <Link href={enrichment.url} target="_blank" rel="noopener">
-            {enrichment.url}
-          </Link>
-          <OpenInNew fontSize="small" sx={{ ml: 1 }} />
-        </Box>
-      )}
-
-      {/* HTTP Status with color-coded icon */}
-      {enrichment.status_code && (
-        <Box display="flex" alignItems="center" mb={1}>
-          <Typography variant="body2" color="textSecondary" sx={{ mr: 1 }}>
-            Status:
-          </Typography>
-          <Chip
-            icon={enrichment.status_code < 400 ? <CheckCircle /> : <Error />}
-            label={enrichment.status_code}
-            color={getStatusColor(enrichment.status_code)}
-            size="small"
-          />
-        </Box>
-      )}
-
-      {/* Technology Stack as chips */}
-      {enrichment.tech && enrichment.tech.length > 0 && (
-        <Box mb={1}>
-          <Typography variant="body2" color="textSecondary" gutterBottom>
-            Technology:
-          </Typography>
-          <Box display="flex" flexWrap="wrap" gap={0.5}>
-            {enrichment.tech.map((tech, index) => (
-              <Chip key={index} label={tech} size="small" variant="outlined" />
-            ))}
-          </Box>
-        </Box>
-      )}
-
-      {/* Additional HTTP metadata */}
-      {enrichment.content_length && (
-        <Typography variant="body2">
-          Size: {formatContentLength(enrichment.content_length)}
-        </Typography>
-      )}
-      
-      {enrichment.title && (
-        <Typography variant="body2">
-          Title: {enrichment.title}
-        </Typography>
-      )}
-    </Box>
-  );
-};
-
-export default HttpXEnrichmentDisplay;
-```
-
-**Default Enrichment Display:**
-```javascript
-// ✅ Fallback display for plugins without custom components
-const DefaultEnrichmentDisplay = ({ enrichment }) => {
-  // Show all top-level properties
-  const topLevelEntries = Object.entries(enrichment).filter(
-    ([key]) => key !== "plugin_name"
-  );
-
-  // If there's a data field, also show its contents
-  const dataEntries = enrichment.data ? Object.entries(enrichment.data) : [];
-
-  return (
-    <Box>
-      {topLevelEntries.map(([key, value]) => (
-        <Box key={key} display="flex" justifyContent="space-between" mb={1}>
-          <Typography variant="body2" color="textSecondary">
-            {key.replace(/_/g, " ").replace(/\b\w/g, (l) => l.toUpperCase())}:
-          </Typography>
-          <Typography variant="body2">
-            {typeof value === "object" ? JSON.stringify(value) : String(value)}
-          </Typography>
-        </Box>
-      ))}
-      
-      {dataEntries.length > 0 && (
-        <>
-          <Typography variant="caption" color="primary" gutterBottom sx={{ mt: 2, display: "block" }}>
-            Data Field Contents:
-          </Typography>
-          {dataEntries.map(([key, value]) => (
-            <Box key={key} display="flex" justifyContent="space-between" mb={1}>
-              <Typography variant="body2" color="textSecondary">
-                {key.replace(/_/g, " ").replace(/\b\w/g, (l) => l.toUpperCase())}:
-              </Typography>
-              <Typography variant="body2">
-                {Array.isArray(value) ? value.join(", ") : String(value)}
-              </Typography>
-            </Box>
-          ))}
-        </>
-      )}
-    </Box>
-  );
-};
 ```
 
 ### Services UI Integration
@@ -895,6 +846,7 @@ The CoreAPI plugin provides a comprehensive Services UI with three main views:
 3. **Graph View**: Network topology visualization (future)
 
 **Services List with Enrichment Indicators:**
+
 ```javascript
 // Services are displayed with enrichment count badges
 const ServiceCard = ({ service }) => (
@@ -922,6 +874,7 @@ const ServiceCard = ({ service }) => (
 ```
 
 **Enrichments View with Plugin Components:**
+
 ```javascript
 // Each service's enrichments are displayed with plugin-specific components
 const ServiceEnrichments = ({ service }) => (
@@ -931,14 +884,21 @@ const ServiceEnrichments = ({ service }) => (
       <Stack spacing={1}>
         {service.enrichments.map((enrichment, index) => {
           // Use registered component or fallback to default
-          const DisplayComponent = PenPal.API.EnrichmentDisplayRegistry.get(enrichment.plugin_name) || DefaultEnrichmentDisplay;
-          
+          const DisplayComponent =
+            PenPal.API.EnrichmentDisplayRegistry.get(enrichment.plugin_name) ||
+            DefaultEnrichmentDisplay;
+
           return (
             <Accordion key={index}>
               <AccordionSummary expandIcon={<ExpandMoreIcon />}>
                 <Typography variant="body1">
                   {enrichment.plugin_name} Enrichment
-                  <Chip label={enrichment.plugin_name} size="small" color="primary" sx={{ ml: 1 }} />
+                  <Chip
+                    label={enrichment.plugin_name}
+                    size="small"
+                    color="primary"
+                    sx={{ ml: 1 }}
+                  />
                 </Typography>
               </AccordionSummary>
               <AccordionDetails>
@@ -956,28 +916,30 @@ const ServiceEnrichments = ({ service }) => (
 ### MQTT-Triggered Enrichment Pattern
 
 **✅ Event-Driven Service Discovery Chain:**
+
 ```javascript
 // ✅ CORRECT: Plugin subscribes to service discovery events
 const HttpXPlugin = {
   async loadPlugin() {
     const MQTT = await PenPal.MQTT.NewClient();
-    
+
     // Subscribe to new services discovered by other plugins (Nmap, Rustscan, etc.)
     await MQTT.Subscribe(
       PenPal.API.MQTT.Topics.New.Services,
       async ({ project, service_ids }) => {
         console.log("HttpX: New Services:", service_ids);
-        
+
         // Get the service details
         const services = await PenPal.API.Services.GetMany(service_ids);
-        
+
         // Filter for HTTP-capable services
-        const network_services = services.filter(service =>
-          service.port &&
-          service.ip_protocol.toLowerCase() === "tcp" &&
-          service.status === "open"
+        const network_services = services.filter(
+          (service) =>
+            service.port &&
+            service.ip_protocol.toLowerCase() === "tcp" &&
+            service.status === "open"
         );
-        
+
         if (network_services.length > 0) {
           // Enrich services with host IP information
           const hosts_map = {};
@@ -990,7 +952,7 @@ const HttpXPlugin = {
               service.host_ip = hosts_map[service.host].ip_address;
             }
           }
-          
+
           // Perform HTTP enrichment scan
           await performHttpScan({
             project_id: project,
@@ -999,7 +961,7 @@ const HttpXPlugin = {
         }
       }
     );
-    
+
     return { graphql: { types, resolvers }, settings };
   },
 };
@@ -1008,26 +970,31 @@ const HttpXPlugin = {
 ### Enrichment Best Practices
 
 **Data Consistency:**
+
 - Always include `plugin_name` field for proper GraphQL interface resolution
 - Use consistent field naming across similar plugins (e.g., `status_code` not `statusCode`)
 - Provide meaningful default values for optional fields
 
 **Performance Optimization:**
+
 - Use bulk updates with `UpsertMany` instead of individual service updates
 - Filter services early to avoid unnecessary processing
 - Cache host data when enriching multiple services from the same host
 
 **Error Handling:**
+
 - Handle cases where services don't match tool output
 - Validate enrichment data before storing
 - Log enrichment statistics for monitoring
 
 **UI Integration:**
+
 - Register custom display components for rich data visualization
 - Provide meaningful fallbacks for missing data
 - Use consistent Material-UI components and styling
 
 **Security Considerations:**
+
 - Sanitize URLs and external content in enrichment displays
 - Validate tool output before storing as enrichments
 - Use `target="_blank" rel="noopener"` for external links
@@ -1035,6 +1002,7 @@ const HttpXPlugin = {
 ### Migration and Compatibility
 
 **Adding Enrichments to Existing Plugins:**
+
 1. Define GraphQL enrichment type implementing `PluginEnrichment`
 2. Register interface resolver for your plugin type
 3. Update tool parsing to create enrichment objects
@@ -1043,6 +1011,7 @@ const HttpXPlugin = {
 6. Register display component with `PenPal.API.registerEnrichmentDisplay`
 
 **Backward Compatibility:**
+
 - The `data` field ensures enrichments work even without custom resolvers
 - Default display component handles any enrichment structure
 - Existing services without enrichments continue to work normally
@@ -1050,6 +1019,7 @@ const HttpXPlugin = {
 The Service Enrichment system enables plugins to build comprehensive service intelligence by layering data from multiple security tools, creating a unified view of each discovered service.
 
 ## Plugin Development Template
+
 Use [PluginTemplate/](mdc:PluginTemplate) as a starting point for new plugins.
 
 ## Centralized Logger System
@@ -1060,16 +1030,19 @@ PenPal provides a centralized logger system that automatically assigns unique co
 ### Logger Features
 
 **Automatic Color Assignment:**
+
 - Each plugin gets a unique color based on a hash of the plugin name
 - 12 ANSI colors available: cyan, green, yellow, blue, magenta, red, white, gray, bright versions
 - Colors are consistent across server restarts for the same plugin name
 
 **Plugin Name Prefixing:**
+
 - Automatically adds colored `[PluginName]` prefix to all log messages
 - Replaces manual console.log formatting with standardized approach
 - Maintains existing timestamp format for compatibility
 
 **Multiple Log Levels:**
+
 - `logger.log()` - General information (white/default color)
 - `logger.info()` - Informational messages (cyan)
 - `logger.warn()` - Warning messages (yellow)
@@ -1091,9 +1064,9 @@ export const YourPluginLogger = PenPal.Utils.BuildLogger("YourPlugin");
 const YourPlugin = {
   async loadPlugin() {
     YourPluginLogger.log("Plugin loading started");
-    
+
     // Plugin initialization code
-    
+
     YourPluginLogger.log("Plugin loaded successfully");
     return { settings };
   },
@@ -1103,6 +1076,7 @@ export default YourPlugin;
 ```
 
 **Using Logger in Other Plugin Files:**
+
 ```javascript
 // other-file.js - API, utilities, etc.
 import PenPal from "#penpal/core";
@@ -1112,7 +1086,7 @@ import { YourPluginLogger as logger } from "./plugin.js";
 
 export const performOperation = async () => {
   logger.log("Starting operation");
-  
+
   try {
     // Operation logic
     logger.log("Operation completed successfully");
@@ -1126,12 +1100,14 @@ export const performOperation = async () => {
 ### Logger Migration Process
 
 **Step 1: Create File-Level Logger Export**
+
 ```javascript
 // Add to top of plugin.js after imports
 export const YourPluginLogger = PenPal.Utils.BuildLogger("YourPlugin");
 ```
 
 **Step 2: Replace Console Statements**
+
 ```javascript
 // ❌ OLD: Manual console.log with prefixes
 console.log("[YourPlugin] Starting scan");
@@ -1144,12 +1120,14 @@ logger.error("Scan failed:", error);
 
 **Step 3: Remove Manual Prefixes**
 Use sed or find-replace to remove plugin name prefixes since the logger handles them:
+
 ```bash
 # Remove plugin name prefixes from all files
 sed -i '' 's/\[YourPlugin\] //g' Plugins/YourPlugin/server/**/*.js
 ```
 
 **Step 4: Import Logger in Other Files**
+
 ```javascript
 // Import shared logger in API files, utilities, etc.
 import { YourPluginLogger as logger } from "../plugin.js";
@@ -1158,6 +1136,7 @@ import { YourPluginLogger as logger } from "../plugin.js";
 ### Logger Output Examples
 
 **Color-Coded Output:**
+
 ```
 2024-01-15T10:30:45.123Z [Docker] Building image: penpal:httpx
 2024-01-15T10:30:46.456Z [HttpX] Starting HTTP service scan
@@ -1166,17 +1145,19 @@ import { YourPluginLogger as logger } from "../plugin.js";
 ```
 
 **Different Log Levels:**
+
 ```javascript
-logger.info("Configuration loaded");    // Cyan [PluginName]
-logger.log("Processing started");       // White [PluginName]  
-logger.warn("Deprecated API used");     // Yellow [PluginName]
-logger.error("Connection failed");      // Red [PluginName]
-logger.debug("Variable state:", obj);   // Gray [PluginName]
+logger.info("Configuration loaded"); // Cyan [PluginName]
+logger.log("Processing started"); // White [PluginName]
+logger.warn("Deprecated API used"); // Yellow [PluginName]
+logger.error("Connection failed"); // Red [PluginName]
+logger.debug("Variable state:", obj); // Gray [PluginName]
 ```
 
 ### Logger Best Practices
 
 **Use Appropriate Log Levels:**
+
 - `logger.log()` for general operational messages
 - `logger.info()` for configuration and startup information
 - `logger.warn()` for non-critical issues and deprecation notices
@@ -1184,17 +1165,20 @@ logger.debug("Variable state:", obj);   // Gray [PluginName]
 - `logger.debug()` for detailed troubleshooting information
 
 **Message Content Guidelines:**
+
 - Remove plugin name prefixes (logger handles them automatically)
 - Use clear, descriptive messages without redundant information
 - Include relevant context like counts, IDs, or status
 - For errors, include the error message or relevant details
 
 **Performance Considerations:**
+
 - Logger calls are synchronous and fast
 - No need to conditionally disable logging in production
 - Debug level can be controlled via environment variables if needed
 
 **File Organization:**
+
 - Always export logger from main plugin.js file
 - Import logger consistently as `logger` or `YourPluginLogger as logger`
 - Use the same logger instance across all files in a plugin
@@ -1202,20 +1186,21 @@ logger.debug("Variable state:", obj);   // Gray [PluginName]
 ### Logger Implementation Details
 
 **Color Assignment Algorithm:**
+
 ```javascript
 // Simplified version of the color assignment
 const colors = [
-  '\x1b[36m', // cyan
-  '\x1b[32m', // green  
-  '\x1b[33m', // yellow
-  '\x1b[34m', // blue
-  '\x1b[35m', // magenta
-  '\x1b[31m', // red
+  "\x1b[36m", // cyan
+  "\x1b[32m", // green
+  "\x1b[33m", // yellow
+  "\x1b[34m", // blue
+  "\x1b[35m", // magenta
+  "\x1b[31m", // red
   // ... more colors
 ];
 
-const hash = plugin_name.split('').reduce((a, b) => {
-  a = ((a << 5) - a) + b.charCodeAt(0);
+const hash = plugin_name.split("").reduce((a, b) => {
+  a = (a << 5) - a + b.charCodeAt(0);
   return a & a;
 }, 0);
 
@@ -1223,6 +1208,7 @@ const color = colors[Math.abs(hash) % colors.length];
 ```
 
 **Message Format:**
+
 ```
 {timestamp} {colored_plugin_prefix} {message}
 2024-01-15T10:30:45.123Z [PluginName] Your log message here
@@ -1231,6 +1217,7 @@ const color = colors[Math.abs(hash) % colors.length];
 ### Migration Examples
 
 **Before (Manual Console Logging):**
+
 ```javascript
 // ❌ OLD: Inconsistent manual logging
 console.log("[HttpX] Starting HTTP scan for", targets.length, "targets");
@@ -1239,6 +1226,7 @@ console.log("[+] HttpX scan completed successfully");
 ```
 
 **After (Centralized Logger):**
+
 ```javascript
 // ✅ NEW: Consistent logger usage
 logger.log("Starting HTTP scan for", targets.length, "targets");
@@ -1247,6 +1235,7 @@ logger.log("Scan completed successfully");
 ```
 
 **Benefits of Migration:**
+
 - **Consistent Formatting**: All plugins use the same timestamp and prefix format
 - **Unique Colors**: Easy visual identification of different plugins in logs
 - **Reduced Maintenance**: No manual prefix management or formatting
@@ -1254,6 +1243,7 @@ logger.log("Scan completed successfully");
 - **Professional Output**: Clean, consistent logging across the entire system
 
 ## Plugin Communication
+
 - **MQTT Plugin**: [Plugins/MQTT/server/plugin.js](mdc:Plugins/MQTT/server/plugin.js) - Inter-plugin messaging
 - Plugins can subscribe to events like new hosts/networks discovery
 - Job queue system for long-running tasks
@@ -1266,6 +1256,7 @@ The `BatchFunction` utility allows plugins to batch rapid event calls together, 
 #### BatchFunction Usage
 
 **Basic Pattern:**
+
 ```javascript
 // ✅ CORRECT: Use BatchFunction to batch MQTT events
 const batchedHandler = PenPal.Utils.BatchFunction(handler, timeoutMs);
@@ -1278,15 +1269,18 @@ await MQTT.Subscribe(
 ```
 
 **Function Signature:**
+
 ```javascript
-PenPal.Utils.BatchFunction(handler, timeoutMs)
+PenPal.Utils.BatchFunction(handler, timeoutMs);
 ```
 
 **Parameters:**
+
 - `handler` - Function that will receive an array of batched argument sets
 - `timeoutMs` - Timeout in milliseconds to wait after the last call before executing
 
 **How It Works:**
+
 1. **Collect Arguments**: Each function call adds its arguments to an internal array
 2. **Reset Timer**: Each new call resets the timeout timer
 3. **Execute Handler**: After `timeoutMs` of no new calls, executes the handler with all batched arguments
@@ -1295,6 +1289,7 @@ PenPal.Utils.BatchFunction(handler, timeoutMs)
 #### Real-World Example: HttpX Plugin
 
 **Before (Individual Processing):**
+
 ```javascript
 // ❌ Old pattern - processes each MQTT event separately
 const start_http_service_scan = async ({ project, service_ids }) => {
@@ -1310,21 +1305,22 @@ await MQTT.Subscribe(
 ```
 
 **After (Batched Processing):**
+
 ```javascript
 // ✅ New pattern - batches multiple MQTT events together
 const start_http_service_scan_batch = async (batchedArgs) => {
   console.log("HttpX: Processing batched events:", batchedArgs.length);
-  
+
   // Collect all unique service IDs and projects from batched arguments
   const projectServiceMap = new Map();
-  
+
   for (const [{ project, service_ids }] of batchedArgs) {
     if (!projectServiceMap.has(project)) {
       projectServiceMap.set(project, new Set());
     }
-    service_ids.forEach(id => projectServiceMap.get(project).add(id));
+    service_ids.forEach((id) => projectServiceMap.get(project).add(id));
   }
-  
+
   // Process each project's services in bulk
   for (const [project, serviceIdSet] of projectServiceMap) {
     const service_ids = Array.from(serviceIdSet);
@@ -1341,18 +1337,21 @@ await MQTT.Subscribe(
 #### BatchFunction Benefits
 
 **Performance Improvements:**
+
 - **Reduced Load**: Prevents overwhelming the system during rapid events
 - **Deduplication**: Automatically handles duplicate service IDs
 - **Bulk Processing**: Enables efficient batch operations
 - **Resource Optimization**: Reduces Docker container spawning and job creation
 
 **Use Cases:**
+
 - **MQTT Event Bursts**: Service/host discovery events during large scans
 - **Database Operations**: Batching multiple inserts/updates
 - **External API Calls**: Reducing API rate limit issues
 - **Container Operations**: Minimizing Docker container overhead
 
 **Configuration Guidelines:**
+
 - **Short Timeouts (1-2s)**: For real-time operations requiring quick response
 - **Medium Timeouts (5-10s)**: For service discovery and enrichment (recommended)
 - **Long Timeouts (30s+)**: For non-critical background processing
@@ -1360,18 +1359,19 @@ await MQTT.Subscribe(
 #### Advanced BatchFunction Patterns
 
 **Multi-Project Deduplication:**
+
 ```javascript
 const batchedHandler = async (batchedArgs) => {
   // Group by project and deduplicate service IDs
   const projectServiceMap = new Map();
-  
+
   for (const [{ project, service_ids }] of batchedArgs) {
     if (!projectServiceMap.has(project)) {
       projectServiceMap.set(project, new Set());
     }
-    service_ids.forEach(id => projectServiceMap.get(project).add(id));
+    service_ids.forEach((id) => projectServiceMap.get(project).add(id));
   }
-  
+
   // Process each project separately
   for (const [project, serviceIds] of projectServiceMap) {
     await processProject(project, Array.from(serviceIds));
@@ -1380,18 +1380,19 @@ const batchedHandler = async (batchedArgs) => {
 ```
 
 **Error Handling:**
+
 ```javascript
 const robustBatchedHandler = async (batchedArgs) => {
   try {
     console.log(`Processing ${batchedArgs.length} batched events`);
-    
+
     // Group and process events
     const results = await processBatchedEvents(batchedArgs);
-    
+
     console.log(`Successfully processed ${results.length} items`);
   } catch (error) {
     console.error("Batch processing failed:", error);
-    
+
     // Fallback to individual processing if batch fails
     for (const [args] of batchedArgs) {
       try {
@@ -1405,19 +1406,30 @@ const robustBatchedHandler = async (batchedArgs) => {
 ```
 
 **Monitoring and Metrics:**
+
 ```javascript
 const monitoredBatchedHandler = async (batchedArgs) => {
   const startTime = Date.now();
   const eventCount = batchedArgs.length;
-  const totalServices = batchedArgs.reduce((sum, [{ service_ids }]) => sum + service_ids.length, 0);
-  
-  console.log(`[Batch] Processing ${eventCount} events with ${totalServices} total services`);
-  
+  const totalServices = batchedArgs.reduce(
+    (sum, [{ service_ids }]) => sum + service_ids.length,
+    0
+  );
+
+  console.log(
+    `[Batch] Processing ${eventCount} events with ${totalServices} total services`
+  );
+
   try {
     await processBatchedEvents(batchedArgs);
-    
+
     const duration = Date.now() - startTime;
-    console.log(`[Batch] Completed in ${duration}ms (${(totalServices/duration*1000).toFixed(1)} services/sec)`);
+    console.log(
+      `[Batch] Completed in ${duration}ms (${(
+        (totalServices / duration) *
+        1000
+      ).toFixed(1)} services/sec)`
+    );
   } catch (error) {
     console.error(`[Batch] Failed after ${Date.now() - startTime}ms:`, error);
     throw error;
@@ -1428,14 +1440,18 @@ const monitoredBatchedHandler = async (batchedArgs) => {
 #### Migration to BatchFunction
 
 **Step 1: Identify Batching Candidates**
+
 - MQTT event handlers that process rapid events
 - Functions called repeatedly with similar arguments
 - Operations that benefit from bulk processing
 
 **Step 2: Modify Handler Signature**
+
 ```javascript
 // Before: Single argument set
-const handler = async ({ project, service_ids }) => { /* ... */ };
+const handler = async ({ project, service_ids }) => {
+  /* ... */
+};
 
 // After: Array of argument sets
 const batchedHandler = async (batchedArgs) => {
@@ -1446,6 +1462,7 @@ const batchedHandler = async (batchedArgs) => {
 ```
 
 **Step 3: Apply BatchFunction**
+
 ```javascript
 // Wrap handler with BatchFunction
 const wrappedHandler = PenPal.Utils.BatchFunction(batchedHandler, 5000);
@@ -1455,6 +1472,7 @@ await MQTT.Subscribe(topic, wrappedHandler);
 ```
 
 **Step 4: Test and Tune**
+
 - Monitor batch sizes and processing times
 - Adjust timeout based on use case requirements
 - Verify deduplication works correctly
@@ -1470,11 +1488,12 @@ The Docker plugin provides essential container orchestration capabilities for ru
 ### Docker Plugin Configuration
 
 **Docker Settings in plugin.js:**
+
 ```javascript
 // ✅ CORRECT Docker configuration patterns
 export const settings = {
   docker: {
-    name: "penpal:toolname",                    // Container image name
+    name: "penpal:toolname", // Container image name
     dockercontext: `${__dirname}/docker-context`, // Build context path
     // OR for pre-built images:
     // image: "existing/image:tag"              // Pull existing image
@@ -1486,7 +1505,7 @@ export const settings = {
   docker: {
     name: "penpal:toolname",
     dockercontext: "./docker-context",
-    image: "conflicting/image"  // Causes validation error
+    image: "conflicting/image", // Causes validation error
   },
 };
 ```
@@ -1494,17 +1513,19 @@ export const settings = {
 ### Docker API Methods
 
 **Container Lifecycle Management:**
+
 ```javascript
 // ✅ Run containers with proper isolation
 const result = await PenPal.Docker.Run({
   image: "penpal:httpx",
   cmd: "httpx -l /input/targets.txt -o /output/results.json",
-  daemonize: true,                    // Run in background
-  network: "penpal_penpal",          // Use PenPal network
-  volume: {                          // Mount shared volume
+  daemonize: true, // Run in background
+  network: "penpal_penpal", // Use PenPal network
+  volume: {
+    // Mount shared volume
     name: "penpal_penpal-plugin-share",
-    path: "/penpal-plugin-share"
-  }
+    path: "/penpal-plugin-share",
+  },
 });
 
 // Get container ID and wait for completion
@@ -1513,31 +1534,36 @@ await PenPal.Docker.Wait(container_id);
 ```
 
 **Volume Management:**
+
 ```javascript
 // ✅ CORRECT Volume patterns for file I/O
 const volume = {
-  name: "penpal_penpal-plugin-share",  // Shared volume name
-  path: "/penpal-plugin-share"         // Container mount path
+  name: "penpal_penpal-plugin-share", // Shared volume name
+  path: "/penpal-plugin-share", // Container mount path
 };
 
 // Use volume paths that work with mounts
 const host_file = "/penpal-plugin-share/httpx/project1/targets.txt";
-const container_file = host_file.replace("/penpal-plugin-share", "/penpal-plugin-share");
+const container_file = host_file.replace(
+  "/penpal-plugin-share",
+  "/penpal-plugin-share"
+);
 
 // ❌ WRONG - Don't use hardcoded paths
-const bad_path = "/tmp/local-file.txt";  // Won't be accessible in container
+const bad_path = "/tmp/local-file.txt"; // Won't be accessible in container
 ```
 
 **Container Commands:**
+
 ```javascript
 // Available Docker operations
-await PenPal.Docker.Start(container_id);           // Start stopped container
-await PenPal.Docker.Stop(container_id);            // Stop running container
-await PenPal.Docker.Wait(container_id);            // Wait for completion
-await PenPal.Docker.Exec({ container, cmd });      // Execute in running container
+await PenPal.Docker.Start(container_id); // Start stopped container
+await PenPal.Docker.Stop(container_id); // Stop running container
+await PenPal.Docker.Wait(container_id); // Wait for completion
+await PenPal.Docker.Exec({ container, cmd }); // Execute in running container
 await PenPal.Docker.Copy({ container, container_file, output_file }); // Copy files
 await PenPal.Docker.RemoveContainer(container_id); // Clean up container
-await PenPal.Docker.Raw(docker_command);           // Execute raw docker command
+await PenPal.Docker.Raw(docker_command); // Execute raw docker command
 ```
 
 ### Docker Build Process
@@ -1561,6 +1587,7 @@ const build_docker_images = async () => {
 ```
 
 **Background Build Status Tracking:**
+
 ```javascript
 // ✅ Check if Docker images are ready before using them
 if (PenPal.Docker.IsImageReady("penpal:httpx")) {
@@ -1578,7 +1605,7 @@ if (PenPal.Docker.IsImageReady("penpal:httpx")) {
 await PenPal.Docker.WaitForImageReady("penpal:httpx", {
   updateCallback: update_job, // Optional progress callback
   updateMessage: "Waiting for HttpX Docker image to build...",
-  timeout: 120000 // Optional timeout in ms (default: 2 minutes)
+  timeout: 120000, // Optional timeout in ms (default: 2 minutes)
 });
 
 // Get complete build status
@@ -1590,6 +1617,7 @@ console.log("Failed builds:", buildStatus.failed);
 ```
 
 **Background Build Benefits:**
+
 - **Faster Server Startup**: GraphQL server starts immediately
 - **Non-blocking**: Long Docker builds don't delay application availability
 - **Progress Tracking**: All builds tracked as Jobs with real-time progress
@@ -1597,6 +1625,7 @@ console.log("Failed builds:", buildStatus.failed);
 - **Error Handling**: Failed builds don't crash the server
 
 **Dockerfile Best Practices:**
+
 ```dockerfile
 # ✅ Multi-stage builds for security tools
 FROM golang:1.21-alpine AS builder
@@ -1613,64 +1642,75 @@ ENTRYPOINT ["./httpx"]
 ### Integration Patterns
 
 **MQTT-Triggered Container Execution:**
+
 ```javascript
 // ✅ Standard pattern for event-driven security tools
 const HttpXPlugin = {
   async loadPlugin() {
     const MQTT = await PenPal.MQTT.NewClient();
-    
+
     // Subscribe to service discovery events
     await MQTT.Subscribe(
       PenPal.API.MQTT.Topics.New.Services,
       async ({ project, service_ids }) => {
         // Filter services for HTTP scanning candidates
         const services = await PenPal.API.Services.GetMany(service_ids);
-        const tcp_services = services.filter(s => 
-          s.ip_protocol === "TCP" && s.status === "open"
+        const tcp_services = services.filter(
+          (s) => s.ip_protocol === "TCP" && s.status === "open"
         );
-        
+
         if (tcp_services.length > 0) {
           await performContainerizedScan(tcp_services);
         }
       }
     );
-    
+
     return { settings };
   },
 };
 ```
 
 **File-Based Container Communication:**
+
 ```javascript
 // ✅ Use shared volumes for input/output
 export const performHttpScan = async ({ services, project_id }) => {
   const outdir = "/penpal-plugin-share/httpx/" + project_id;
   PenPal.Utils.MkdirP(outdir);
-  
+
   // Create input file for container
   const targets_file = path.join(outdir, `targets-${PenPal.Utils.Epoch()}.txt`);
-  const targets = services.map(s => `http://${s.host_ip}:${s.port}`);
-  fs.writeFileSync(targets_file, targets.join('\n'));
-  
+  const targets = services.map((s) => `http://${s.host_ip}:${s.port}`);
+  fs.writeFileSync(targets_file, targets.join("\n"));
+
   // Create output file path
   const output_file = path.join(outdir, `results-${PenPal.Utils.Epoch()}.json`);
-  
+
   // Convert to container paths
-  const container_targets = targets_file.replace("/penpal-plugin-share", "/penpal-plugin-share");
-  const container_output = output_file.replace("/penpal-plugin-share", "/penpal-plugin-share");
-  
+  const container_targets = targets_file.replace(
+    "/penpal-plugin-share",
+    "/penpal-plugin-share"
+  );
+  const container_output = output_file.replace(
+    "/penpal-plugin-share",
+    "/penpal-plugin-share"
+  );
+
   // Run containerized tool
   const result = await PenPal.Docker.Run({
     image: settings.docker.name,
     cmd: `-l ${container_targets} -o ${container_output} -json`,
     daemonize: true,
-    volume: { name: "penpal_penpal-plugin-share", path: "/penpal-plugin-share" },
-    network: "penpal_penpal"
+    volume: {
+      name: "penpal_penpal-plugin-share",
+      path: "/penpal-plugin-share",
+    },
+    network: "penpal_penpal",
   });
-  
+
   // Wait and process results
   await PenPal.Docker.Wait(result.stdout.trim());
-  const results = fs.readFileSync(output_file, 'utf8');
+  const results = fs.readFileSync(output_file, "utf8");
   return JSON.parse(results);
 };
 ```
@@ -1678,16 +1718,19 @@ export const performHttpScan = async ({ services, project_id }) => {
 ### Security and Isolation
 
 **Network Isolation:**
+
 - All containers run in `penpal_penpal` network
 - Isolated from host network by default
 - Can communicate with other PenPal services
 
 **Volume Security:**
+
 - Shared volumes use specific mount points
 - No access to host filesystem outside mounted volumes
 - Temporary files automatically cleaned up
 
 **Resource Management:**
+
 - Containers are ephemeral and cleaned up after use
 - No persistent state in containers
 - Resource limits can be enforced
@@ -1695,6 +1738,7 @@ export const performHttpScan = async ({ services, project_id }) => {
 ### Docker Plugin Dependencies
 
 **Required Dependencies:**
+
 ```json
 {
   "name": "YourSecurityTool",
@@ -1703,6 +1747,7 @@ export const performHttpScan = async ({ services, project_id }) => {
 ```
 
 **Docker Host Configuration:**
+
 - Requires Docker daemon accessible at `penpal-docker-api:2376`
 - Uses Docker Compose for orchestration
 - Supports both image pulling and local building
@@ -1737,6 +1782,7 @@ const job_id = "manual-id"; // Manual ID generation - let API handle IDs
 ### Job Structure
 
 **Basic Job Fields:**
+
 ```javascript
 const jobData = {
   name: "Descriptive Job Name",
@@ -1745,11 +1791,14 @@ const jobData = {
   progress: 0, // 0-100 percentage
   status: "running", // running, done, failed, cancelled
   // Optional fields:
-  stages: [/* array of stage objects */],
+  stages: [
+    /* array of stage objects */
+  ],
 };
 ```
 
 **Job with Stages:**
+
 ```javascript
 const jobWithStages = {
   name: "Multi-Stage Job",
@@ -1761,21 +1810,21 @@ const jobWithStages = {
       name: "Stage 1: Preparation",
       statusText: "Preparing environment",
       progress: 0,
-      status: "pending"
+      status: "pending",
     },
     {
-      name: "Stage 2: Execution", 
+      name: "Stage 2: Execution",
       statusText: "Running main process",
       progress: 0,
-      status: "pending"
+      status: "pending",
     },
     {
       name: "Stage 3: Cleanup",
       statusText: "Cleaning up resources",
       progress: 0,
-      status: "pending"
-    }
-  ]
+      status: "pending",
+    },
+  ],
 };
 ```
 
@@ -1790,7 +1839,7 @@ await PenPal.Jobs.Update(job_id, updates);
 await PenPal.Jobs.UpdateStage(job_id, stage_index, updates);
 
 // ❌ WRONG - Don't use PenPal.JobsTracker
-await PenPal.JobsTracker.insertJob(jobData);     // INCORRECT API NAME
+await PenPal.JobsTracker.insertJob(jobData); // INCORRECT API NAME
 await PenPal.JobsTracker.updateJob(job_id, data); // INCORRECT API NAME
 await PenPal.JobsTracker.updateJobStage(job_id, stage, data); // INCORRECT API NAME
 
@@ -1803,12 +1852,13 @@ The JobsTracker plugin exposes its API through the `PenPal.Jobs` namespace autom
 ### Jobs API Methods
 
 **Create Job:**
+
 ```javascript
 // Simple job without stages
 const job = await PenPal.Jobs.Create({
   name: "Network Scan",
   statusText: "Starting network scan",
-  progress: 0
+  progress: 0,
 });
 
 // Job with stages
@@ -1816,45 +1866,49 @@ const job = await PenPal.Jobs.Create(jobWithStages);
 ```
 
 **Update Job:**
+
 ```javascript
 // Update job progress and status
 await PenPal.Jobs.Update(job.id, {
   progress: 50,
-  statusText: "Halfway complete"
+  statusText: "Halfway complete",
 });
 
 // Mark job as complete
 await PenPal.Jobs.Update(job.id, {
   progress: 100,
   status: "done",
-  statusText: "Scan complete"
+  statusText: "Scan complete",
 });
 ```
 
 **Update Job Progress (Convenience Method):**
+
 ```javascript
 // Quick progress update
 await PenPal.Jobs.UpdateProgress(job.id, 75);
 ```
 
 **Update Job Stage:**
+
 ```javascript
 // Update specific stage by index (0-based)
 await PenPal.Jobs.UpdateStage(job.id, 0, {
   progress: 100,
   status: "done",
-  statusText: "Preparation complete"
+  statusText: "Preparation complete",
 });
 
 // Start next stage
 await PenPal.Jobs.UpdateStage(job.id, 1, {
   progress: 0,
   status: "running",
-  statusText: "Beginning execution"
+  statusText: "Beginning execution",
 });
 ```
 
 **Retrieve Jobs:**
+
 ```javascript
 // Get specific job
 const job = await PenPal.Jobs.Get(job_id);
@@ -1870,68 +1924,88 @@ const recentJobs = await PenPal.Jobs.GetFiltered("recent");
 ### Job Management Best Practices
 
 **Job Lifecycle Management:**
+
 ```javascript
 // 1. Create job
 const job = await PenPal.Jobs.Create({
   name: "Host Discovery Scan",
   statusText: "Initializing scan parameters",
-  progress: 0
+  progress: 0,
 });
 
 try {
   // 2. Update progress during execution
   await PenPal.Jobs.UpdateProgress(job.id, 25);
   await performScanStep1();
-  
+
   await PenPal.Jobs.Update(job.id, {
     progress: 50,
-    statusText: "Scanning network ranges"
+    statusText: "Scanning network ranges",
   });
   await performScanStep2();
-  
+
   // 3. Complete successfully
   await PenPal.Jobs.Update(job.id, {
     progress: 100,
     status: PenPal.Jobs.Status.DONE,
-    statusText: "Scan completed successfully"
+    statusText: "Scan completed successfully",
   });
-  
 } catch (error) {
   // 4. Handle failures
   await PenPal.Jobs.Update(job.id, {
     status: PenPal.Jobs.Status.FAILED,
-    statusText: `Scan failed: ${error.message}`
+    statusText: `Scan failed: ${error.message}`,
   });
 }
 ```
 
 **Multi-Stage Job Management:**
+
 ```javascript
 const job = await PenPal.Jobs.Create({
   name: "Comprehensive Security Scan",
   stages: [
-    { name: "Port Scan", statusText: "Scanning ports", progress: 0, status: PenPal.Jobs.Status.PENDING },
-    { name: "Service Detection", statusText: "Detecting services", progress: 0, status: PenPal.Jobs.Status.PENDING },
-    { name: "Vulnerability Assessment", statusText: "Checking vulnerabilities", progress: 0, status: PenPal.Jobs.Status.PENDING }
-  ]
+    {
+      name: "Port Scan",
+      statusText: "Scanning ports",
+      progress: 0,
+      status: PenPal.Jobs.Status.PENDING,
+    },
+    {
+      name: "Service Detection",
+      statusText: "Detecting services",
+      progress: 0,
+      status: PenPal.Jobs.Status.PENDING,
+    },
+    {
+      name: "Vulnerability Assessment",
+      statusText: "Checking vulnerabilities",
+      progress: 0,
+      status: PenPal.Jobs.Status.PENDING,
+    },
+  ],
 });
 
 // Execute stage 1
-await PenPal.Jobs.UpdateStage(job.id, 0, { status: PenPal.Jobs.Status.RUNNING });
+await PenPal.Jobs.UpdateStage(job.id, 0, {
+  status: PenPal.Jobs.Status.RUNNING,
+});
 await performPortScan();
-await PenPal.Jobs.UpdateStage(job.id, 0, { 
-  progress: 100, 
+await PenPal.Jobs.UpdateStage(job.id, 0, {
+  progress: 100,
   status: PenPal.Jobs.Status.DONE,
-  statusText: "Port scan complete"
+  statusText: "Port scan complete",
 });
 
 // Execute stage 2
-await PenPal.Jobs.UpdateStage(job.id, 1, { status: PenPal.Jobs.Status.RUNNING });
+await PenPal.Jobs.UpdateStage(job.id, 1, {
+  status: PenPal.Jobs.Status.RUNNING,
+});
 await performServiceDetection();
-await PenPal.Jobs.UpdateStage(job.id, 1, { 
-  progress: 100, 
+await PenPal.Jobs.UpdateStage(job.id, 1, {
+  progress: 100,
   status: PenPal.Jobs.Status.DONE,
-  statusText: "Service detection complete"
+  statusText: "Service detection complete",
 });
 
 // Update overall job progress
@@ -1941,6 +2015,7 @@ await PenPal.Jobs.UpdateProgress(job.id, 100);
 ### Integration with Security Tools
 
 **Example: Nmap Integration**
+
 ```javascript
 // Replace local job management with Jobs API
 export const start_detailed_hosts_scan = async (hosts) => {
@@ -1949,10 +2024,25 @@ export const start_detailed_hosts_scan = async (hosts) => {
     statusText: "Preparing detailed scan",
     progress: 0,
     stages: [
-      { name: "Port Scan", statusText: "Scanning ports", progress: 0, status: PenPal.Jobs.Status.PENDING },
-      { name: "Service Detection", statusText: "Detecting services", progress: 0, status: PenPal.Jobs.Status.PENDING },
-      { name: "OS Detection", statusText: "Identifying operating systems", progress: 0, status: PenPal.Jobs.Status.PENDING }
-    ]
+      {
+        name: "Port Scan",
+        statusText: "Scanning ports",
+        progress: 0,
+        status: PenPal.Jobs.Status.PENDING,
+      },
+      {
+        name: "Service Detection",
+        statusText: "Detecting services",
+        progress: 0,
+        status: PenPal.Jobs.Status.PENDING,
+      },
+      {
+        name: "OS Detection",
+        statusText: "Identifying operating systems",
+        progress: 0,
+        status: PenPal.Jobs.Status.PENDING,
+      },
+    ],
   });
 
   // Pass job_id to scan function instead of job_stages
@@ -1968,22 +2058,23 @@ Always use the predefined status constants to ensure consistency:
 
 ```javascript
 // ✅ CORRECT Status constants
-PenPal.Jobs.Status.PENDING    // "pending" - Job is queued/waiting
-PenPal.Jobs.Status.RUNNING    // "running" - Job is actively executing  
-PenPal.Jobs.Status.DONE       // "done" - Job completed successfully
-PenPal.Jobs.Status.FAILED     // "failed" - Job failed with error
-PenPal.Jobs.Status.CANCELLED  // "cancelled" - Job was cancelled
+PenPal.Jobs.Status.PENDING; // "pending" - Job is queued/waiting
+PenPal.Jobs.Status.RUNNING; // "running" - Job is actively executing
+PenPal.Jobs.Status.DONE; // "done" - Job completed successfully
+PenPal.Jobs.Status.FAILED; // "failed" - Job failed with error
+PenPal.Jobs.Status.CANCELLED; // "cancelled" - Job was cancelled
 
 // ✅ CORRECT Check if status is completed
 const isCompleted = PenPal.Jobs.CompletedStatuses.includes(job.status);
 
 // ❌ WRONG - Don't use hardcoded status strings
-status: "completed" // Invalid status - use PenPal.Jobs.Status.DONE
-status: "finished"  // Invalid status - use PenPal.Jobs.Status.DONE
-status: "running"   // Use PenPal.Jobs.Status.RUNNING instead
+status: "completed"; // Invalid status - use PenPal.Jobs.Status.DONE
+status: "finished"; // Invalid status - use PenPal.Jobs.Status.DONE
+status: "running"; // Use PenPal.Jobs.Status.RUNNING instead
 ```
 
 **Job Status Values:**
+
 - `PenPal.Jobs.Status.PENDING` - Job is queued/waiting to start
 - `PenPal.Jobs.Status.RUNNING` - Job is currently executing
 - `PenPal.Jobs.Status.DONE` - Job completed successfully
@@ -1991,6 +2082,7 @@ status: "running"   // Use PenPal.Jobs.Status.RUNNING instead
 - `PenPal.Jobs.Status.CANCELLED` - Job was manually cancelled
 
 **Filter Modes:**
+
 - `"active"` - Shows running jobs and recent completed jobs (default UI view)
 - `"recent"` - Shows jobs from the last 24 hours
 - `"all"` - Shows all jobs with pagination
@@ -1998,6 +2090,7 @@ status: "running"   // Use PenPal.Jobs.Status.RUNNING instead
 ### Automatic Job Cleanup
 
 The JobsTracker automatically cleans up stale jobs:
+
 - Jobs not updated for 5+ minutes are marked as "cancelled"
 - Cleanup runs every 5 minutes automatically
 - Prevents accumulation of orphaned jobs from crashed processes
@@ -2005,6 +2098,7 @@ The JobsTracker automatically cleans up stale jobs:
 ### UI Integration
 
 The JobsTracker provides a comprehensive UI at `/jobs` with:
+
 - **Real-time job monitoring** with 500ms polling
 - **Progress visualization** with color-coded progress bars
 - **Stage-by-stage tracking** for complex jobs
@@ -2015,6 +2109,7 @@ The JobsTracker provides a comprehensive UI at `/jobs` with:
 ### Migration from Local Job Management
 
 **Before (Local Job Management):**
+
 ```javascript
 // ❌ Old pattern - local job arrays
 const jobs = [];
@@ -2023,20 +2118,105 @@ jobs.push({ id: job_id, name: "Scan", progress: 0 });
 ```
 
 **After (Jobs API):**
+
 ```javascript
 // ✅ New pattern - centralized Jobs API
 const job = await PenPal.Jobs.Create({
   name: "Scan",
-  progress: 0
+  progress: 0,
 });
 ```
 
 The Jobs API provides better reliability, persistence, monitoring, and user experience compared to local job management.
 
+## Client-Side Plugin Integration and UI Extensibility
+
+The PenPal UI is built with a modular, component-based architecture that allows plugins to seamlessly extend the user interface. This is achieved through a combination of component registration, route registration, and a consistent plugin structure.
+
+### Client-Side Plugin Structure
+
+A typical client-side `plugin.js` follows a simple, declarative pattern:
+
+```javascript
+// ✅ CORRECT: Standard client-side plugin structure
+import.meta.glob("./**/*.jsx", { eager: true });
+import registerRoutes from "./routes.js";
+
+const MyPlugin = {
+  loadPlugin() {
+    return {
+      registerRoutes,
+    };
+  },
+};
+
+export default MyPlugin;
+```
+
+- **`import.meta.glob`**: This Vite-specific function eagerly loads all `.jsx` files within the plugin's directory, ensuring all components are available for registration.
+- **`registerRoutes`**: This function, defined in a separate `routes.js` file, tells the PenPal core how to handle navigation for this plugin's pages.
+
+### Component Registration
+
+Plugins can define and register their own React components, which can then be used anywhere in the application, including overriding core components.
+
+**✅ CORRECT: Registering a component**
+
+```javascript
+// MyComponent.jsx
+import React from "react";
+import { registerComponent } from "@penpal/core";
+
+const MyComponent = () => <div>Hello from my plugin!</div>;
+
+registerComponent("MyComponent", MyComponent);
+export default MyComponent;
+```
+
+Once registered, `MyComponent` can be rendered by other components using `<Components.MyComponent />`.
+
+### Route Registration
+
+Plugins can add new pages and views to the UI by registering routes.
+
+**✅ CORRECT: Registering routes**
+
+```javascript
+// routes.js
+import { Components } from "@penpal/core";
+
+const registerRoutes = (routes) => {
+  routes.push({
+    path: "/my-plugin-page",
+    component: Components.MyPluginPage, // A registered component
+  });
+  return routes;
+};
+
+export default registerRoutes;
+```
+
+This allows plugins to be self-contained, managing their own UI components and navigation.
+
+### View-Based Architecture & Extensibility
+
+The new UI, particularly in areas like the Projects page, is designed around a "view-based" architecture.
+
+- **View Components**: Different ways of looking at data (e.g., Table View, Card View, Timeline View) are implemented as separate, registered components.
+- **View Switcher**: A central component (like `ProjectsView`) dynamically renders the selected view component.
+- **Plugin-Contributed Views**: This pattern makes it straightforward for a new plugin to contribute its own "view". A plugin can:
+  1. Create a new component for its custom view (e.g., `MyCustomProjectView.jsx`).
+  2. Register the component (`registerComponent('MyCustomProjectView', ...)`).
+  3. Potentially, register a button or toggle to allow users to switch to this new view by updating the state that controls the view switcher.
+
+This powerful pattern allows for deep integration and extension of core UI features without modifying the core codebase.
+
 ## GraphQL Integration
+
 Plugins extend the GraphQL schema with:
+
 - Custom types and mutations
-- Resolvers and data loaders  
+- Resolvers and data loaders
 - Schema stitching via plugin loading system
 - **Real-time subscriptions** via WebSocket
 
@@ -2048,22 +2228,29 @@ PenPal supports real-time GraphQL subscriptions using WebSocket transport while 
 #### Server-Side Subscription Setup
 
 **PubSub System:**
+
 ```javascript
 // PubSub is automatically available in all plugins
 export const updateItem = async (item_id, updates) => {
-  const result = await PenPal.DataStore.updateOne("PluginName", "Items", { id: item_id }, updates);
-  
+  const result = await PenPal.DataStore.updateOne(
+    "PluginName",
+    "Items",
+    { id: item_id },
+    updates
+  );
+
   // Publish real-time update
   if (PenPal.PubSub) {
     const updatedItem = await getItem(item_id);
-    PenPal.PubSub.publish('ITEM_UPDATED', { itemUpdated: updatedItem });
+    PenPal.PubSub.publish("ITEM_UPDATED", { itemUpdated: updatedItem });
   }
-  
+
   return result;
 };
 ```
 
 **Subscription Schema:**
+
 ```graphql
 # plugin/graphql/schema/subscriptions.graphql
 extend type Subscription {
@@ -2074,19 +2261,20 @@ extend type Subscription {
 ```
 
 **Subscription Resolvers:**
+
 ```javascript
 // plugin/graphql/resolvers/subscriptions.js
 export default {
   async itemUpdated(parent, args, { pubsub }) {
-    return pubsub.asyncIterator(['ITEM_UPDATED']);
+    return pubsub.asyncIterator(["ITEM_UPDATED"]);
   },
-  
+
   async itemCreated(parent, args, { pubsub }) {
-    return pubsub.asyncIterator(['ITEM_CREATED']);
+    return pubsub.asyncIterator(["ITEM_CREATED"]);
   },
-  
+
   async itemDeleted(parent, args, { pubsub }) {
-    return pubsub.asyncIterator(['ITEM_DELETED']);
+    return pubsub.asyncIterator(["ITEM_DELETED"]);
   },
 };
 ```
@@ -2106,13 +2294,13 @@ export default {
       return context.pubsub.asyncIterator(["JOB_UPDATED"]);
     }
   },
-  
+
   jobCreated: {
     subscribe: (parent, args, context) => {
       return context.pubsub.asyncIterator(["JOB_CREATED"]);
     }
   },
-  
+
   activeJobsChanged: {
     subscribe: (parent, args, context) => {
       return context.pubsub.asyncIterator(["ACTIVE_JOBS_CHANGED"]);
@@ -2129,6 +2317,7 @@ export default {
 ```
 
 **Why This Matters:**
+
 - GraphQL requires subscription resolvers to return async iterables
 - The function pattern fails with "Subscription field must return Async Iterable. Received: undefined."
 - The object pattern with `subscribe` method is the GraphQL specification standard
@@ -2136,12 +2325,14 @@ export default {
 
 **Debugging Subscription Issues:**
 If subscriptions fail with "Internal error occurred during message handling", check:
+
 1. **Resolver Pattern**: Use object resolvers with `subscribe` method
 2. **PubSub Availability**: Ensure `context.pubsub` is available in WebSocket context
 3. **AsyncIterator Creation**: Verify `pubsub.asyncIterator()` succeeds
 4. **Schema Registration**: Confirm subscription resolvers are properly exported
 
 **Resolver Registration:**
+
 ```javascript
 // plugin/graphql/resolvers.js
 export default [
@@ -2158,6 +2349,7 @@ export default [
 #### Client-Side Subscription Usage
 
 **Subscription Query:**
+
 ```javascript
 // plugin/client/queries/item-subscription.js
 import { gql } from "@apollo/client";
@@ -2177,6 +2369,7 @@ export default ITEM_UPDATED_SUBSCRIPTION;
 ```
 
 **React Component with Subscriptions:**
+
 ```javascript
 import React, { useState, useEffect } from "react";
 import { useQuery, useSubscription } from "@apollo/client";
@@ -2190,19 +2383,24 @@ const ItemComponent = () => {
   });
 
   // Real-time subscription
-  const { data: subscriptionData } = useSubscription(ITEM_UPDATED_SUBSCRIPTION, {
-    onData: ({ data }) => {
-      if (data?.data?.itemUpdated) {
-        const updatedItem = data.data.itemUpdated;
-        setItems(prev => prev.map(item => 
-          item.id === updatedItem.id ? updatedItem : item
-        ));
-      }
-    },
-    onError: (error) => {
-      console.warn("Subscription error, falling back to polling:", error);
-    },
-  });
+  const { data: subscriptionData } = useSubscription(
+    ITEM_UPDATED_SUBSCRIPTION,
+    {
+      onData: ({ data }) => {
+        if (data?.data?.itemUpdated) {
+          const updatedItem = data.data.itemUpdated;
+          setItems((prev) =>
+            prev.map((item) =>
+              item.id === updatedItem.id ? updatedItem : item
+            )
+          );
+        }
+      },
+      onError: (error) => {
+        console.warn("Subscription error, falling back to polling:", error);
+      },
+    }
+  );
 
   // Fallback polling if subscription fails
   useEffect(() => {
@@ -2216,8 +2414,10 @@ const ItemComponent = () => {
 
   return (
     <div>
-      {items.map(item => (
-        <div key={item.id}>{item.name} - {item.status}</div>
+      {items.map((item) => (
+        <div key={item.id}>
+          {item.name} - {item.status}
+        </div>
       ))}
     </div>
   );
@@ -2228,12 +2428,14 @@ const ItemComponent = () => {
 
 **Server WebSocket Setup:**
 The GraphQL server automatically configures WebSocket support:
+
 - **WebSocket endpoint**: `ws://localhost:3001/graphql`
 - **HTTP endpoint**: `http://localhost:3001/graphql`
 - **Split transport**: Subscriptions via WebSocket, queries/mutations via HTTP
 
 **Client Apollo Configuration:**
 Apollo Client is pre-configured with split link transport:
+
 ```javascript
 // Automatic split: subscriptions use WebSocket, queries/mutations use HTTP
 const apollo_client = new ApolloClient({
@@ -2245,21 +2447,29 @@ const apollo_client = new ApolloClient({
 #### Common Subscription Patterns
 
 **Real-time Job Updates (JobsTracker Example):**
+
 ```javascript
 // Server: Publish job updates
 export const updateJob = async (job_id, updates) => {
-  const result = await PenPal.DataStore.updateOne("JobsTracker", "Jobs", { id: job_id }, updates);
-  
+  const result = await PenPal.DataStore.updateOne(
+    "JobsTracker",
+    "Jobs",
+    { id: job_id },
+    updates
+  );
+
   // Real-time notification
   if (PenPal.PubSub) {
     const updatedJob = await getJob(job_id);
-    PenPal.PubSub.publish('JOB_UPDATED', { jobUpdated: updatedJob });
-    
+    PenPal.PubSub.publish("JOB_UPDATED", { jobUpdated: updatedJob });
+
     // Aggregate updates
     const activeJobs = await getActiveJobs();
-    PenPal.PubSub.publish('ACTIVE_JOBS_CHANGED', { activeJobsChanged: activeJobs });
+    PenPal.PubSub.publish("ACTIVE_JOBS_CHANGED", {
+      activeJobsChanged: activeJobs,
+    });
   }
-  
+
   return result;
 };
 
@@ -2274,10 +2484,11 @@ const { data } = useSubscription(ACTIVE_JOBS_SUBSCRIPTION, {
 ```
 
 **Service Discovery Updates:**
+
 ```javascript
 // Server: Publish service discoveries
-PenPal.PubSub.publish('NEW_SERVICES_DISCOVERED', { 
-  newServicesDiscovered: { project_id, services } 
+PenPal.PubSub.publish("NEW_SERVICES_DISCOVERED", {
+  newServicesDiscovered: { project_id, services },
 });
 
 // Client: Real-time service updates
@@ -2295,21 +2506,25 @@ const { data } = useSubscription(SERVICE_DISCOVERY_SUBSCRIPTION, {
 #### Subscription Best Practices
 
 **Event Naming Conventions:**
+
 - Use UPPER_SNAKE_CASE for event names
 - Include context: `JOB_UPDATED`, `SERVICE_DISCOVERED`, `HOST_SCAN_COMPLETE`
 - Group related events: `ACTIVE_JOBS_CHANGED` aggregates multiple job events
 
 **Error Handling:**
+
 - Always implement subscription error handlers
 - Provide fallback to polling for reliability
 - Log subscription errors for debugging
 
 **Performance Considerations:**
+
 - Use aggregated subscriptions (e.g., `activeJobsChanged`) instead of individual item subscriptions
 - Implement proper subscription cleanup in React components
 - Consider subscription filtering on server-side for large datasets
 
 **Security & Context:**
+
 - Subscriptions inherit the same authentication context as queries/mutations
 - PubSub events are server-wide - filter sensitive data appropriately
 - Consider user-specific subscriptions for multi-tenant scenarios
@@ -2317,12 +2532,14 @@ const { data } = useSubscription(SERVICE_DISCOVERY_SUBSCRIPTION, {
 #### WebSocket vs Polling
 
 **Use Subscriptions For:**
+
 - Real-time status updates (jobs, scans, discoveries)
 - Live dashboards and monitoring
 - Collaborative features
 - Critical alerts and notifications
 
 **Use Polling For:**
+
 - One-time data fetching
 - Backup/fallback scenarios
 - Non-critical periodic updates
@@ -2348,6 +2565,7 @@ await PenPal.DataStore.insert("StoreName", data);
 ```
 
 **DataStore Configuration in plugin.js:**
+
 ```javascript
 const settings = {
   datastores: [
@@ -2359,6 +2577,7 @@ const settings = {
 ```
 
 **Common DataStore Patterns:**
+
 - **Single Record**: `fetchOne("Plugin", "Store", { id: "some-id" })`
 - **Multiple Records**: `fetch("Plugin", "Store", { status: "active" })`
 - **Query by Array**: `fetch("Plugin", "Store", { id: { $in: [id1, id2] } })`
@@ -2369,11 +2588,13 @@ const settings = {
 ## GraphQL Schema Conflicts
 
 **✅ Avoiding Type Conflicts:**
+
 - Check existing GraphQL types before creating new ones
 - Use unique type names prefixed with plugin name if needed
 - Remove conflicting types from Base plugin when migrating functionality
 
 **Common Conflict Scenarios:**
+
 ```graphql
 # ❌ This will cause conflicts if Job type already exists elsewhere
 type Job {
@@ -2389,6 +2610,7 @@ type JobsTrackerJob {
 ```
 
 **Scalar Type Usage:**
+
 - Use existing scalars like `JSON` instead of `JSONObject`
 - Check [PenPal/app/src/server/graphql/schema/scalars.graphql](mdc:PenPal/app/src/server/graphql/schema/scalars.graphql) for available types
 - Consistent scalar usage prevents "Unknown type" errors
@@ -2396,10 +2618,13 @@ type JobsTrackerJob {
 ## Plugin Development Best Practices
 
 **API Layer Structure:**
+
 ```javascript
 // api/index.js - Clean separation of concerns
 export const getItems = async (item_id) => {
-  return await PenPal.DataStore.fetchOne("PluginName", "Items", { id: item_id });
+  return await PenPal.DataStore.fetchOne("PluginName", "Items", {
+    id: item_id,
+  });
 };
 
 export const insertItem = async (item_data) => {
@@ -2409,12 +2634,15 @@ export const insertItem = async (item_data) => {
     created_at: new Date().toISOString(),
     updated_at: new Date().toISOString(),
   };
-  const result = await PenPal.DataStore.insertMany("PluginName", "Items", [item_with_timestamps]);
+  const result = await PenPal.DataStore.insertMany("PluginName", "Items", [
+    item_with_timestamps,
+  ]);
   return result[0];
 };
 ```
 
 **Plugin Registration Pattern:**
+
 ```javascript
 // plugin.js - Register APIs on PenPal object
 PenPal.YourAPI = {
@@ -2422,35 +2650,42 @@ PenPal.YourAPI = {
   Insert: API.insertItem,
   Update: API.updateItem,
   // Helper functions
-  Create: async (itemData) => { /* convenience wrapper */ },
+  Create: async (itemData) => {
+    /* convenience wrapper */
+  },
 };
 ```
 
 **Dependency Management:**
+
 - Always specify plugin dependencies in manifest.json
 - Use `"load": false` temporarily during development to prevent loading
 - DataStore-dependent plugins must list `"DataStore@0.1.0"` in dependencies
 - Docker-dependent plugins must list `"Docker@0.1.0"` in dependencies
 
 **Migration Considerations:**
+
 - When moving functionality from one plugin to another, update both GraphQL schemas
 - Remove old resolvers and types to prevent conflicts
 - Update client-side GraphQL queries to use new endpoints
 - Consider backward compatibility for existing data
 
 **Testing DataStore Integration:**
+
 - Test with empty database first
 - Verify all CRUD operations work correctly
 - Check query syntax with MongoDB-style operators (`$in`, `$lt`, etc.)
 - Ensure proper error handling for missing records
 
 **Client-Server Plugin Coordination:**
+
 - Client plugins should mirror server plugin structure
 - Use consistent naming between client queries and server resolvers
 - Implement proper loading states and error handling in React components
 - Consider real-time updates with polling or subscriptions
 
 **Logger Integration:**
+
 - Always use the centralized logger system for consistent, colored output
 - Create file-level logger exports that can be imported across plugin files
 - Replace all console.log statements with appropriate logger methods
@@ -2468,19 +2703,20 @@ The HttpX plugin demonstrates the standard pattern for chained service discovery
 const HttpXPlugin = {
   async loadPlugin() {
     const MQTT = await PenPal.MQTT.NewClient();
-    
+
     // Subscribe to upstream service discovery events
     await MQTT.Subscribe(
       PenPal.API.MQTT.Topics.New.Services,
       async ({ project, service_ids }) => {
         // Filter for relevant services
         const services = await PenPal.API.Services.GetMany(service_ids);
-        const candidates = services.filter(service => 
-          service.ip_protocol === "TCP" && 
-          service.status === "open" &&
-          service.port
+        const candidates = services.filter(
+          (service) =>
+            service.ip_protocol === "TCP" &&
+            service.status === "open" &&
+            service.port
         );
-        
+
         if (candidates.length > 0) {
           await performToolSpecificScan(candidates);
         }
@@ -2493,39 +2729,45 @@ const HttpXPlugin = {
 ### Service Enrichment Pattern
 
 **✅ Standardized Enrichment Workflow:**
+
 ```javascript
 // ✅ CORRECT Service enrichment pattern
-export const parseAndUpsertResults = async (project_id, services_data, output_data) => {
+export const parseAndUpsertResults = async (
+  project_id,
+  services_data,
+  output_data
+) => {
   const results = parseToolOutput(output_data);
   const service_updates = [];
-  
+
   for (const result of results) {
     // Match results to original services
-    const matching_service = services_data.find(service => 
-      service.host_ip === result.host && service.port === result.port
+    const matching_service = services_data.find(
+      (service) =>
+        service.host_ip === result.host && service.port === result.port
     );
-    
+
     if (matching_service) {
       // Create plugin-specific enrichment
       const enrichment = {
         plugin_name: "YourPlugin",
         // Tool-specific fields
-        ...result
+        ...result,
       };
-      
+
       // Append to existing enrichments
       const updated_enrichments = [
         ...(matching_service.enrichments || []),
-        enrichment
+        enrichment,
       ];
-      
+
       service_updates.push({
         id: matching_service.id,
-        enrichments: updated_enrichments
+        enrichments: updated_enrichments,
       });
     }
   }
-  
+
   // Bulk update services
   if (service_updates.length > 0) {
     await PenPal.API.Services.UpsertMany(service_updates);
@@ -2536,6 +2778,7 @@ export const parseAndUpsertResults = async (project_id, services_data, output_da
 ### Host IP Resolution Pattern
 
 **✅ Host Data Enrichment:**
+
 ```javascript
 // ✅ CORRECT Pattern for resolving host IPs
 const network_services = services.filter(/* filtering logic */);
@@ -2556,37 +2799,47 @@ for (const service of network_services) {
 ### File I/O with Containers
 
 **✅ Volume Mount File Exchange:**
+
 ```javascript
 // ✅ CORRECT Pattern for container file I/O
 export const performContainerizedScan = async ({ services, project_id }) => {
   const outdir_base = "/penpal-plugin-share";
   const outdir = path.join(outdir_base, "toolname", project_id);
   PenPal.Utils.MkdirP(outdir);
-  
+
   // Create input file on host
   const targets_file = path.join(outdir, `targets-${PenPal.Utils.Epoch()}.txt`);
-  const targets = services.map(s => `${s.host_ip}:${s.port}`);
-  fs.writeFileSync(targets_file, targets.join('\n'));
-  
+  const targets = services.map((s) => `${s.host_ip}:${s.port}`);
+  fs.writeFileSync(targets_file, targets.join("\n"));
+
   // Create output file path
   const output_file = path.join(outdir, `results-${PenPal.Utils.Epoch()}.json`);
-  
+
   // Convert to container paths (volume mount)
-  const container_targets = targets_file.replace(outdir_base, "/penpal-plugin-share");
-  const container_output = output_file.replace(outdir_base, "/penpal-plugin-share");
-  
+  const container_targets = targets_file.replace(
+    outdir_base,
+    "/penpal-plugin-share"
+  );
+  const container_output = output_file.replace(
+    outdir_base,
+    "/penpal-plugin-share"
+  );
+
   // Run tool in container
   const result = await PenPal.Docker.Run({
     image: settings.docker.name,
     cmd: `tool-command -i ${container_targets} -o ${container_output}`,
     daemonize: true,
-    volume: { name: "penpal_penpal-plugin-share", path: "/penpal-plugin-share" },
-    network: "penpal_penpal"
+    volume: {
+      name: "penpal_penpal-plugin-share",
+      path: "/penpal-plugin-share",
+    },
+    network: "penpal_penpal",
   });
-  
+
   // Wait for completion and read results
   await PenPal.Docker.Wait(result.stdout.trim());
-  const results = fs.readFileSync(output_file, 'utf8');
+  const results = fs.readFileSync(output_file, "utf8");
   return parseResults(results);
 };
 ```
@@ -2594,18 +2847,20 @@ export const performContainerizedScan = async ({ services, project_id }) => {
 ### Plugin Manifest Best Practices
 
 **✅ Development-Ready Manifest:**
+
 ```json
 {
   "name": "YourPlugin",
   "version": "0.1.0",
   "dependsOn": ["CoreAPI@0.1.0", "Docker@0.1.0", "JobsTracker@0.1.0"],
-  "load": false  // Disable during development
+  "load": false // Disable during development
 }
 ```
 
 ### GraphQL Schema Organization
 
 **✅ Plugin-Specific Schema Structure:**
+
 ```
 server/graphql/
 ├── index.js                    // Schema loader
@@ -2619,6 +2874,7 @@ server/graphql/
 ```
 
 **⚠️ IMPORTANT: GraphQL File Requirements**
+
 - All `.graphql` files MUST contain valid GraphQL definitions (types, queries, mutations, etc.)
 - Files with only comments will cause "Unexpected <EOF>" syntax errors
 - Remove empty schema files or add minimal valid definitions
@@ -2637,6 +2893,7 @@ import { loadGraphQLFiles } from "#penpal/core"; // This function doesn't exist
 ```
 
 **GraphQL Schema Loading Implementation:**
+
 ```javascript
 // ✅ CORRECT: graphql/schema/index.js
 import PenPal from "#penpal/core";
@@ -2653,6 +2910,7 @@ export default loadGraphQLFiles;
 ```
 
 **Resolver Structure:**
+
 ```javascript
 // ✅ CORRECT: graphql/resolvers.js
 import resolvers from "./resolvers/index.js";
@@ -2688,6 +2946,7 @@ export default Plugin; // Remove this line
 ```
 
 **Key Requirements:**
+
 - Import `PenPal` from `#penpal/core`
 - Import `Plugin` from `./plugin.js`
 - Import `Manifest` from `./manifest.json` with JSON assertion
@@ -2695,6 +2954,7 @@ export default Plugin; // Remove this line
 - No exports needed - registration is a side effect
 
 **Plugin Integration:**
+
 ```javascript
 // ✅ CORRECT: plugin.js
 import { loadGraphQLFiles, resolvers } from "./graphql/index.js";
@@ -2734,7 +2994,12 @@ const DeferJobCreateOrUpdate = (jobsFunction, ...args) => {
     return jobsFunction(...args);
   } else {
     return new Promise((resolve, reject) => {
-      DeferredJobs.queue.push({ function: jobsFunction, args, resolve, reject });
+      DeferredJobs.queue.push({
+        function: jobsFunction,
+        args,
+        resolve,
+        reject,
+      });
       if (!DeferredJobs.timer) startDeferredJobsTimer();
     });
   }
@@ -2745,6 +3010,7 @@ const job = await PenPal.Jobs.Create(jobData); // May fail if DataStore isn't re
 ```
 
 **DataStore Adapter Implementation:**
+
 ```javascript
 // ✅ CORRECT Adapter readiness implementation
 MongoAdapter.isReady = async () => {
@@ -2799,6 +3065,7 @@ When developing plugins that share status values, enums, or other constants betw
 ### Creating Shared Constants
 
 **Directory Structure:**
+
 ```
 Plugins/YourPlugin/
 ├── client/
@@ -2812,6 +3079,7 @@ Plugins/YourPlugin/
 ```
 
 **Constants File Pattern:**
+
 ```javascript
 // ✅ CORRECT: Plugins/YourPlugin/common/your-constants.js
 export const YourStatus = {
@@ -2834,7 +3102,9 @@ export const isStatusCompleted = (status) => {
 export const validateStatus = (status) => {
   const validStatuses = Object.values(YourStatus);
   if (!validStatuses.includes(status)) {
-    throw new Error(`Invalid status: ${status}. Valid: ${validStatuses.join(", ")}`);
+    throw new Error(
+      `Invalid status: ${status}. Valid: ${validStatuses.join(", ")}`
+    );
   }
   return status;
 };
@@ -2843,9 +3113,14 @@ export const validateStatus = (status) => {
 ### Server Plugin Integration
 
 **✅ CORRECT: Server plugin imports and exposes constants**
+
 ```javascript
 // server/plugin.js
-import { YourStatus, STATUS_COLLECTIONS, validateStatus } from "../common/your-constants.js";
+import {
+  YourStatus,
+  STATUS_COLLECTIONS,
+  validateStatus,
+} from "../common/your-constants.js";
 
 const YourPlugin = {
   async loadPlugin() {
@@ -2863,6 +3138,7 @@ const YourPlugin = {
 ```
 
 **Server API Usage:**
+
 ```javascript
 // server/api/index.js
 import { YourStatus, STATUS_COLLECTIONS } from "../../common/your-constants.js";
@@ -2875,7 +3151,7 @@ export const updateItem = async (item_id, updates) => {
 
   // Filter by status using constants
   const activeItems = await PenPal.DataStore.fetch("YourPlugin", "Items", {
-    status: { $in: STATUS_COLLECTIONS.ACTIVE }
+    status: { $in: STATUS_COLLECTIONS.ACTIVE },
   });
 
   return result;
@@ -2885,13 +3161,18 @@ export const updateItem = async (item_id, updates) => {
 ### Client Component Integration
 
 **✅ CORRECT: Direct import in client components**
+
 ```javascript
 // client/components/your-component.jsx
-import { YourStatus, STATUS_COLLECTIONS, isStatusCompleted } from "../../common/your-constants.js";
+import {
+  YourStatus,
+  STATUS_COLLECTIONS,
+  isStatusCompleted,
+} from "../../common/your-constants.js";
 
 const YourComponent = ({ items }) => {
   // Use constants for filtering and comparisons
-  const activeItems = items.filter(item => 
+  const activeItems = items.filter((item) =>
     STATUS_COLLECTIONS.ACTIVE.includes(item.status)
   );
 
@@ -2899,7 +3180,7 @@ const YourComponent = ({ items }) => {
 
   return (
     <div>
-      {activeItems.map(item => (
+      {activeItems.map((item) => (
         <div key={item.id}>
           {item.name} - {item.status === YourStatus.RUNNING ? "🔄" : "⏸️"}
         </div>
@@ -2912,6 +3193,7 @@ const YourComponent = ({ items }) => {
 ### Client Plugin.js Simplicity
 
 **✅ CORRECT: Keep client plugin.js simple**
+
 ```javascript
 // ❌ WRONG - Don't export constants or complex APIs from client plugin.js
 import { registerPlugin } from "@penpal/core";
@@ -2944,19 +3226,31 @@ export default YourPlugin;
 ### Migration from Hardcoded Strings
 
 **Common Hardcoded String Patterns to Replace:**
+
 ```javascript
 // ❌ WRONG - Hardcoded status strings
-if (job.status === "done") { /* ... */ }
-if (job.status !== "cancelled" && job.status !== "failed") { /* ... */ }
-const completedJobs = jobs.filter(j => j.status === "done" || j.status === "failed");
+if (job.status === "done") {
+  /* ... */
+}
+if (job.status !== "cancelled" && job.status !== "failed") {
+  /* ... */
+}
+const completedJobs = jobs.filter(
+  (j) => j.status === "done" || j.status === "failed"
+);
 
 // ✅ CORRECT - Using constants
-if (job.status === JobStatus.DONE) { /* ... */ }
-if (!COMPLETED_STATUSES.includes(job.status)) { /* ... */ }
-const completedJobs = jobs.filter(j => COMPLETED_STATUSES.includes(j.status));
+if (job.status === JobStatus.DONE) {
+  /* ... */
+}
+if (!COMPLETED_STATUSES.includes(job.status)) {
+  /* ... */
+}
+const completedJobs = jobs.filter((j) => COMPLETED_STATUSES.includes(j.status));
 ```
 
 **Search and Replace Strategy:**
+
 1. **Find all hardcoded strings**: Use `grep -r '"status_value"' Plugins/YourPlugin/`
 2. **Create constants file**: Define all status values and collections
 3. **Update server code**: Import constants and replace strings
@@ -2966,16 +3260,19 @@ const completedJobs = jobs.filter(j => COMPLETED_STATUSES.includes(j.status));
 ### Status Synchronization Best Practices
 
 **✅ Consistent Status Values:**
+
 - Use lowercase, hyphenated strings for status values (`"in-progress"`, not `"InProgress"`)
 - Keep status names descriptive but concise
 - Avoid status values that could be confused (`"complete"` vs `"done"`)
 
 **✅ Status Collections:**
+
 - Group related statuses into collections (`COMPLETED_STATUSES`, `ACTIVE_STATUSES`)
 - Use collections for filtering and validation
 - Document what each collection represents
 
 **✅ Helper Functions:**
+
 - Provide validation functions (`validateStatus()`)
 - Provide state-checking functions (`isStatusCompleted()`, `isStatusActive()`)
 - Include transition logic if needed (`canTransitionTo()`)
@@ -2993,6 +3290,7 @@ const completedJobs = jobs.filter(j => COMPLETED_STATUSES.includes(j.status));
 ### Testing Status Management
 
 **✅ Test Status Transitions:**
+
 ```javascript
 // Test all valid status transitions
 const validTransitions = [
@@ -3009,17 +3307,18 @@ validTransitions.forEach(([from, to]) => {
 ```
 
 **✅ Test Status Collections:**
+
 ```javascript
 // Ensure collections are mutually exclusive and complete
-test('Status collections are properly defined', () => {
+test("Status collections are properly defined", () => {
   const allStatuses = Object.values(JobStatus);
   const completedStatuses = COMPLETED_STATUSES;
   const activeStatuses = ACTIVE_STATUSES;
-  
+
   // No overlap between active and completed
-  const overlap = activeStatuses.filter(s => completedStatuses.includes(s));
+  const overlap = activeStatuses.filter((s) => completedStatuses.includes(s));
   expect(overlap).toHaveLength(0);
-  
+
   // All statuses are categorized
   const categorized = [...activeStatuses, ...completedStatuses];
   expect(categorized.sort()).toEqual(allStatuses.sort());

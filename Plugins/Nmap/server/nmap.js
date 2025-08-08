@@ -78,11 +78,11 @@ export const parseAndUpsertResults = async (project_id, xml_data) => {
     const ip = host.address[0].$.addr;
     const hostname = host.hostnames?.[0]?.hostname?.[0]?.$?.name ?? null;
     const closed =
-      host.ports?.[0].extraports.find(
+      host.ports?.[0]?.extraports?.find(
         (extra_port) => extra_port.$.state === "closed"
       )?.$?.count ?? 0;
     const filtered =
-      host.ports?.[0].extraports.find(
+      host.ports?.[0]?.extraports?.find(
         (extra_port) => extra_port.$.state === "filtered"
       )?.$?.count ?? 0;
 
@@ -222,13 +222,15 @@ export const performScan = async ({
 
   // Check if Docker image is ready before running
   await PenPal.Docker.WaitForImageReady(settings.docker.name, {
-    updateCallback: (progress, message) => update_job(progress, message, null),
+    // updateCallback: (progress, message) => update_job(progress, message, null),
+    updateCallback: () => {},
     updateMessage: "Waiting for Nmap Docker image to build...",
   });
 
   // docker run
   let result = await PenPal.Docker.Run({
     image: settings.docker.name,
+    name: `nmap-${project_id}-${PenPal.Utils.Epoch()}`,
     cmd: nmap_command,
     daemonize: true,
     volume: {
@@ -245,55 +247,101 @@ export const performScan = async ({
   // Wait for the container to finish
   while (true) {
     try {
-      const result = await PenPal.Utils.AwaitTimeout(
-        async () => await PenPal.Docker.Wait(container_id),
-        settings.STATUS_SLEEP
+      // Use Docker.Wait with timeout instead of AwaitTimeout
+      const result = await PenPal.Docker.Wait(
+        container_id,
+        settings.STATUS_SLEEP || 10000
       );
       break;
     } catch (e) {
-      let stats = await getNmapProgress(container_id);
-      if (stats !== null) {
-        // Determine current stage based on scan type
-        let currentStage = null;
+      // Check if it's a timeout error or actual failure
+      if (e.message && e.message.includes("timed out")) {
+        // Respect cancellation requests
         if (job_id) {
-          // Get current job to check if it has stages
           const currentJob = await PenPal.Jobs.Get(job_id);
-          if (currentJob && currentJob.stages && currentJob.stages.length > 0) {
-            if (stats.scanType.includes("SYN Stealth Scan")) {
-              currentStage = 0; // SYN Scan stage
-            } else if (stats.scanType.includes("Service Scan")) {
-              currentStage = 1; // Service Scan stage
-              // Mark SYN scan as complete if we're in service scan
-              if (currentJob.stages[0] && currentJob.stages[0].progress < 100) {
-                await PenPal.Jobs.UpdateStage(job_id, 0, {
-                  progress: 100,
-                  statusText: "SYN scan completed",
-                });
-              }
-            } else if (stats.scanType.includes("Script Scan")) {
-              currentStage = 2; // Script Scan stage
-              // Mark previous stages as complete
-              if (currentJob.stages[0] && currentJob.stages[0].progress < 100) {
-                await PenPal.Jobs.UpdateStage(job_id, 0, {
-                  progress: 100,
-                  statusText: "SYN scan completed",
-                });
-              }
-              if (currentJob.stages[1] && currentJob.stages[1].progress < 100) {
-                await PenPal.Jobs.UpdateStage(job_id, 1, {
-                  progress: 100,
-                  statusText: "Service scan completed",
-                });
+          if (currentJob?.cancellation_request) {
+            try {
+              await PenPal.Docker.Stop(container_id);
+            } catch (stopErr) {
+              logger.warn(
+                `Error stopping container on cancellation: ${stopErr.message}`
+              );
+            }
+            await PenPal.Jobs.Cancel(job_id);
+            // Cleanup container if still exists
+            try {
+              await PenPal.Docker.RemoveContainer(container_id);
+            } catch (rmErr) {
+              // ignore
+            }
+            return; // exit early
+          }
+        }
+        // This is expected - get progress and continue monitoring
+        let stats = await getNmapProgress(container_id);
+        if (stats !== null) {
+          // Determine current stage based on scan type
+          let currentStage = null;
+          if (job_id) {
+            // Get current job to check if it has stages
+            const currentJob = await PenPal.Jobs.Get(job_id);
+            if (
+              currentJob &&
+              currentJob.stages &&
+              currentJob.stages.length > 0
+            ) {
+              if (stats.scanType.includes("SYN Stealth Scan")) {
+                currentStage = 0; // SYN Scan stage
+              } else if (stats.scanType.includes("Service Scan")) {
+                currentStage = 1; // Service Scan stage
+                // Mark SYN scan as complete if we're in service scan
+                if (
+                  currentJob.stages[0] &&
+                  currentJob.stages[0].progress < 100
+                ) {
+                  await PenPal.Jobs.UpdateStage(job_id, 0, {
+                    progress: 100,
+                    statusText: "SYN scan completed",
+                    status: PenPal.Jobs.Status.DONE,
+                  });
+                }
+              } else if (stats.scanType.includes("Script Scan")) {
+                currentStage = 2; // Script Scan stage
+                // Mark previous stages as complete
+                if (
+                  currentJob.stages[0] &&
+                  currentJob.stages[0].progress < 100
+                ) {
+                  await PenPal.Jobs.UpdateStage(job_id, 0, {
+                    progress: 100,
+                    statusText: "SYN scan completed",
+                    status: PenPal.Jobs.Status.DONE,
+                  });
+                }
+                if (
+                  currentJob.stages[1] &&
+                  currentJob.stages[1].progress < 100
+                ) {
+                  await PenPal.Jobs.UpdateStage(job_id, 1, {
+                    progress: 100,
+                    statusText: "Service scan completed",
+                    status: PenPal.Jobs.Status.DONE,
+                  });
+                }
               }
             }
           }
-        }
 
-        await update_job(
-          stats.scanProgress,
-          `Elapsed: ${stats.elapsed}, ${stats.scanType} in progress, ${stats.hostsCompleted} completed / ${stats.hostsUp} up, Remaining: ${stats.remainingTime}`,
-          currentStage
-        );
+          await update_job(
+            stats.scanProgress,
+            `Elapsed: ${stats.elapsed}, ${stats.scanType} in progress, ${stats.hostsCompleted} completed / ${stats.hostsUp} up, Remaining: ${stats.remainingTime}`,
+            currentStage
+          );
+        }
+      } else {
+        // Actual error occurred
+        logger.error(`Docker wait failed: ${e.message}`);
+        throw e;
       }
     }
   }

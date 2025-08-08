@@ -136,6 +136,7 @@ export const performHttpScan = async ({
   services,
   project_id,
   update_job = () => {},
+  job_id = null,
 }) => {
   try {
     HttpXLogger.log(`Starting HTTP scan for ${services.length} services`);
@@ -224,14 +225,36 @@ export const performHttpScan = async ({
 
     await update_job(20, "HTTP discovery scan in progress...");
 
-    // Wait for container to complete with timeout
-    const wait_result = await Promise.race([
-      PenPal.Docker.Wait(container_id),
-      new Promise(
-        (_, reject) =>
-          setTimeout(() => reject(new Error("HttpX scan timeout")), 300000) // 5 minute timeout
-      ),
-    ]);
+    // Wait for container to complete with periodic cancellation checks
+    while (true) {
+      try {
+        await PenPal.Docker.Wait(container_id, 10000);
+        break; // finished
+      } catch (e) {
+        if (e.message && e.message.includes("timed out")) {
+          if (job_id) {
+            const currentJob = await PenPal.Jobs.Get(job_id);
+            if (currentJob?.cancellation_request) {
+              try {
+                await PenPal.Docker.Stop(container_id);
+              } catch (stopErr) {
+                HttpXLogger.warn(
+                  `Error stopping httpx container on cancellation: ${stopErr.message}`
+                );
+              }
+              await PenPal.Jobs.Cancel(job_id);
+              try {
+                await PenPal.Docker.RemoveContainer(container_id);
+              } catch {}
+              return;
+            }
+          }
+          // continue waiting
+        } else {
+          throw e;
+        }
+      }
+    }
 
     await update_job(80, "HTTP scan complete, processing results...");
 
@@ -278,4 +301,23 @@ export const performHttpScan = async ({
       statusText: "HTTP discovery scan failed",
     };
   }
+};
+
+/**
+ * Attach a screenshot to an HttpX enrichment
+ * This is a convenience function for HttpX-specific screenshot attachments
+ */
+export const attachScreenshotToHttpXEnrichment = async (
+  service_selector,
+  screenshot_buffer,
+  screenshot_filename,
+  metadata = {}
+) => {
+  return await PenPal.API.Services.AttachScreenshotToEnrichment(
+    service_selector,
+    "HttpX",
+    screenshot_buffer,
+    screenshot_filename,
+    metadata
+  );
 };

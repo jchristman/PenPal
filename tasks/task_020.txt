@@ -1,0 +1,78 @@
+# Task ID: 20
+# Title: Implement Core Test Execution Engine with Docker and Puppeteer Integration
+# Status: pending
+# Dependencies: 18, 19
+# Priority: high
+# Description: Develop the central test execution engine that runs Puppeteer tests within Docker containers, manages the complete test lifecycle, and integrates with the JobsTracker for monitoring.
+# Details:
+Create a modular test execution engine with the following components:
+
+1. **Container Management**:
+   - Implement Docker container creation, configuration, and cleanup
+   - Handle container networking and resource allocation
+   - Ensure proper isolation between test runs
+
+2. **Browser Lifecycle Management**:
+   - Initialize and configure Puppeteer browser instances
+   - Handle browser crashes and restarts
+   - Implement resource cleanup after test completion
+
+3. **Test Execution Flow**:
+   - Parse and validate test scripts/steps
+   - Execute test steps sequentially with proper error handling
+   - Implement timeout mechanisms for steps and overall test execution
+   - Support parallel test execution where appropriate
+
+4. **Artifact Collection**:
+   - Capture screenshots at configurable points (test start, end, failures)
+   - Collect browser console logs, network requests, and performance metrics
+   - Store artifacts with appropriate metadata for later analysis
+
+5. **Failure Handling**:
+   - Implement graceful error recovery mechanisms
+   - Provide detailed error reporting with context
+   - Support test retries with configurable attempts
+
+6. **JobsTracker Integration**:
+   - Report test progress in real-time
+   - Update test status (queued, running, completed, failed)
+   - Send execution metrics and timing information
+
+7. **Environment Management**:
+   - Implement setup and teardown hooks
+   - Support environment variable injection
+   - Handle test-specific configuration
+
+The engine should be designed with extensibility in mind, allowing for future additions of different browser automation tools beyond Puppeteer.
+
+# Test Strategy:
+Testing should be comprehensive and include:
+
+1. **Unit Tests**:
+   - Test each component in isolation with mocks for dependencies
+   - Verify proper error handling in each module
+   - Test configuration parsing and validation
+
+2. **Integration Tests**:
+   - Verify Docker container creation and management
+   - Test Puppeteer initialization and browser management
+   - Validate artifact collection and storage
+   - Test JobsTracker integration with mocked endpoints
+
+3. **End-to-End Tests**:
+   - Run sample test scripts through the complete execution pipeline
+   - Verify proper execution of multi-step test scenarios
+   - Test parallel execution capabilities
+   - Validate resource cleanup after test completion
+
+4. **Performance Tests**:
+   - Measure resource usage during test execution
+   - Test with varying loads to ensure scalability
+   - Benchmark startup and teardown times
+
+5. **Failure Scenario Tests**:
+   - Simulate browser crashes and verify recovery
+   - Test with intentionally failing test scripts
+   - Verify proper error reporting and retry mechanisms
+
+All tests should be automated and included in the CI pipeline. Documentation should include examples of how to extend the engine for custom test scenarios.

@@ -1,29 +1,28 @@
 import React from "react";
 import { Components, registerComponent } from "@penpal/core";
 import _ from "lodash";
-import Grid from "@mui/material/Grid";
 import moment from "moment";
 
 const DashboardTrendingStatistic = ({ title, value, delta, since }) => (
-  <Grid item lg={4} sm={6} xl={4} xs={12}>
+  <div className="col-span-12 sm:col-span-6 lg:col-span-4 xl:col-span-4">
     <Components.DashboardTrendingStatistic
       title={title}
       value={value}
       delta={delta}
       caption={`since ${moment(since).from(moment())}`}
     />
-  </Grid>
+  </div>
 );
 
 const DashboardComponents = ({ data }) => {
   return (
-    <Grid container spacing={2}>
+    <div className="grid grid-cols-12 gap-4">
       {_.map(data, (field, key) =>
         field.__typename === "DashboardableStatisticsTrendingInt" ? (
           <DashboardTrendingStatistic key={key} {...field} />
         ) : null
       )}
-    </Grid>
+    </div>
   );
 };
 

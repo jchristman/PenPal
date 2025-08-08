@@ -1,0 +1,96 @@
+---
+description: 
+globs: *.tsx,*.jsx
+alwaysApply: false
+---
+# Combobox (Popover + Command) Scrolling in Dialogs
+
+<rule>
+name: combobox_scrolling_in_dialog
+description: Ensures mouse wheel scrolling works for CommandList inside Popover within Dialog/DialogContent.
+
+filters:
+  - type: file_content
+    pattern: "<Popover.*>.*<CommandList.*>.*</Popover>"
+  - type: file_content
+    pattern: "<Dialog.*>.*<Popover.*>.*</Dialog>"
+  - type: file_content
+    pattern: "<DialogContent.*>.*<Popover.*>.*</DialogContent>"
+
+actions:
+  - type: suggest
+    message: |
+      ## Fixing Combobox Scrolling Inside Dialogs
+      
+      **Issue:**
+      When using a Combobox pattern (built with `<Popover>` and `<Command>`/`<CommandList>`) inside a Shadcn UI `<Dialog>` or `<DialogContent>`, the dropdown list (`<CommandList>`) might not be scrollable using the mouse wheel or trackpad, although dragging the scrollbar works.
+      
+      This happens due to focus management conflicts between the modal nature of the `<Dialog>` and the nested `<Popover>`.
+      
+      **Solution:**
+      Add the `modal={true}` prop to the `<Popover>` component.
+      
+      ```tsx
+      // ❌ Incorrect: Scrolling may not work with mouse wheel
+      <Dialog>
+        <DialogContent>
+          <Popover open={open} onOpenChange={setOpen}>
+            {/* ... PopoverTrigger ... */}
+            <PopoverContent>
+              <Command>
+                {/* ... CommandInput ... */}
+                <CommandList>
+                  {/* ... CommandItems ... */}
+                </CommandList>
+              </Command>
+            </PopoverContent>
+          </Popover>
+        </DialogContent>
+      </Dialog>
+      
+      // ✅ Correct: Add modal={true} to Popover
+      <Dialog>
+        <DialogContent>
+          <Popover open={open} onOpenChange={setOpen} modal={true}>
+            {/* ... PopoverTrigger ... */}
+            <PopoverContent>
+              <Command>
+                {/* ... CommandInput ... */}
+                <CommandList>
+                  {/* ... CommandItems ... */}
+                </CommandList>
+              </Command>
+            </PopoverContent>
+          </Popover>
+        </DialogContent>
+      </Dialog>
+      ```
+      
+      **Reference:**
+      See this GitHub discussion: [cmdk Issue #272](mdc:https:/github.com/pacocoursey/cmdk/issues/272#issuecomment-2147619528)
+
+examples:
+  - input: |
+      <Dialog>
+        <DialogContent>
+          <Popover open={popoverOpen} onOpenChange={setPopoverOpen}>
+            <PopoverTrigger asChild>
+              <Button>Select...</Button>
+            </PopoverTrigger>
+            <PopoverContent>
+              <Command>
+                <CommandList>
+                  {/* Many items... */}
+                </CommandList>
+              </Command>
+            </PopoverContent>
+          </Popover>
+        </DialogContent>
+      </Dialog>
+    output: |
+      Consider adding `modal={true}` to the `<Popover>` component to ensure mouse wheel scrolling works correctly for the `<CommandList>` inside the `<Dialog>`.
+
+metadata:
+  priority: medium
+  version: 1.0
+</rule> 

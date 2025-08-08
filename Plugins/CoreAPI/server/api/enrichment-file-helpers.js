@@ -6,11 +6,12 @@ import {
 } from "../../common/file-attachment-constants.js";
 
 /**
- * Attach a screenshot to an HttpX enrichment
- * This is a convenience function for the most common use case
+ * Attach a screenshot to any plugin enrichment
+ * Generic function that can be used by any plugin
  */
-export const attachScreenshotToHttpXEnrichment = async (
+export const attachScreenshotToEnrichment = async (
   service_selector,
+  plugin_name,
   screenshot_buffer,
   screenshot_filename,
   metadata = {}
@@ -30,7 +31,7 @@ export const attachScreenshotToHttpXEnrichment = async (
 
   return await PenPal.API.Services.AttachFileToEnrichment(
     service_selector,
-    "HttpX",
+    plugin_name,
     file_data,
     file_metadata
   );

@@ -1,0 +1,71 @@
+# Task ID: 25
+# Title: Implement Performance Monitoring Framework for E2E Tests
+# Status: pending
+# Dependencies: 23
+# Priority: low
+# Description: Develop and integrate a comprehensive performance monitoring framework into the existing E2E test suite that captures key metrics and enables performance assertions.
+# Details:
+Create a modular performance monitoring framework that integrates with our E2E test infrastructure to measure and report on critical performance metrics. The implementation should include:
+
+1. **Page Load Time Measurement**:
+   - Track navigation timing API metrics (navigationStart, domContentLoaded, loadEvent)
+   - Implement custom markers for SPA route changes
+   - Calculate and store time-to-interactive metrics
+
+2. **Core Web Vitals Tracking**:
+   - Implement collection of LCP (Largest Contentful Paint)
+   - Track FID (First Input Delay) or its lab equivalent TBT (Total Blocking Time)
+   - Measure CLS (Cumulative Layout Shift)
+   - Capture INP (Interaction to Next Paint) where applicable
+
+3. **Memory Usage Monitoring**:
+   - Track JS heap size before and after key user flows
+   - Monitor for memory leaks during long-running tests
+   - Implement garbage collection forcing when needed for consistent measurements
+
+4. **Network Performance Analysis**:
+   - Capture request counts, sizes, and timing information
+   - Track API response times for critical endpoints
+   - Monitor for unnecessary network requests
+
+5. **Assertion Capabilities**:
+   - Create a flexible API for asserting performance thresholds
+   - Support both absolute thresholds and relative degradation checks
+   - Implement conditional test failures based on performance criteria
+
+6. **Reporting Infrastructure**:
+   - Store metrics in a structured format (JSON)
+   - Enable trend analysis across test runs
+   - Provide visualization capabilities or integration with existing dashboards
+
+The framework should be configurable to run in different modes (basic/comprehensive) and should have minimal impact on the test execution time itself. Ensure backward compatibility with existing tests.
+
+# Test Strategy:
+The implementation should be verified through the following test approach:
+
+1. **Unit Tests**:
+   - Create unit tests for each metric collection function
+   - Verify threshold calculation logic works correctly
+   - Test reporting format generation
+
+2. **Integration Tests**:
+   - Create a sample application with known performance characteristics
+   - Verify all metrics are collected accurately against this reference app
+   - Test the framework with both passing and failing performance thresholds
+
+3. **Validation Tests**:
+   - Compare metrics collected by the framework against browser DevTools measurements
+   - Verify Core Web Vitals align with Lighthouse or similar tools
+   - Ensure memory measurements correlate with browser task manager values
+
+4. **Regression Testing**:
+   - Run the framework against existing E2E tests to ensure it doesn't break them
+   - Measure the overhead added by the performance monitoring
+   - Verify that results are consistent across multiple runs
+
+5. **Edge Cases**:
+   - Test behavior during network throttling conditions
+   - Verify metrics collection during page errors or timeouts
+   - Test with various browser window sizes and device emulations
+
+Acceptance criteria should include documentation of the API, examples of usage in existing tests, and demonstration of a complete metrics collection and reporting cycle with visualizations of the results.

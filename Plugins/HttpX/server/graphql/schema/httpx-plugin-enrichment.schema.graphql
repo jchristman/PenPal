@@ -13,7 +13,24 @@ method: HTTP method used
 scheme: HTTP or HTTPS
 path: URL path component
 """
-type HttpXPluginEnrichment implements PluginEnrichment {
+type HttpXPluginEnrichment implements PluginEnrichment
+  @uiGroup(
+    name: "details"
+    label: "Response Details"
+    collapsible: true
+    priority: 20
+  )
+  @uiGroup(
+    name: "tech"
+    label: "Technology Stack"
+    collapsible: true
+    priority: 10
+  )
+  @enrichmentDisplay(
+    layout: "card"
+    title: "HttpX Service Analysis"
+    summaryFields: ["url", "status_code", "title", "tech"]
+  ) {
   "This allows the type resolver to determine if the PluginEnrichment"
   plugin_name: String!
   "Generic data field that holds all plugin-specific enrichment data"
@@ -22,22 +39,56 @@ type HttpXPluginEnrichment implements PluginEnrichment {
   files: [EnrichmentFileAttachment]
   "The discovered URL"
   url: String
+    @uiComponent(type: URL_LINK, config: { priority: 0, hideLabel: true })
   "HTTP status code"
-  status_code: Int
+  status_code: Int @uiComponent(type: STATUS_INDICATOR, config: { priority: 1 })
   "Content type of the response"
   content_type: String
+    @uiComponent(
+      type: TEXT
+      config: { group: "details", priority: 2, label: "Content Type" }
+    )
   "Content length of the response"
   content_length: Int
+    @uiComponent(
+      type: METRIC
+      config: { group: "details", priority: 1, unit: "bytes" }
+    )
   "HTML title of the page"
   title: String
+    @uiComponent(type: TEXT, config: { priority: 2, label: "Title" })
   "Server header information"
   server: String
+    @uiComponent(
+      type: TEXT
+      config: { group: "tech", priority: 2, label: "Server" }
+    )
   "Detected technology stack"
   tech: [String]
+    @uiComponent(
+      type: LIST
+      config: {
+        group: "tech"
+        priority: 1
+        itemComponent: { type: BADGE, config: { color: "secondary" } }
+      }
+    )
   "HTTP method used"
   method: String
+    @uiComponent(
+      type: BADGE
+      config: { group: "details", priority: 3, color: "info" }
+    )
   "Protocol scheme (http/https)"
   scheme: String
+    @uiComponent(
+      type: BADGE
+      config: { group: "details", priority: 4, color: "info" }
+    )
   "URL path"
   path: String
+    @uiComponent(
+      type: TEXT
+      config: { group: "details", priority: 5, label: "Path" }
+    )
 }

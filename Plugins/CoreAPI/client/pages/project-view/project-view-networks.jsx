@@ -1,76 +1,57 @@
 import React, { useState } from "react";
-import { Components, registerComponent } from "@penpal/core";
-import { makeStyles } from "@mui/styles";
-import Paper from "@mui/material/Paper";
-import Tabs from "@mui/material/Tabs";
-import Tab from "@mui/material/Tab";
+import { Components, registerComponent, Hooks } from "@penpal/core";
 
-import { TabPanel } from "./project-view-data-container.jsx";
+import { useQuery } from "@apollo/client";
+import getNetworksInformation from "./queries/get-networks-information.js";
 
-const useStyles = makeStyles((theme) => ({
-  container: {
-    flexGrow: 1,
-    display: "flex",
-    height: "100%",
-  },
-  tabs: {
-    borderRight: `1px solid ${theme.palette.divider}`,
-  },
-  tab_panel_container: {
-    paddingLeft: theme.spacing(2),
-    paddingRight: theme.spacing(2),
-  },
-}));
+const { useToast } = Hooks;
 
-const ProjectViewNetworks = ({ project }) => {
-  const classes = useStyles();
-  const [value, setValue] = useState(0);
+const ProjectViewNetworks = ({ project, disable_polling }) => {
+  const { toast } = useToast();
 
-  const handleChange = (event, newValue) => {
-    setValue(newValue);
-  };
+  const { data, loading, error } = useQuery(getNetworksInformation, {
+    pollInterval: disable_polling ? 0 : 15000,
+    variables: {
+      id: project.id,
+    },
+  });
+
+  if (loading) {
+    return null;
+  }
+
+  if (error) {
+    toast({
+      title: "Error",
+      description: error.message,
+      variant: "destructive",
+    });
+    return null;
+  }
+
+  const {
+    getProject: { scope: { networksConnection: { networks = [] } } = {} } = {},
+  } = data || {};
 
   const tabs = [
     {
-      title: "List",
-      content: () => "List",
+      value: "dashboard",
+      label: "Dashboard",
+      content: <Components.ProjectViewNetworksDashboard networks={networks} />,
     },
     {
-      title: "Hosts",
-      content: () => "Hosts",
+      value: "table",
+      label: "Table",
+      content: <Components.ProjectViewNetworksTable networks={networks} />,
     },
     {
-      title: "Services",
-      content: () => "Services",
-    },
-    {
-      title: "Graph",
-      content: () => "Graph",
+      value: "graph",
+      label: "Graph",
+      content: <Components.ProjectViewNetworksGraph networks={networks} />,
     },
   ];
 
-  return (
-    <Paper className={classes.container}>
-      <Tabs
-        orientation="vertical"
-        variant="scrollable"
-        value={value}
-        onChange={handleChange}
-        className={classes.tabs}
-      >
-        {tabs.map(({ title }, i) => (
-          <Tab key={i} label={title} />
-        ))}
-      </Tabs>
-      <div className={classes.tab_panel_container}>
-        {tabs.map(({ content: Content }, i) => (
-          <TabPanel value={value} index={i} key={i}>
-            <Content project={project} />
-          </TabPanel>
-        ))}
-      </div>
-    </Paper>
-  );
+  return <Components.VerticalTabs tabs={tabs} defaultTab="dashboard" />;
 };
 
 registerComponent("ProjectViewNetworks", ProjectViewNetworks);

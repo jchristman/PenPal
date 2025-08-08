@@ -3,102 +3,24 @@ import {
   Components,
   registerComponent,
   Hooks,
+  Utils,
   GraphQLUtils,
 } from "@penpal/core";
+import { Check, ChevronsUpDown } from "lucide-react";
 import _ from "lodash";
-import Grid from "@mui/material/Grid";
-import Paper from "@mui/material/Paper";
-import Select from "@mui/material/Select";
-import MenuItem from "@mui/material/MenuItem";
-import FormControl from "@mui/material/FormControl";
-import ExpandMoreIcon from "@mui/icons-material/ExpandMore";
-import Button from "@mui/material/Button";
-import { makeStyles } from "@mui/styles";
-import { indigo } from "@mui/material/colors";
-import cx from "classnames";
+
+const { cn } = Utils;
 
 import { useQuery, useMutation } from "@apollo/client";
-import { useSnackbar } from "notistack";
 
 import GetConfigurablePluginsQuery from "./queries/get-configurable-plugins.js";
-
-const useStyles = makeStyles((theme) => ({
-  main: {
-    width: "100%",
-    height: "100%",
-    display: "flex",
-    flexDirection: "column",
-  },
-  selectBox: {
-    marginBottom: theme.spacing(2),
-    display: "flex",
-    flexDirection: "row",
-    alignItems: "center",
-  },
-  save_button: {
-    marginLeft: theme.spacing(2),
-  },
-  flex: {
-    flex: 1,
-  },
-  select: {
-    minWidth: 200,
-    background: "white",
-    color: indigo[75],
-    fontWeight: 200,
-    borderStyle: "none",
-    borderWidth: 2,
-    borderRadius: 12,
-    paddingLeft: 24,
-    paddingTop: 14,
-    paddingBottom: 15,
-    boxShadow: "0px 5px 8px -3px rgba(0,0,0,0.14)",
-    "&:focus": {
-      borderRadius: 12,
-      background: "white",
-      borderColor: indigo[100],
-    },
-  },
-  icon: {
-    color: indigo[300],
-    right: 12,
-    position: "absolute",
-    userSelect: "none",
-    pointerEvents: "none",
-  },
-  paper: {
-    borderRadius: 12,
-    marginTop: 8,
-  },
-  list: {
-    paddingTop: 0,
-    paddingBottom: 0,
-    background: "white",
-    "& li": {
-      fontWeight: 200,
-      paddingTop: 12,
-      paddingBottom: 12,
-    },
-    "& li:hover": {
-      background: indigo[100],
-    },
-    "& li.Mui-selected": {
-      color: "white",
-      background: indigo[400],
-    },
-    "& li.Mui-selected:hover": {
-      background: indigo[500],
-    },
-  },
-}));
 
 const Selector = () => {
   // ---------------------- Hooks ---------------------- //
   const { generateQueryFromSchema, generateMutationFromSchema } = GraphQLUtils;
   const { useIntrospection, useImperativeQuery } = Hooks;
 
-  const classes = useStyles();
-  const { enqueueSnackbar } = useSnackbar();
+  const { toast } = Hooks.useToast();
 
   const {
     loading: introspection_loading,
@@ -115,6 +37,7 @@ const Selector = () => {
   const loading = introspection_loading || plugins_loading;
 
   const [selected, setSelected] = useState("");
+  const [open, setOpen] = useState(false);
 
   const { configuration } = getConfigurablePlugins?.[selected]?.settings ?? {
     configuration: {
@@ -150,24 +73,31 @@ const Selector = () => {
           setConfigSinceLastSave(config);
         } catch (e) {
           console.error("Selector", e);
-          enqueueSnackbar(`Error: ${e.message}`, { variant: "error" });
+          toast({
+            title: "Error",
+            description: e.message,
+            variant: "destructive",
+          });
         }
       }
     })();
   }, [loading, selected]);
 
-  // ---------------------- Hooks ---------------------- //
+  // ---------------------- Handlers ---------------------- //
 
-  const handleChange = (event) => {
+  const handlePluginSelect = (pluginIndex) => {
     setLocalConfig({});
-    setSelected(event.target.value);
+    setSelected(pluginIndex);
+    setOpen(false);
   };
+
   const handleConfigChange = (path, newValue) => {
     // Need to clone the object so that the reference changes on setLocalConfig
     const newLocalConfig = _.cloneDeep(localConfig);
     _.set(newLocalConfig, path, newValue);
     setLocalConfig(newLocalConfig);
   };
+
   const config_has_changed_since_last_save =
     JSON.stringify(localConfig) !== JSON.stringify(configSinceLastSave);
 
@@ -183,78 +113,105 @@ const Selector = () => {
       setLocalConfig(newLocalConfig);
       setConfigSinceLastSave(newLocalConfig);
     } catch (e) {
-      enqueueSnackbar(`Error: ${e.message}`, { variant: "error" });
+      toast({
+        title: "Error",
+        description: e.message,
+        variant: "destructive",
+      });
     }
   };
 
-  const iconComponent = (props) => {
-    return <ExpandMoreIcon className={cx(props.className, classes.icon)} />;
-  };
-
-  const menuProps = {
-    classes: {
-      paper: classes.paper,
-      list: classes.list,
-    },
-    anchorOrigin: {
-      vertical: "bottom",
-      horizontal: "left",
-    },
-    transformOrigin: {
-      vertical: "top",
-      horizontal: "left",
-    },
-    //getContentAnchorEl: null,
-  };
+  // Get selected plugin for display
+  const selectedPlugin =
+    selected !== "" ? getConfigurablePlugins[selected] : null;
 
   return (
-    <div className={classes.main}>
+    <div className="w-full h-full flex flex-col">
       {loading ? (
-        "Loading available plugins..."
+        <div className="flex items-center justify-center p-8">
+          <Components.Spinner className="w-6 h-6 mr-2" />
+          Loading available plugins...
+        </div>
       ) : (
         <>
-          <div className={classes.selectBox}>
-            <FormControl>
-              <Select
-                //disableUnderline
-                classes={{ root: classes.select }}
-                MenuProps={menuProps}
-                IconComponent={iconComponent}
-                value={selected}
-                onChange={handleChange}
-              >
-                {getConfigurablePlugins?.map((plugin, index) => (
-                  <MenuItem key={plugin.id} value={index}>
-                    {plugin.name}
-                  </MenuItem>
-                ))}
-              </Select>
-            </FormControl>
+          <div className="mb-4 flex flex-row items-center space-x-4">
+            <Components.Popover open={open} onOpenChange={setOpen}>
+              <Components.PopoverTrigger asChild>
+                <Components.Button
+                  variant="outline"
+                  role="combobox"
+                  aria-expanded={open}
+                  className="w-64 justify-between bg-white border border-gray-200 rounded-xl shadow-sm"
+                >
+                  {selectedPlugin
+                    ? selectedPlugin.name
+                    : "Select a plugin to configure..."}
+                  <ChevronsUpDown className="ml-2 h-4 w-4 shrink-0 opacity-50" />
+                </Components.Button>
+              </Components.PopoverTrigger>
+              <Components.PopoverContent className="w-64 p-0 bg-white border border-gray-200 rounded-xl shadow-lg">
+                <Components.Command>
+                  <Components.CommandInput
+                    placeholder="Search plugins..."
+                    className="h-9"
+                  />
+                  <Components.CommandList>
+                    <Components.CommandEmpty>
+                      No plugins found.
+                    </Components.CommandEmpty>
+                    {getConfigurablePlugins?.map((plugin, index) => (
+                      <Components.CommandItem
+                        key={plugin.id}
+                        value={plugin.name}
+                        onSelect={() => handlePluginSelect(index.toString())}
+                        className="cursor-pointer"
+                      >
+                        <Check
+                          className={cn(
+                            "mr-2 h-4 w-4",
+                            selected === index.toString()
+                              ? "opacity-100"
+                              : "opacity-0"
+                          )}
+                        />
+                        {plugin.name}
+                      </Components.CommandItem>
+                    ))}
+                  </Components.CommandList>
+                </Components.Command>
+              </Components.PopoverContent>
+            </Components.Popover>
 
-            <Button
-              variant="contained"
-              color="primary"
+            <Components.Button
+              variant="default"
               disabled={!config_has_changed_since_last_save}
               onClick={handleSave}
-              className={classes.save_button}
-              size="large"
+              size="lg"
             >
               Save Configuration
-            </Button>
+            </Components.Button>
           </div>
-          <Paper square className={classes.flex}>
-            {selected === "" ? (
-              <div style={{ padding: 8 }}>Select Plugin to configure....</div>
-            ) : Object.keys(localConfig).length === 0 ? (
-              <div style={{ padding: 8 }}>Loading configuration...</div>
-            ) : (
-              <Components.ConfigurationPage
-                key={selected} // Janky way to re-mount when the config changes, for the active tab
-                localConfig={localConfig}
-                handleConfigChange={handleConfigChange}
-              />
-            )}
-          </Paper>
+
+          <Components.Card className="flex-1">
+            <Components.CardContent className="p-6">
+              {selected === "" ? (
+                <div className="text-muted-foreground">
+                  Select Plugin to configure...
+                </div>
+              ) : Object.keys(localConfig).length === 0 ? (
+                <div className="flex items-center text-muted-foreground">
+                  <Components.Spinner className="w-4 h-4 mr-2" />
+                  Loading configuration...
+                </div>
+              ) : (
+                <Components.ConfigurationPage
+                  key={selected} // Janky way to re-mount when the config changes, for the active tab
+                  localConfig={localConfig}
+                  handleConfigChange={handleConfigChange}
+                />
+              )}
+            </Components.CardContent>
+          </Components.Card>
         </>
       )}
     </div>

@@ -1,7 +1,6 @@
 import { registerRoute } from "@penpal/core";
 
-import HomeIcon from "@mui/icons-material/Home";
-import SettingsInputSvideoIcon from "@mui/icons-material/SettingsInputSvideo";
+import { HomeIcon, Cog6ToothIcon } from "@heroicons/react/24/outline";
 
 const registerRoutes = () => {
   const Dashboard = {
@@ -18,9 +17,19 @@ const registerRoutes = () => {
     path: "/configure",
     componentName: "Configuration",
     prettyName: "Configure Plugins",
-    icon: SettingsInputSvideoIcon,
+    icon: Cog6ToothIcon,
   };
   registerRoute(Configuration);
+
+  const ConfigurationPlugin = {
+    name: "configuration-plugin",
+    path: "/configure/:plugin_name",
+    componentName: "Configuration",
+    prettyName: "Configure Plugin",
+    icon: Cog6ToothIcon,
+    hideFromNav: true,
+  };
+  registerRoute(ConfigurationPlugin);
 };
 
 export default registerRoutes;

@@ -1,0 +1,26 @@
+type HttpXConfigurationUI {
+  STATUS_SLEEP: Int
+}
+
+type HttpXConfiguration {
+  ui: HttpXConfigurationUI
+  _ui: JSON
+}
+
+input HttpXConfigurationUIInput {
+  STATUS_SLEEP: Int
+}
+
+input HttpXConfigurationInput {
+  ui: HttpXConfigurationUIInput
+  _ui: JSON
+}
+
+extend type Query {
+  getHttpXConfiguration: HttpXConfiguration
+}
+extend type Mutation {
+  setHttpXConfiguration(
+    configuration: HttpXConfigurationInput!
+  ): HttpXConfiguration
+}

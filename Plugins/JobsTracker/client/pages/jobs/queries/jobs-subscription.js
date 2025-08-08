@@ -9,6 +9,7 @@ const JOBS_SUBSCRIPTION = gql`
       progress
       statusText
       status
+      cancellation_request
       stages {
         name
         plugin

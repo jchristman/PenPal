@@ -7,5 +7,8 @@ type Query {
     before: String
     pageSize: Int
     pageNumber: Int
+    searchTerm: String
+    sortBy: String
+    sortDirection: String
   ): ProjectsConnection!
 }

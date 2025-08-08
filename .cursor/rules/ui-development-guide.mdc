@@ -1,0 +1,125 @@
+---
+description: Provides a comprehensive guide for developing User Interface (UI) plugins and components within the PenPal framework. This rule details essential patterns, including client-side plugin structure, component and route registration, the view-based architecture for UI extensibility, and the service enrichment display system. Load this rule when tasked with creating or modifying UI features, extending existing components, or understanding PenPal's front-end architecture.
+globs: 
+alwaysApply: false
+---
+# PenPal UI Development Guide
+
+This guide outlines the patterns and best practices for developing user interface components and plugins within the PenPal ecosystem. It is based on the architecture established in the CoreAPI plugin.
+
+## Client-Side Plugin Structure
+
+A client-side plugin requires a specific file structure to be correctly loaded by the PenPal application.
+
+1.  **`index.js`**: The main entry point that registers the plugin with the core system. It should be kept simple.
+    -   **Example**: `[index.js](mdc:Plugins/CoreAPI/client/index.js)`
+    ```javascript
+    // Overall PenPal coordinating server code
+    import PenPal from "@penpal/core";
+
+    // Plugin-specific info
+    import Plugin from "./plugin.js";
+    import Manifest from "./manifest.json";
+
+    // Register the plugin
+    PenPal.registerPlugin(Manifest, Plugin);
+    ```
+
+2.  **`plugin.js`**: The core of the client-side plugin. It loads all React components and registers the plugin's routes.
+    -   **`import.meta.glob`**: This Vite function is used to eagerly load all `.jsx` components within the plugin, making them available for registration.
+    -   **`registerRoutes`**: A function exported from `routes.js` is returned to inform the core application of the plugin's pages.
+    -   **Example**: `[plugin.js](mdc:Plugins/CoreAPI/client/plugin.js)`
+    ```javascript
+    import.meta.glob("./**/*.jsx", { eager: true });
+    import registerRoutes from "./routes.js";
+
+    const CoreAPIPlugin = {
+      loadPlugin() {
+        return {
+          registerRoutes,
+        };
+      },
+    };
+
+    export default CoreAPIPlugin;
+    ```
+
+3.  **`routes.js`**: This file defines the navigation routes for the plugin's pages.
+    -   **Example**: `[routes.js](mdc:Plugins/CoreAPI/client/routes.js)`
+    ```javascript
+    import { registerRoute } from "@penpal/core";
+    import { FolderIcon } from "@heroicons/react/24/outline";
+
+    const registerRoutes = () => {
+      const Projects = {
+        name: "projects",
+        path: "/projects",
+        componentName: "Projects",
+        prettyName: "Projects",
+        icon: FolderIcon,
+      };
+      registerRoute(Projects, 1);
+    };
+
+    export default registerRoutes;
+    ```
+
+## Component Registration
+
+To ensure components are available throughout the application, they must be registered with the core system.
+
+-   **`registerComponent(name, component)`**: Use this function from `@penpal/core` in every component file.
+-   **Usage**: Once registered, a component like `'MyComponent'` can be rendered anywhere using `<Components.MyComponent />`.
+
+```javascript
+// ✅ Correct: MyComponent.jsx
+import React from 'react';
+import { Components, registerComponent } from '@penpal/core';
+
+const MyComponent = () => <div>Hello from my plugin!</div>;
+
+// Register the component
+registerComponent('MyComponent', MyComponent);
+
+// Also export for fast refresh
+export default MyComponent;
+
+// --- In another component ---
+// <Components.MyComponent />
+```
+
+## View-Based Architecture
+
+For complex pages, PenPal uses a "view-based" architecture. This allows users to switch between different representations of the same data (e.g., Table, Cards, Graph).
+
+-   **View Container**: A primary component manages the state for the current view, often using URL search parameters (`?view=table`). Example: `[project-view-hosts.jsx](mdc:Plugins/CoreAPI/client/pages/project-view/project-view-hosts.jsx)`.
+-   **View Components**: Each specific view is a separate component. Examples: `[project-view-hosts-table.jsx](mdc:Plugins/CoreAPI/client/pages/project-view/project-view-hosts-table.jsx)`, `[project-view-hosts-graph.jsx](mdc:Plugins/CoreAPI/client/pages/project-view/project-view-hosts-graph.jsx)`.
+-   **Extensibility**: This pattern is highly extensible. A new plugin can contribute its own view to an existing page by registering its view component and providing a way to select it (e.g., a new button in a `ToggleGroup`).
+
+## Service Enrichment Display System
+
+A critical extensibility point is the Service Enrichments UI. Plugins can provide custom React components to display their unique data for discovered services.
+
+-   **Registration**: Plugins register their display component using `PenPal.API.registerEnrichmentDisplay(pluginName, component)`.
+-   **Implementation**: The `[project-view-services-enrichments.jsx](mdc:Plugins/CoreAPI/client/pages/project-view/project-view-services-enrichments.jsx)` component looks up the appropriate display component from the registry based on the enrichment's `plugin_name`. If none is found, it uses a `DefaultEnrichmentDisplay`.
+
+See the `[README-services-extensibility.md](mdc:Plugins/CoreAPI/client/pages/project-view/README-services-extensibility.md)` for a detailed guide on this system.
+
+## UI Toolkit
+
+To maintain a consistent look and feel, always use the shared UI toolkit.
+
+-   **Shared Components**: Use the pre-styled components available from `@penpal/core`, accessed via the `Components` object (e.g., `<Components.Button />`, `<Components.Card />`).
+-   **Styling**: Use **Tailwind CSS** for all styling. The `cn` utility from `@penpal/core`'s `Utils` should be used for conditionally applying classes.
+-   **Icons**: Use icons from `lucide-react` or `@heroicons/react/24/outline` for consistency.
+
+## State Management
+
+-   **Local State**: Use standard React hooks like `useState` and `useMemo` for component-level state.
+-   **URL State**: For state that should be bookmarkable or reflected in the browser history (like active tabs or views), use the `useSearchParams` hook from `react-router-dom`. This is the preferred method for managing view state.
+
+## GraphQL Integration
+
+-   **Hooks**: Use `useQuery` and `useMutation` from `@apollo/client` for data fetching and updates.
+-   **File Structure**: Keep GraphQL queries, mutations, and fragments in separate `.js` files using the `gql` tag.
+-   **Fragments**: Use fragments to reuse common sets of fields across multiple queries, as seen in `[project-summary-fragment.js](mdc:Plugins/CoreAPI/client/pages/projects/queries/project-summary-fragment.js)`.

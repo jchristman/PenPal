@@ -1,37 +1,10 @@
 import React, { useState } from "react";
 import { Components, registerComponent } from "@penpal/core";
-import { makeStyles } from "@mui/styles";
-import Paper from "@mui/material/Paper";
-import Tabs from "@mui/material/Tabs";
-import Tab from "@mui/material/Tab";
+import { useSearchParams } from "react-router-dom";
 
-const useStyles = makeStyles((theme) => ({
-  root: {
-    flex: 1,
-    width: "100%",
-    background: "transparent",
-    display: "flex",
-    flexDirection: "column",
-    overflowY: "auto",
-  },
-  tab_bar: {
-    paddingLeft: 4,
-    paddingRight: 4,
-  },
-  tab_panel: {
-    marginTop: theme.spacing(2),
-    flex: 1,
-    overflowY: "auto",
-  },
-  tab_container: {
-    flex: 1,
-    display: "flex",
-    overflowY: "auto",
-  },
-}));
+const { Tabs, TabsContent, TabsList, TabsTrigger } = Components;
 
 export const TabPanel = (props) => {
-  const classes = useStyles();
   const { children, value, index, ...other } = props;
 
   return (
@@ -39,7 +12,7 @@ export const TabPanel = (props) => {
       role="tabpanel"
       hidden={value !== index}
       {...other}
-      className={classes.tab_panel}
+      className="mt-4 flex-1 overflow-y-auto"
     >
       {value === index ? children : null}
     </div>
@@ -47,54 +20,75 @@ export const TabPanel = (props) => {
 };
 
 const ProjectViewDataContainer = ({ project, disable_polling }) => {
-  const classes = useStyles();
-  const [value, setValue] = useState(0);
+  const [searchParams, setSearchParams] = useSearchParams();
 
-  const handleChange = (event, newValue) => {
-    setValue(newValue);
+  // Get active tab from URL, default to "networks"
+  const activeTab = searchParams.get("tab") || "networks";
+
+  const handleTabChange = (value) => {
+    setSearchParams((prev) => {
+      const newParams = new URLSearchParams(prev);
+      newParams.set("tab", value);
+      // Reset view when changing tabs
+      newParams.delete("view");
+      return newParams;
+    });
   };
 
   const tabs = [
     {
-      title: "Dashboard",
-      content: Components.ProjectViewDashboard,
+      value: "networks",
+      label: "Networks",
+      content: () => <Components.ProjectViewNetworks project={project} />,
     },
     {
-      title: "Hosts",
-      content: Components.ProjectViewHosts,
+      value: "hosts",
+      label: "Hosts",
+      content: () => (
+        <Components.ProjectViewHosts
+          project={project}
+          disable_polling={disable_polling}
+        />
+      ),
     },
     {
-      title: "Networks",
-      content: Components.ProjectViewNetworks,
-    },
-    {
-      title: "Services",
-      content: Components.ProjectViewServices,
+      value: "services",
+      label: "Services",
+      content: () => (
+        <Components.ProjectViewServices
+          project={project}
+          disable_polling={disable_polling}
+        />
+      ),
     },
   ];
 
   return (
-    <div className={classes.root}>
-      <Paper className={classes.tab_bar}>
-        <Tabs
-          value={value}
-          onChange={handleChange}
-          indicatorColor="primary"
-          textColor="primary"
-          variant="scrollable"
-          scrollButtons="auto"
-        >
-          {tabs.map(({ title }, i) => (
-            <Tab key={i} label={title} />
-          ))}
+    <div className="flex flex-col h-full">
+      {/* Horizontal tabs using Tabs components with black border */}
+      <div className="border-b border-black">
+        <Tabs value={activeTab} onValueChange={handleTabChange}>
+          <TabsList className="h-auto p-0 bg-transparent">
+            {tabs.map((tab) => (
+              <TabsTrigger
+                key={tab.value}
+                value={tab.value}
+                className={`px-4 py-3 text-sm font-medium border-b-2 transition-colors rounded-none ${
+                  activeTab === tab.value
+                    ? "border-primary text-primary border-b-2" // Thicker orange underline and orange text
+                    : "border-transparent text-muted-foreground hover:text-foreground"
+                }`}
+              >
+                {tab.label}
+              </TabsTrigger>
+            ))}
+          </TabsList>
         </Tabs>
-      </Paper>
-      <div className={classes.tab_container}>
-        {tabs.map(({ content: Content }, i) => (
-          <TabPanel value={value} index={i} key={i}>
-            <Content project={project} disable_polling={disable_polling} />
-          </TabPanel>
-        ))}
+      </div>
+
+      {/* Tab content */}
+      <div className="flex-1 flex flex-col h-full">
+        {tabs.find((tab) => tab.value === activeTab)?.content()}
       </div>
     </div>
   );

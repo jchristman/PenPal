@@ -1,7 +1,7 @@
 #!/bin/bash
 
-docker compose -f docker-compose.common.yaml -f docker-compose.dev.yaml pull
-docker compose -f docker-compose.common.yaml -f docker-compose.dev.yaml build --build-arg UID=$(id -u) --build-arg PLATFORM=$(uname -m) penpal-base
-docker compose -f docker-compose.common.yaml -f docker-compose.dev.yaml build penpal-frontend
-docker compose -f docker-compose.common.yaml -f docker-compose.dev.yaml build penpal-server
-docker compose -f docker-compose.common.yaml -f docker-compose.dev.yaml build penpal-docker-api
+docker compose pull
+docker compose build --build-arg UID=$(id -u) --build-arg PLATFORM=$(uname -m) penpal-base
+docker compose build penpal-frontend
+docker compose build penpal-server
+docker compose build penpal-docker-api

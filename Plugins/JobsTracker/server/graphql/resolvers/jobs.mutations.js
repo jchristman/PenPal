@@ -25,6 +25,16 @@ export default {
     return await API.getJob(id);
   },
 
+  async requestJobCancellation(parent, { id }, context) {
+    await API.requestCancellation(id);
+    return await API.getJob(id);
+  },
+
+  async confirmJobCancelled(parent, { id, statusText }, context) {
+    await API.confirmCancelled(id, statusText || "Cancelled by user");
+    return await API.getJob(id);
+  },
+
   async updateJobStage(parent, { jobId, stageIndex, input }, context) {
     await API.updateJobStage(jobId, stageIndex, input);
     return await API.getJob(jobId);

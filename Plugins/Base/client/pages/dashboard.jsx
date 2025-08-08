@@ -6,25 +6,16 @@ import {
   GraphQLUtils,
 } from "@penpal/core";
 import _ from "lodash";
-import { useSnackbar } from "notistack";
 import { useQuery } from "@apollo/client";
-
-import Container from "@mui/material/Container";
-import Grid from "@mui/material/Grid";
-import Paper from "@mui/material/Paper";
-import Select from "@mui/material/Select";
-import { makeStyles } from "@mui/styles";
 
 import GetDashboardablePluginsQuery from "./dashboard/queries/get-dashboardable-plugins.js";
 
-const useStyles = makeStyles((theme) => ({}));
 const Dashboard = () => {
   // ---------------------- Hooks ---------------------- //
   const { generateQueryFromSchemas } = GraphQLUtils;
   const { useIntrospection, useImperativeQuery } = Hooks;
 
-  const classes = useStyles();
-  const { enqueueSnackbar } = useSnackbar();
+  const { toast } = Hooks.useToast();
 
   const { loading: introspection_loading, types } = useIntrospection();
 
@@ -64,7 +55,11 @@ const Dashboard = () => {
           });
           setAvailableDashboardData(_availableDashboardData);
         } catch (e) {
-          enqueueSnackbar(`Error: ${e.message}`, { variant: "error" });
+          toast({
+            title: "Error",
+            description: e.message,
+            variant: "destructive",
+          });
         }
       }
     })();
@@ -73,9 +68,9 @@ const Dashboard = () => {
   // ---------------------- Hooks ---------------------- //
 
   return (
-    <Container maxWidth="lg">
+    <div className="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8">
       <Components.DashboardComponents data={availableDashboardData} />
-    </Container>
+    </div>
   );
 };
 

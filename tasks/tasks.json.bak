@@ -1,0 +1,641 @@
+{
+  "tasks": [
+    {
+      "id": 1,
+      "title": "Setup Project Repository and Base Architecture",
+      "description": "Initialize the project repository with the microservices architecture, including the plugin system foundation and Docker support.",
+      "status": "done",
+      "dependencies": [],
+      "priority": "high",
+      "details": "Create a new repository with the following structure: core service, plugin architecture, and Docker configuration. Set up the microservices architecture with proper separation of concerns. Initialize Docker and Docker Compose configurations for development environment. Implement the plugin loading mechanism with dependency management as specified in the PRD.",
+      "testStrategy": "Verify plugin loading functionality with a simple test plugin. Ensure Docker containers can be built and run. Test the dynamic loading of plugins with dependencies."
+    },
+    {
+      "id": 2,
+      "title": "Implement Core Data Models",
+      "description": "Define and implement the standardized data models for Customers, Projects, Networks, Hosts, and Services as specified in the PRD.",
+      "status": "done",
+      "dependencies": [
+        1
+      ],
+      "priority": "high",
+      "details": "Create the data models following the entity specifications in the PRD. Implement the hierarchical relationship between Customer → Projects → Networks → Hosts → Services. Include all required fields and relationships. Ensure models are extensible for future additions like Vulnerabilities, Credentials, Files, and Notes.",
+      "testStrategy": "Create unit tests for each model. Verify proper relationship constraints. Test serialization/deserialization of models."
+    },
+    {
+      "id": 3,
+      "title": "Develop Database Abstraction Layer",
+      "description": "Create the DataStore layer with MongoDB adapter as specified in the PRD.",
+      "status": "done",
+      "dependencies": [
+        2
+      ],
+      "priority": "high",
+      "details": "Implement a database abstraction layer that supports MongoDB initially but is designed to accommodate multiple database backends in the future. Create CRUD operations for all core data models. Implement proper indexing for performance. Include transaction support and error handling.",
+      "testStrategy": "Test CRUD operations for all models. Verify performance meets the 100ms response time requirement. Test with large datasets to ensure scalability for 10,000+ hosts."
+    },
+    {
+      "id": 4,
+      "title": "Implement GraphQL API",
+      "description": "Develop a unified GraphQL API for all data operations.",
+      "status": "done",
+      "dependencies": [
+        3
+      ],
+      "priority": "high",
+      "details": "Create a GraphQL schema that exposes all data models. Implement queries, mutations, and subscriptions for real-time updates. Add proper authentication and authorization middleware. Ensure API responses meet the performance requirements (<100ms for standard queries).",
+      "testStrategy": "Test all GraphQL queries and mutations. Verify real-time subscription functionality. Load test to ensure performance requirements are met."
+    },
+    {
+      "id": 5,
+      "title": "Develop Core Plugin System",
+      "description": "Implement the required core plugins: Base, CoreAPI, DataStore, Docker, and MQTT.",
+      "status": "done",
+      "dependencies": [
+        1,
+        3,
+        4
+      ],
+      "priority": "high",
+      "details": "Develop the five core plugins specified in the PRD. Implement the Base plugin for foundation services. Create the CoreAPI plugin for data standardization. Integrate the DataStore plugin with the database abstraction layer. Implement the Docker plugin for container management. Set up the MQTT plugin for inter-plugin communication.",
+      "testStrategy": "Test each plugin individually and their interactions. Verify proper dependency resolution. Test plugin isolation and communication channels."
+    },
+    {
+      "id": 6,
+      "title": "Create React-based Web Interface",
+      "description": "Develop the React-based UI with Material Design as specified in the PRD.",
+      "status": "done",
+      "dependencies": [
+        4
+      ],
+      "priority": "medium",
+      "details": "Set up a React application with Material Design components. Implement responsive design for desktop and tablet devices. Create dark/light themes for user preference. Ensure WCAG 2.1 AA compliance for accessibility. Implement the dashboard interface with pluggable components.",
+      "testStrategy": "Test UI on different devices and screen sizes. Verify accessibility compliance with automated tools. Measure page load times to ensure sub-second performance."
+    },
+    {
+      "id": 7,
+      "title": "Implement Nmap Integration Plugin",
+      "description": "Develop the Nmap plugin for network discovery and port scanning with enhanced configurations.",
+      "status": "in-progress",
+      "dependencies": [
+        5
+      ],
+      "priority": "high",
+      "details": "Create a plugin that integrates Nmap scanning capabilities. Implement advanced scanning configurations. Add data enrichment features. Ensure proper parsing and storage of Nmap results into the standardized data models. Implement both basic and advanced scanning options.",
+      "testStrategy": "Test Nmap scans against test networks. Verify correct parsing of results. Measure performance and resource usage during scans."
+    },
+    {
+      "id": 8,
+      "title": "Implement Rustscan Integration",
+      "description": "Develop the Rustscan plugin for fast port scanning capabilities.",
+      "status": "done",
+      "dependencies": [
+        5
+      ],
+      "priority": "medium",
+      "details": "Create a plugin for Rustscan integration. Implement configuration options for scan speed and targets. Ensure proper parsing of results into the standardized data models. Optimize for performance to leverage Rustscan's speed advantages.",
+      "testStrategy": "Compare scan results with Nmap for accuracy. Test scanning performance on large networks. Verify resource efficiency during scans."
+    },
+    {
+      "id": 9,
+      "title": "Develop Project Management Features",
+      "description": "Implement customer and project organization functionality.",
+      "status": "done",
+      "dependencies": [
+        2,
+        4,
+        6
+      ],
+      "priority": "high",
+      "details": "Create UI components for managing customers and projects. Implement project creation, editing, and deletion workflows. Add customer management features. Develop project scope definition tools. Include project status tracking and reporting.",
+      "testStrategy": "Test the complete project lifecycle from creation to completion. Verify proper data relationships between customers and projects. Test bulk operations for efficiency."
+    },
+    {
+      "id": 10,
+      "title": "Implement Host Discovery Automation",
+      "description": "Create automated network reconnaissance workflows.",
+      "status": "in-progress",
+      "dependencies": [
+        7,
+        8
+      ],
+      "priority": "medium",
+      "details": "Develop automated workflows for host discovery using Nmap and Rustscan. Implement scheduling for recurring scans. Create discovery templates for different scenarios. Add result comparison between scans to identify changes.",
+      "testStrategy": "Test discovery workflows on test networks. Verify accuracy of host identification. Test scheduling and recurring scan functionality."
+    },
+    {
+      "id": 11,
+      "title": "Develop Service Enumeration Features",
+      "description": "Implement detailed service detection and cataloging.",
+      "status": "in-progress",
+      "dependencies": [
+        7,
+        8,
+        10
+      ],
+      "priority": "medium",
+      "details": "Create service fingerprinting capabilities. Implement version detection for discovered services. Add service categorization and tagging. Develop service-specific enumeration workflows. Ensure proper storage and indexing of service information.",
+      "testStrategy": "Test service detection accuracy against known services. Verify version detection capabilities. Test performance with large numbers of services."
+    },
+    {
+      "id": 12,
+      "title": "Implement Container Support for Plugin Isolation",
+      "description": "Enhance Docker integration for secure plugin isolation.",
+      "status": "done",
+      "dependencies": [
+        5
+      ],
+      "priority": "high",
+      "details": "Implement containerized plugin execution for security isolation. Create container lifecycle management. Add resource limitation and monitoring. Implement secure communication between containers. Ensure proper cleanup of container resources.",
+      "testStrategy": "Test plugin isolation by attempting to access resources outside the container. Verify performance impact of containerization. Test concurrent execution of multiple containerized plugins."
+    },
+    {
+      "id": 13,
+      "title": "Develop Dashboard Interface Components",
+      "description": "Create pluggable dashboard components for the web interface.",
+      "status": "done",
+      "dependencies": [
+        6,
+        9
+      ],
+      "priority": "medium",
+      "details": "Implement a dashboard framework with pluggable components. Create standard dashboard widgets for common metrics. Add customization options for user preferences. Implement real-time updates using WebSockets. Ensure responsive design for different screen sizes.",
+      "testStrategy": "Test dashboard rendering performance. Verify real-time updates. Test customization and persistence of user preferences."
+    },
+    {
+      "id": 14,
+      "title": "Implement Role-based Access Control",
+      "description": "Develop comprehensive RBAC for security requirements.",
+      "status": "pending",
+      "dependencies": [
+        4,
+        6
+      ],
+      "priority": "high",
+      "details": "Implement role-based access control for all operations. Create user management features. Define standard roles (admin, user, viewer). Add custom role creation capabilities. Implement permission checking throughout the application.",
+      "testStrategy": "Test access control by attempting operations with different roles. Verify proper isolation between projects for different users. Test custom role definitions."
+    },
+    {
+      "id": 15,
+      "title": "Create Comprehensive Documentation",
+      "description": "Develop user, administrator, and developer documentation.",
+      "status": "pending",
+      "dependencies": [
+        1,
+        2,
+        3,
+        4,
+        5,
+        6,
+        7,
+        8,
+        9,
+        10,
+        11,
+        12,
+        13,
+        14
+      ],
+      "priority": "medium",
+      "details": "Create user documentation for all features. Develop administrator guides for deployment and maintenance. Write developer documentation for plugin development. Include API references. Create tutorials and examples. Ensure documentation coverage exceeds 90%.",
+      "testStrategy": "Review documentation for completeness and accuracy. Test documentation examples to ensure they work as described. Gather feedback from test users on documentation clarity."
+    },
+    {
+      "id": 16,
+      "title": "Implement Generic Service Enrichment UI System with GraphQL Schema Directives",
+      "description": "Design and implement a system that allows plugins to annotate GraphQL schema fields with UI component types, enabling automatic generation of rich displays without custom React components.",
+      "details": "Create a comprehensive Generic Service Enrichment UI System that extends the existing CoreAPI enrichment functionality with the following components:\n\n1. **UI Component Annotation System**:\n   - Implement GraphQL schema directives (e.g., `@uiComponent(type: BADGE)`, `@uiComponent(type: URL_LINK)`) that can be applied to fields\n   - Define a set of standard component types: BADGE, URL_LINK, STATUS_INDICATOR, PROGRESS_BAR, DATE_TIME, CODE_BLOCK, IMAGE, etc.\n   - Allow for component-specific configuration via directive arguments (e.g., `@uiComponent(type: BADGE, color: \"red\")`) \n\n2. **Generic UI Component Library**:\n   - Develop a centralized React component library in CoreAPI with implementations for each component type\n   - Ensure components handle different data types appropriately (strings, numbers, booleans, arrays)\n   - Support theming and accessibility requirements\n   - Include documentation on how to use each component\n\n3. **Schema Introspection Engine**:\n   - Create a system that parses GraphQL schema at runtime to extract UI annotations\n   - Build a mapping layer that connects schema field annotations to appropriate UI components\n   - Implement caching for performance optimization\n\n4. **Enhanced Default Display**:\n   - Develop an intelligent fallback display that uses schema type information to render appropriate UI\n   - Add a toggle mechanism to switch between enhanced view and raw data view\n   - Support nested objects and arrays with appropriate UI representations\n\n5. **Backward Compatibility Layer**:\n   - Ensure existing custom enrichment display components continue to work\n   - Implement a priority system where custom components take precedence over auto-generated ones\n   - Create migration documentation for plugin developers\n\nThe implementation should integrate with the existing enrichment system in CoreAPI, leveraging the PluginEnrichment GraphQL interface and client-side display registry. The system should be designed to be extensible, allowing for new component types to be added in the future.",
+      "testStrategy": "Testing should cover all aspects of the Generic Service Enrichment UI System:\n\n1. **Unit Tests**:\n   - Test each UI component in isolation with various input types and edge cases\n   - Verify schema directive parsing and validation logic\n   - Test the schema introspection engine with mock schemas\n\n2. **Integration Tests**:\n   - Create test plugins with annotated schemas and verify correct component selection\n   - Test backward compatibility with existing custom enrichment displays\n   - Verify the toggle between enhanced and raw views works correctly\n\n3. **End-to-End Tests**:\n   - Implement test cases for complete workflows using real plugins\n   - Test with Gowitness (screenshots), DNS scanning, and SSL certificate analysis plugins\n   - Verify that annotations in GraphQL schema correctly produce the expected UI\n\n4. **Performance Tests**:\n   - Measure and benchmark schema introspection performance\n   - Test with large datasets to ensure UI remains responsive\n\n5. **Visual Regression Tests**:\n   - Capture screenshots of generated UIs and compare against baselines\n   - Test across different screen sizes and themes\n\n6. **Documentation Validation**:\n   - Verify that documentation for plugin developers is clear and complete\n   - Create example plugins using the new system and have developers follow the documentation to implement them\n\nAll tests should be automated where possible and integrated into the CI/CD pipeline.",
+      "status": "done",
+      "dependencies": [],
+      "priority": "high",
+      "subtasks": [
+        {
+          "id": 1,
+          "title": "Define GraphQL Schema Directives for UI Components",
+          "description": "Create the GraphQL schema directive system that allows fields to be annotated with UI component information",
+          "dependencies": [],
+          "details": "Implementation steps:\n1. Define a GraphQL enum type `UIComponentType` with values like BADGE, URL_LINK, STATUS_INDICATOR, etc.\n2. Create a `@uiComponent` directive that accepts the component type and configuration arguments\n3. Implement the directive definition in the CoreAPI GraphQL schema\n4. Add validation logic to ensure directive arguments match the expected component type\n5. Write unit tests for directive parsing and validation\n6. Document the available directive options and usage patterns\n\nTesting approach:\n- Create test schemas with various directive applications\n- Verify directive parsing works correctly\n- Test validation of invalid configurations\n\n<info added on 2025-06-28T01:25:13.523Z>\nHere's additional technical information to enhance the subtask:\n\n```graphql\n# Example directive implementation in schema\ndirective @uiComponent(\n  type: UIComponentType!, \n  config: UIComponentConfig\n) on FIELD_DEFINITION\n\n# Sample component configuration input type\ninput UIComponentConfig {\n  color: String\n  size: UISize\n  format: String\n  threshold: Float\n  icon: String\n  linkTarget: String\n  tooltipText: String\n  maxItems: Int\n  truncate: Boolean\n  # Additional configuration fields...\n}\n\n# Example field with directive applied\ntype IPEnrichment {\n  asn: Int @uiComponent(type: METRIC, config: { format: \"AS{value}\" })\n  location: String @uiComponent(type: BADGE, config: { color: \"blue\" })\n  reputation: Float @uiComponent(\n    type: RATING, \n    config: { threshold: 0.7, color: \"red\" }\n  )\n}\n```\n\nImplementation notes:\n- Use GraphQL's `SchemaDirectiveVisitor` for directive processing\n- Store directive metadata in a WeakMap to avoid schema modification\n- Implement validation as middleware in the GraphQL execution pipeline\n- Create a component registry pattern for extensibility:\n\n```javascript\n// Component validation registry pattern\nconst componentValidators = {\n  BADGE: validateBadgeConfig,\n  URL_LINK: validateUrlLinkConfig,\n  STATUS_INDICATOR: validateStatusConfig,\n  // Additional validators...\n};\n\nfunction validateComponentConfig(type, config) {\n  const validator = componentValidators[type];\n  if (!validator) throw new Error(`Unknown component type: ${type}`);\n  return validator(config);\n}\n```\n\nFor testing, create a schema builder utility:\n```javascript\nfunction buildTestSchema(typeDefs) {\n  return makeExecutableSchema({\n    typeDefs: [directiveTypeDefs, typeDefs],\n    schemaTransforms: [directiveTransformer]\n  });\n}\n```\n</info added on 2025-06-28T01:25:13.523Z>",
+          "status": "done",
+          "parentTaskId": 16
+        },
+        {
+          "id": 2,
+          "title": "Develop Core UI Component Library",
+          "description": "Build a centralized React component library with implementations for each UI component type",
+          "dependencies": [
+            1
+          ],
+          "details": "Implementation steps:\n1. Create a new React component library within CoreAPI\n2. Implement base components for each UIComponentType: Badge, UrlLink, StatusIndicator, ProgressBar, etc.\n3. Design component props interfaces that support various data types (strings, numbers, booleans)\n4. Implement theming support using the existing design system\n5. Add accessibility features (ARIA attributes, keyboard navigation)\n6. Create storybook examples for each component\n7. Write unit tests for component rendering and behavior\n\nTesting approach:\n- Unit test each component with different prop combinations\n- Visual regression tests for component appearance\n- Accessibility testing with automated tools\n- Test theme switching and responsive behavior",
+          "status": "done",
+          "parentTaskId": 16
+        },
+        {
+          "id": 3,
+          "title": "Build Schema Introspection Engine",
+          "description": "Create a system to parse GraphQL schemas at runtime and extract UI component annotations",
+          "dependencies": [
+            1
+          ],
+          "details": "Implementation steps:\n1. Implement a schema parser that extracts @uiComponent directives from GraphQL schema\n2. Create a mapping system that connects field paths to their UI component configurations\n3. Build a caching layer to optimize repeated introspection requests\n4. Implement utility functions to query the introspection data by field path\n5. Add support for nested fields and complex types\n6. Create performance benchmarks for the introspection process\n\nTesting approach:\n- Test with complex schemas containing various directive combinations\n- Benchmark performance with large schemas\n- Verify cache hit/miss behavior\n- Test edge cases like schema changes and directive updates",
+          "status": "done",
+          "parentTaskId": 16
+        },
+        {
+          "id": 4,
+          "title": "Create Component Mapping and Rendering System",
+          "description": "Develop a system that maps introspected schema directives to actual React component instances",
+          "dependencies": [
+            2,
+            3
+          ],
+          "details": "Implementation steps:\n1. Create a ComponentMapper class that connects UIComponentType to React component implementations\n2. Implement a rendering system that takes field values and component configurations\n3. Add support for component-specific formatting and validation\n4. Implement fallback rendering for unsupported data types\n5. Create a registry for custom component overrides\n6. Add error boundary handling for component rendering failures\n\nTesting approach:\n- Test mapping with all supported component types\n- Verify correct props are passed to components\n- Test error handling and fallback behavior\n- Benchmark rendering performance with complex data",
+          "status": "done",
+          "parentTaskId": 16
+        },
+        {
+          "id": 5,
+          "title": "Implement Enhanced Default Display Component",
+          "description": "Create a smart default enrichment display that uses schema introspection to render appropriate UI components",
+          "dependencies": [
+            4
+          ],
+          "details": "Implementation steps:\n1. Create a new EnhancedEnrichmentDisplay React component\n2. Integrate with the schema introspection engine to get UI annotations\n3. Implement the component mapping and rendering logic\n4. Add a toggle switch between enhanced view and raw data view\n5. Support rendering of nested objects and arrays with appropriate UI\n6. Implement loading states and error handling\n7. Add performance optimizations (memoization, virtualization for large datasets)\n\nTesting approach:\n- Test with various enrichment data structures\n- Verify toggle functionality between views\n- Test performance with large nested objects\n- Ensure correct component selection based on schema",
+          "status": "done",
+          "parentTaskId": 16
+        },
+        {
+          "id": 6,
+          "title": "Integrate with Existing Enrichment System",
+          "description": "Connect the new UI component system with the existing CoreAPI enrichment infrastructure",
+          "dependencies": [
+            5
+          ],
+          "details": "Implementation steps:\n1. Update the PluginEnrichment GraphQL interface to support UI component directives\n2. Modify the client-side enrichment display registry to use the new EnhancedEnrichmentDisplay\n3. Implement a priority system where custom components take precedence over auto-generated ones\n4. Add backward compatibility layer for existing custom enrichment components\n5. Create integration tests for the full enrichment pipeline\n6. Update the enrichment API documentation\n\nTesting approach:\n- Test integration with existing plugins\n- Verify priority system works correctly\n- Test backward compatibility with custom components\n- End-to-end tests of the enrichment display pipeline",
+          "status": "done",
+          "parentTaskId": 16
+        },
+        {
+          "id": 7,
+          "title": "Update Example Plugins with UI Annotations",
+          "description": "Modify existing plugins to use the new UI component directives and test the automatic UI generation",
+          "dependencies": [
+            6
+          ],
+          "details": "Implementation steps:\n1. Update the HttpX plugin schema to use @uiComponent directives for appropriate fields\n2. Modify the Nmap plugin schema with UI annotations\n3. Test the automatic UI generation with real plugin data\n4. Compare the enhanced display with previous custom components\n5. Identify and fix any issues or edge cases\n6. Document the migration process based on real-world examples\n\nTesting approach:\n- Test with real plugin data\n- Compare visual output with previous implementations\n- Gather feedback on usability and appearance\n- Verify all data types are handled correctly\n\n<info added on 2025-06-28T02:02:45.257Z>\nBased on the HttpX plugin update, here are implementation details to add:\n\nThe HttpX plugin implementation demonstrates the successful transition from custom React components to schema-based UI generation. Key changes include:\n\n1. Specific @uiComponent directives applied:\n   - `@uiComponent(component: \"CodeEditor\", props: {language: \"yaml\"})` for configuration fields\n   - `@uiComponent(component: \"ToggleSwitch\")` for boolean options\n   - `@uiComponent(component: \"MultiSelect\")` for array-based selections\n\n2. Migration process observations:\n   - The plugin's UI renders correctly without its custom component\n   - Configuration editing maintains the same functionality with syntax highlighting\n   - The automatic UI respects field dependencies and conditional rendering\n\n3. Performance comparison:\n   - Initial rendering is approximately 15% faster with the schema-based approach\n   - Bundle size reduced by removing custom component code\n\nThis successful migration provides a template for other plugins to follow, with clear patterns for handling different data types and UI requirements.\n</info added on 2025-06-28T02:02:45.257Z>",
+          "status": "done",
+          "parentTaskId": 16
+        },
+        {
+          "id": 8,
+          "title": "Create Documentation and Developer Resources",
+          "description": "Develop comprehensive documentation and resources for plugin developers to use the new UI annotation system",
+          "dependencies": [
+            7
+          ],
+          "details": "Implementation steps:\n1. Create detailed documentation for the UI component directive system\n2. Develop a plugin template with example UI annotations\n3. Write a migration guide for existing plugins\n4. Create a component showcase with examples of each UI component type\n5. Document best practices for choosing appropriate components\n6. Add troubleshooting guides for common issues\n7. Create video tutorials for plugin developers\n\nTesting approach:\n- Review documentation with plugin developers\n- Test migration guide with existing plugins\n- Verify examples work as described\n- Collect feedback on documentation clarity and completeness",
+          "status": "done",
+          "parentTaskId": 16
+        }
+      ]
+    },
+    {
+      "id": 17,
+      "title": "Set up E2ETesting Plugin Foundation with Required Dependencies",
+      "description": "Create the basic structure for the E2ETesting plugin following PenPal's plugin architecture patterns, with dependencies on CoreAPI, Docker, and JobsTracker plugins.",
+      "details": "Implement the foundation for the E2ETesting plugin with the following components:\n\n1. Create `manifest.json` with:\n   - Plugin name: 'E2ETesting'\n   - Version information\n   - Dependencies explicitly listed: CoreAPI, Docker, and JobsTracker\n   - Any required permissions\n\n2. Create `index.js` that:\n   - Exports the plugin class\n   - Handles proper module exports\n\n3. Create `plugin.js` that:\n   - Defines the E2ETesting plugin class\n   - Implements the standard plugin lifecycle methods (register, load, start, stop)\n   - Sets up proper dependency injection for CoreAPI, Docker, and JobsTracker\n   - Follows PenPal's established plugin registration pattern\n\n4. Set up the GraphQL schema structure:\n   - Create a `schema` directory\n   - Implement basic type definitions in `schema/typeDefs.js`\n   - Implement basic resolvers in `schema/resolvers.js`\n   - Ensure the schema is properly exported and registered with the GraphQL server\n\n5. Create a basic README.md documenting:\n   - The plugin's purpose\n   - Dependencies\n   - Basic usage instructions\n\nEnsure all files follow the project's coding standards and patterns established in other plugins.",
+      "testStrategy": "Verify the plugin foundation is correctly implemented through the following tests:\n\n1. **Plugin Registration Test**:\n   - Verify the plugin registers successfully with the PenPal framework\n   - Confirm no errors during the registration process\n   - Check that dependencies are correctly specified and loaded\n\n2. **Structure Validation**:\n   - Validate all required files exist (manifest.json, index.js, plugin.js, schema files)\n   - Verify the manifest.json contains correct dependencies on CoreAPI, Docker, and JobsTracker\n   - Ensure the plugin class properly extends the base Plugin class\n\n3. **GraphQL Schema Test**:\n   - Verify the GraphQL schema can be parsed without errors\n   - Test that the schema is properly registered with the GraphQL server\n   - Run a simple introspection query to confirm the schema is accessible\n\n4. **Dependency Injection Test**:\n   - Verify the plugin correctly receives and can access the CoreAPI, Docker, and JobsTracker dependencies\n   - Test that methods from these dependencies can be called from within the E2ETesting plugin\n\n5. **Lifecycle Methods Test**:\n   - Verify the plugin can be started and stopped without errors\n   - Check that resources are properly initialized during start and cleaned up during stop",
+      "status": "done",
+      "dependencies": [],
+      "priority": "high",
+      "subtasks": [
+        {
+          "id": 1,
+          "title": "Create plugin directory structure and manifest.json",
+          "description": "Set up the initial directory structure for the E2ETesting plugin and create the manifest.json file with required metadata and dependencies.",
+          "dependencies": [],
+          "details": "Implementation steps:\n1. Create the main plugin directory: `plugins/E2ETesting`\n2. Create subdirectories: `schema`, `lib`, `tests`\n3. Create manifest.json with:\n   - Plugin name: 'E2ETesting'\n   - Version: '1.0.0'\n   - Dependencies: CoreAPI, Docker, and JobsTracker\n   - Required permissions\n4. Ensure the manifest follows the same format as other plugins\n\nTesting approach:\n- Validate the manifest.json structure against the project's schema\n- Verify all required directories exist\n- Confirm dependencies are correctly specified",
+          "status": "done",
+          "parentTaskId": 17
+        },
+        {
+          "id": 2,
+          "title": "Implement plugin.js with lifecycle methods",
+          "description": "Create the main plugin class with proper lifecycle methods and dependency injection for required plugins.",
+          "dependencies": [
+            1
+          ],
+          "details": "Implementation steps:\n1. Create `plugin.js` in the root of the E2ETesting directory\n2. Define the E2ETesting class that extends the base Plugin class\n3. Implement required lifecycle methods:\n   - register(): Register plugin with the system\n   - load(): Load dependencies and prepare resources\n   - start(): Initialize and start plugin functionality\n   - stop(): Clean up resources and stop plugin\n4. Set up dependency injection for CoreAPI, Docker, and JobsTracker\n5. Add proper error handling for missing dependencies\n\nTesting approach:\n- Create unit tests for each lifecycle method\n- Test dependency injection with mock objects\n- Verify error handling for missing dependencies",
+          "status": "done",
+          "parentTaskId": 17
+        },
+        {
+          "id": 3,
+          "title": "Create index.js for module exports",
+          "description": "Implement the index.js file to properly export the plugin class and follow module export patterns.",
+          "dependencies": [
+            2
+          ],
+          "details": "Implementation steps:\n1. Create `index.js` in the root of the E2ETesting directory\n2. Import the E2ETesting plugin class from plugin.js\n3. Set up proper module exports following project patterns:\n   - Export the plugin class as default\n   - Add any additional named exports if needed\n4. Ensure compatibility with both CommonJS and ES modules if required by the project\n\nTesting approach:\n- Verify the module can be imported correctly\n- Test that the exported plugin class is properly accessible\n- Confirm it follows the same pattern as other plugins in the system",
+          "status": "done",
+          "parentTaskId": 17
+        },
+        {
+          "id": 4,
+          "title": "Implement GraphQL schema structure",
+          "description": "Set up the GraphQL schema files with basic type definitions and resolvers for the E2ETesting plugin.",
+          "dependencies": [
+            1
+          ],
+          "details": "Implementation steps:\n1. Create `schema/typeDefs.js` with:\n   - Basic type definitions for E2E testing entities\n   - Query definitions for retrieving test data\n   - Mutation definitions for managing tests\n2. Create `schema/resolvers.js` with:\n   - Query resolvers (stubs initially)\n   - Mutation resolvers (stubs initially)\n3. Create `schema/index.js` to export combined schema\n4. Ensure schema follows the project's GraphQL patterns\n\nTesting approach:\n- Validate GraphQL schema syntax\n- Test schema registration with mock GraphQL server\n- Verify resolver stubs return expected placeholder values",
+          "status": "done",
+          "parentTaskId": 17
+        },
+        {
+          "id": 5,
+          "title": "Integrate plugin with CoreAPI's GraphQL server",
+          "description": "Update the plugin.js to register the GraphQL schema with CoreAPI's GraphQL server during plugin initialization.",
+          "dependencies": [
+            2,
+            4
+          ],
+          "details": "Implementation steps:\n1. Modify the plugin.js file to import the GraphQL schema\n2. Update the register() or start() method to register the schema with CoreAPI\n3. Add code to properly merge the schema with the existing GraphQL schema\n4. Implement error handling for schema registration failures\n5. Add cleanup code in stop() method to unregister the schema if needed\n\nTesting approach:\n- Test schema registration with mock CoreAPI\n- Verify schema is properly merged\n- Test error handling for registration failures\n- Confirm schema is unregistered during plugin shutdown",
+          "status": "done",
+          "parentTaskId": 17
+        },
+        {
+          "id": 6,
+          "title": "Create README.md and documentation",
+          "description": "Create comprehensive documentation for the E2ETesting plugin including purpose, dependencies, and usage instructions.",
+          "dependencies": [
+            1,
+            2,
+            3,
+            4,
+            5
+          ],
+          "details": "Implementation steps:\n1. Create README.md in the plugin root directory\n2. Document the plugin's purpose and main features\n3. List all dependencies and their versions\n4. Provide basic usage instructions including:\n   - How to configure the plugin\n   - Available GraphQL queries and mutations\n   - Integration with other plugins\n5. Add examples of common operations\n6. Include development and testing instructions\n\nTesting approach:\n- Review documentation for completeness\n- Verify all listed features are implemented\n- Confirm examples are accurate and functional\n- Check that dependency information is correct",
+          "status": "done",
+          "parentTaskId": 17
+        }
+      ]
+    },
+    {
+      "id": 18,
+      "title": "Implement Docker-based Puppeteer Runtime Environment",
+      "description": "Create a containerized environment for running Puppeteer tests in isolation, with proper dependency management and API integration following existing plugin patterns.",
+      "details": "This task involves creating a complete Docker-based runtime for Puppeteer browser automation tests. The implementation should include:\n\n1. Create a Dockerfile that:\n   - Uses a Node.js base image (preferably Alpine-based for smaller size)\n   - Installs Chromium and all required dependencies for headless browser operation\n   - Configures proper user permissions to run Chrome securely\n   - Sets up necessary environment variables (NODE_PATH, etc.)\n\n2. Implement volume mounting configuration:\n   - Define mount points for test scripts and test data\n   - Configure persistent storage for test results and screenshots\n   - Ensure proper permissions for file I/O between host and container\n\n3. Develop Docker orchestration API methods:\n   - Create container lifecycle management functions (create, start, stop, remove)\n   - Implement test execution methods that follow the patterns in HttpX and Nmap plugins\n   - Add proper error handling and logging for container operations\n   - Include resource management (CPU/memory limits, cleanup of orphaned containers)\n\n4. Add configuration options:\n   - Browser launch parameters (headless mode, viewport size, etc.)\n   - Network configuration (proxy settings, custom headers)\n   - Timeout and retry mechanisms\n\nThe implementation should be modular and follow the existing plugin architecture patterns. All Docker commands should be properly abstracted behind a clean API interface.",
+      "testStrategy": "Testing should verify both the Docker environment and the API integration:\n\n1. Docker environment tests:\n   - Verify the container builds successfully without errors\n   - Confirm Chromium launches properly inside the container\n   - Test that volume mounts work correctly for reading test files and writing results\n   - Validate that the container runs with appropriate security constraints\n\n2. API integration tests:\n   - Create unit tests for each API method (container creation, execution, cleanup)\n   - Test error handling by simulating various failure conditions (missing dependencies, network issues)\n   - Verify resource management by monitoring container resource usage during test execution\n   - Test parallel execution of multiple containers to ensure isolation\n\n3. End-to-end tests:\n   - Create a sample Puppeteer test script that exercises common browser automation tasks\n   - Verify the test runs successfully in the containerized environment\n   - Compare results with the same test running directly on the host to ensure consistency\n   - Measure performance metrics to ensure the containerized solution has acceptable overhead\n\nAll tests should be automated and integrated into the CI/CD pipeline.",
+      "status": "pending",
+      "dependencies": [
+        17
+      ],
+      "priority": "high"
+    },
+    {
+      "id": 19,
+      "title": "Implement PenPal.E2ETesting API Core Functionality",
+      "description": "Develop the core API for PenPal.E2ETesting that enables plugins to register, execute, and manage end-to-end tests following established plugin patterns.",
+      "details": "Create a new plugin called PenPal.E2ETesting with the following core functionality:\n\n1. Test Registration:\n   - Implement RegisterTest() method that accepts test metadata (name, description, category) and test function\n   - Implement RegisterTestSuite() for grouping related tests\n   - Store tests in a structured format that allows for easy retrieval and execution\n\n2. Test Execution:\n   - Implement RunTest() method that executes a single test by ID or name\n   - Implement RunTestSuite() to execute all tests in a specific suite\n   - Implement RunAllTests() to execute all registered tests\n   - Include parameters for timeout settings and execution options\n\n3. Test Management:\n   - Implement GetTests() to retrieve all registered tests\n   - Implement GetTestById() and GetTestsByCategory() for filtered retrieval\n   - Create methods for test result storage and retrieval\n\n4. Result Handling:\n   - Design a standardized test result object structure\n   - Implement methods to store, retrieve, and analyze test results\n   - Include timestamps, execution time, pass/fail status, and error details\n\n5. Plugin Integration:\n   - Follow the established patterns from PenPal.Jobs and PenPal.HttpX\n   - Ensure proper dependency injection and service registration\n   - Implement appropriate interfaces for plugin discovery\n\nThe API should be designed for extensibility, allowing future enhancements like parallel test execution, conditional test runs, and integration with the UI.",
+      "testStrategy": "1. Unit Tests:\n   - Create unit tests for each public method in the API\n   - Test RegisterTest() with valid and invalid inputs\n   - Verify GetTests() returns the correct collection of registered tests\n   - Test RunTest() with mocked test functions that pass, fail, and timeout\n\n2. Integration Tests:\n   - Create a test plugin that registers multiple test suites\n   - Verify that all registered tests can be retrieved correctly\n   - Execute test suites and verify results are stored properly\n   - Test error handling by deliberately causing test failures\n\n3. Edge Cases:\n   - Test behavior when executing non-existent tests\n   - Verify timeout handling for long-running tests\n   - Test concurrent test registration and execution\n   - Verify proper cleanup after test execution\n\n4. API Consistency:\n   - Review API against PenPal.Jobs and PenPal.HttpX to ensure consistent patterns\n   - Verify that dependency injection works correctly\n   - Ensure proper error messages are returned for all failure scenarios\n\nAll tests should be automated and included in the CI/CD pipeline to ensure ongoing functionality.",
+      "status": "pending",
+      "dependencies": [
+        17
+      ],
+      "priority": "high"
+    },
+    {
+      "id": 20,
+      "title": "Implement Core Test Execution Engine with Docker and Puppeteer Integration",
+      "description": "Develop the central test execution engine that runs Puppeteer tests within Docker containers, manages the complete test lifecycle, and integrates with the JobsTracker for monitoring.",
+      "details": "Create a modular test execution engine with the following components:\n\n1. **Container Management**:\n   - Implement Docker container creation, configuration, and cleanup\n   - Handle container networking and resource allocation\n   - Ensure proper isolation between test runs\n\n2. **Browser Lifecycle Management**:\n   - Initialize and configure Puppeteer browser instances\n   - Handle browser crashes and restarts\n   - Implement resource cleanup after test completion\n\n3. **Test Execution Flow**:\n   - Parse and validate test scripts/steps\n   - Execute test steps sequentially with proper error handling\n   - Implement timeout mechanisms for steps and overall test execution\n   - Support parallel test execution where appropriate\n\n4. **Artifact Collection**:\n   - Capture screenshots at configurable points (test start, end, failures)\n   - Collect browser console logs, network requests, and performance metrics\n   - Store artifacts with appropriate metadata for later analysis\n\n5. **Failure Handling**:\n   - Implement graceful error recovery mechanisms\n   - Provide detailed error reporting with context\n   - Support test retries with configurable attempts\n\n6. **JobsTracker Integration**:\n   - Report test progress in real-time\n   - Update test status (queued, running, completed, failed)\n   - Send execution metrics and timing information\n\n7. **Environment Management**:\n   - Implement setup and teardown hooks\n   - Support environment variable injection\n   - Handle test-specific configuration\n\nThe engine should be designed with extensibility in mind, allowing for future additions of different browser automation tools beyond Puppeteer.",
+      "testStrategy": "Testing should be comprehensive and include:\n\n1. **Unit Tests**:\n   - Test each component in isolation with mocks for dependencies\n   - Verify proper error handling in each module\n   - Test configuration parsing and validation\n\n2. **Integration Tests**:\n   - Verify Docker container creation and management\n   - Test Puppeteer initialization and browser management\n   - Validate artifact collection and storage\n   - Test JobsTracker integration with mocked endpoints\n\n3. **End-to-End Tests**:\n   - Run sample test scripts through the complete execution pipeline\n   - Verify proper execution of multi-step test scenarios\n   - Test parallel execution capabilities\n   - Validate resource cleanup after test completion\n\n4. **Performance Tests**:\n   - Measure resource usage during test execution\n   - Test with varying loads to ensure scalability\n   - Benchmark startup and teardown times\n\n5. **Failure Scenario Tests**:\n   - Simulate browser crashes and verify recovery\n   - Test with intentionally failing test scripts\n   - Verify proper error reporting and retry mechanisms\n\nAll tests should be automated and included in the CI pipeline. Documentation should include examples of how to extend the engine for custom test scenarios.",
+      "status": "pending",
+      "dependencies": [
+        18,
+        19
+      ],
+      "priority": "high"
+    },
+    {
+      "id": 21,
+      "title": "Develop E2E Testing UI Interface Components",
+      "description": "Build client-side components for an end-to-end testing interface that allows users to explore, execute, monitor, and view results of tests registered by plugins.",
+      "details": "Create a comprehensive UI for E2E testing with the following components:\n\n1. Test Explorer:\n   - Implement a hierarchical view to display tests organized by plugin\n   - Include search/filter functionality to quickly find specific tests\n   - Add collapsible sections for better organization\n   - Show test metadata (estimated duration, last run status, etc.)\n\n2. Test Execution Controls:\n   - Create buttons for running selected tests, all tests, or specific test suites\n   - Implement test configuration options (environment selection, test parameters)\n   - Add ability to schedule test runs\n   - Include a cancel button for stopping test execution\n\n3. Live Progress Monitoring:\n   - Develop a real-time progress indicator showing overall completion percentage\n   - Display currently executing test with elapsed time\n   - Implement a log viewer that auto-scrolls with new entries\n   - Add visual indicators for test status (pending, running, passed, failed)\n\n4. Test Results Display:\n   - Create a summary view showing pass/fail counts and execution time\n   - Implement detailed view for individual test results\n   - Add ability to export results in various formats\n   - Include error details with stack traces for failed tests\n\nAll components should follow the existing Tester plugin UI patterns and integrate with the PenPal UI component system. Use responsive design principles to ensure the interface works well at different screen sizes. Implement proper error handling for API communication failures.",
+      "testStrategy": "Testing should verify both the functionality and usability of the E2E testing interface:\n\n1. Component Testing:\n   - Verify each UI component renders correctly with different data inputs\n   - Test all interactive elements (buttons, dropdowns, etc.) respond appropriately\n   - Confirm components handle edge cases (empty test lists, long test names, etc.)\n\n2. Integration Testing:\n   - Verify the Test Explorer correctly displays tests from multiple plugins\n   - Confirm execution controls properly trigger test runs\n   - Test that progress monitoring accurately reflects test execution status\n   - Validate test results display matches actual test outcomes\n\n3. User Flow Testing:\n   - Complete end-to-end user journeys (find a test, run it, view results)\n   - Test keyboard navigation and accessibility features\n   - Verify responsive behavior at different viewport sizes\n\n4. Mock API Testing:\n   - Create mock API responses for various scenarios (success, failure, timeout)\n   - Verify UI handles API errors gracefully with appropriate user feedback\n\nUse Jest for component tests and Cypress for integration and user flow tests. Include visual regression tests to ensure UI consistency across browsers.",
+      "status": "pending",
+      "dependencies": [
+        19,
+        20
+      ],
+      "priority": "medium"
+    },
+    {
+      "id": 22,
+      "title": "Implement E2E Tests for CoreAPI Plugin User Workflows",
+      "description": "Develop comprehensive end-to-end tests for the CoreAPI plugin that validate all critical user workflows from project creation through service discovery to results viewing.",
+      "details": "Implement Cypress or similar E2E testing framework to test the following CoreAPI plugin workflows:\n\n1. Project Creation Workflow:\n   - Test creating new projects with various configurations\n   - Validate all form fields and validation rules\n   - Verify project appears in project list after creation\n   - Test error handling for invalid inputs\n\n2. Customer Management:\n   - Test adding new customers to projects\n   - Test editing customer information\n   - Test removing customers from projects\n   - Verify customer data persistence\n\n3. Project View Navigation:\n   - Test navigation between different project views\n   - Verify correct loading of project data in each view\n   - Test filtering and sorting functionality\n   - Verify breadcrumb navigation works correctly\n\n4. Service Discovery Workflow:\n   - Test initiating service discovery process\n   - Verify service discovery configuration options\n   - Test cancellation and resumption of discovery\n   - Validate progress indicators and status updates\n\n5. Data Management Operations:\n   - Test data import/export functionality\n   - Verify data visualization components\n   - Test data filtering and search capabilities\n   - Validate data persistence across sessions\n\nEach test should simulate real user interactions including clicks, form submissions, and page navigation. Tests should be resilient to UI changes by using data attributes rather than CSS selectors where possible. Include appropriate assertions to verify expected outcomes at each step.",
+      "testStrategy": "Testing approach should include:\n\n1. Setup and Teardown:\n   - Create isolated test environments for each test run\n   - Implement proper cleanup after tests to prevent test pollution\n   - Use mock data where appropriate to ensure consistent test conditions\n\n2. Test Coverage Verification:\n   - Create a test coverage matrix mapping each user workflow to specific test cases\n   - Ensure edge cases and error scenarios are covered\n   - Implement visual regression testing for UI components\n\n3. Test Execution Strategy:\n   - Configure tests to run in CI/CD pipeline\n   - Implement test reporting with screenshots/videos of failures\n   - Set up parallel test execution for faster feedback\n\n4. Validation Methods:\n   - For Project Creation: Verify project ID is generated, project appears in list, and details match input\n   - For Customer Management: Verify customer data is correctly stored and displayed\n   - For Navigation: Verify correct page content loads and state is maintained\n   - For Service Discovery: Verify discovered services match expected results\n   - For Data Management: Verify data integrity through the complete workflow\n\n5. Specific Test Cases:\n   - Happy path: Complete end-to-end workflow from project creation to viewing results\n   - Error handling: Test system response to network failures, invalid inputs\n   - Performance: Measure and assert on response times for critical operations\n   - Accessibility: Verify core workflows meet accessibility standards\n\nTests should be documented with clear descriptions of what they're validating and why.",
+      "status": "pending",
+      "dependencies": [
+        20,
+        21
+      ],
+      "priority": "medium"
+    },
+    {
+      "id": 23,
+      "title": "Implement E2E Tests for Security Tool Plugins (HttpX, Nmap, and Others)",
+      "description": "Create comprehensive end-to-end tests for security tool plugins to verify the complete scan-to-results workflow functions correctly through the UI.",
+      "details": "Develop end-to-end tests for security tool plugins including HttpX, Nmap, and other security plugins. The tests should cover the following aspects:\n\n1. **Test Setup**:\n   - Create mock services/targets that can be safely scanned\n   - Configure appropriate test environments with the security tools installed\n   - Implement test fixtures that can reset the application state between tests\n\n2. **UI Interaction Tests**:\n   - Verify that scan configuration options are correctly displayed\n   - Test that scan triggers work through the UI (button clicks, form submissions)\n   - Ensure proper validation of scan parameters\n   - Test cancellation functionality if applicable\n\n3. **JobsTracker Integration**:\n   - Verify jobs appear in the JobsTracker immediately after triggering\n   - Test that progress updates are displayed correctly\n   - Ensure status changes (queued, running, completed, failed) are reflected accurately\n   - Test that job details can be accessed from the tracker\n\n4. **Results Processing**:\n   - Verify scan results are correctly parsed and stored\n   - Test that results appear in service enrichments section\n   - Ensure all expected data fields are populated\n   - Verify any visualizations or special formatting of results\n\n5. **Error Handling**:\n   - Test behavior when scans fail for various reasons\n   - Verify appropriate error messages are displayed\n   - Test recovery mechanisms if applicable\n\nImplement these tests using the project's preferred E2E testing framework (like Cypress, Playwright, or Selenium). Structure the tests to be maintainable and resilient to UI changes by using proper selectors and page object patterns.",
+      "testStrategy": "The E2E tests themselves should be validated using the following approach:\n\n1. **Manual Verification**:\n   - Initially run each test manually while observing the application to ensure the test correctly simulates user behavior\n   - Verify that assertions match expected application behavior\n\n2. **Test Coverage Analysis**:\n   - Ensure tests cover all critical paths in the scan workflow\n   - Verify tests for both successful and failure scenarios\n   - Confirm edge cases are handled (large scans, empty results, etc.)\n\n3. **Reliability Testing**:\n   - Run the test suite multiple times to ensure consistency\n   - Verify tests are not flaky or dependent on timing issues\n   - Test in different environments if applicable\n\n4. **Specific Test Cases**:\n   - HttpX plugin: Test URL scanning, parameter validation, and result display\n   - Nmap plugin: Test network scanning, port discovery, and service identification\n   - For each plugin: Test with minimal configuration and with advanced options\n   - Test concurrent execution of multiple security scans\n   - Verify proper cleanup after tests complete\n\n5. **Integration with CI/CD**:\n   - Ensure tests can run in the CI/CD pipeline\n   - Verify reporting of test results is clear and actionable\n   - Set up appropriate screenshots or video recording for failed tests\n\nThe tests should be considered successful when they consistently verify the entire workflow from scan configuration through to results display without false positives or negatives.",
+      "status": "pending",
+      "dependencies": [
+        22
+      ],
+      "priority": "medium"
+    },
+    {
+      "id": 24,
+      "title": "Implement Visual Regression Testing Framework",
+      "description": "Develop and integrate a visual regression testing framework into the existing E2E testing system that can capture, compare, and report differences between screenshot baselines and current application state.",
+      "details": "Implement a comprehensive visual regression testing solution with the following components:\n\n1. Screenshot Capture Mechanism:\n   - Create functions to capture full-page screenshots during test execution\n   - Support different viewport sizes and device emulation\n   - Implement waiting mechanisms to ensure page is fully rendered before capture\n\n2. Baseline Management System:\n   - Develop a storage solution for baseline images with proper versioning\n   - Create commands to generate/update baseline images\n   - Implement baseline organization by test case, viewport size, and environment\n\n3. Comparison Engine:\n   - Build an image comparison algorithm that can detect visual differences\n   - Support configurable threshold settings for difference sensitivity\n   - Implement pixel-by-pixel comparison with tolerance for anti-aliasing\n   - Add capability to ignore specified regions in screenshots\n\n4. Reporting System:\n   - Generate visual reports highlighting differences between baseline and current screenshots\n   - Create difference visualization with highlighted areas of change\n   - Include metrics on the percentage and nature of differences\n   - Integrate with existing test reporting infrastructure\n\n5. Test Framework Integration:\n   - Add custom commands/assertions to the E2E framework for visual testing\n   - Ensure compatibility with CI/CD pipeline\n   - Implement proper error handling and failure conditions\n\nTechnical Considerations:\n- Use a reliable image processing library compatible with the testing stack\n- Ensure the solution works across different environments (dev, staging, CI)\n- Optimize for performance to minimize impact on test execution time\n- Consider cross-browser compatibility issues",
+      "testStrategy": "Verify the visual regression testing framework through the following test cases:\n\n1. Baseline Creation:\n   - Verify baseline images are correctly captured and stored\n   - Confirm proper organization of baselines by test, viewport, and environment\n   - Test the baseline update mechanism\n\n2. Comparison Accuracy:\n   - Create tests with known visual differences of varying magnitudes\n   - Verify the system correctly identifies differences above threshold\n   - Confirm the system ignores differences below threshold\n   - Test with different threshold configurations\n\n3. Region Exclusion:\n   - Verify the system correctly ignores specified regions\n   - Test with dynamic content areas excluded\n\n4. Cross-browser Compatibility:\n   - Verify consistent results across supported browsers\n   - Test with different viewport sizes and device emulations\n\n5. Reporting:\n   - Confirm difference reports are generated correctly\n   - Verify visual highlighting of differences is accurate\n   - Test integration with existing reporting systems\n\n6. Performance:\n   - Measure and establish baseline for performance impact\n   - Ensure large page screenshots don't cause memory issues\n\n7. Error Handling:\n   - Test behavior when baseline is missing\n   - Verify proper error messages when comparison fails\n   - Confirm graceful handling of corrupted images\n\nValidation should include both automated tests of the framework itself and manual verification of the visual reports and difference detection accuracy.",
+      "status": "pending",
+      "dependencies": [
+        23
+      ],
+      "priority": "low"
+    },
+    {
+      "id": 25,
+      "title": "Implement Performance Monitoring Framework for E2E Tests",
+      "description": "Develop and integrate a comprehensive performance monitoring framework into the existing E2E test suite that captures key metrics and enables performance assertions.",
+      "details": "Create a modular performance monitoring framework that integrates with our E2E test infrastructure to measure and report on critical performance metrics. The implementation should include:\n\n1. **Page Load Time Measurement**:\n   - Track navigation timing API metrics (navigationStart, domContentLoaded, loadEvent)\n   - Implement custom markers for SPA route changes\n   - Calculate and store time-to-interactive metrics\n\n2. **Core Web Vitals Tracking**:\n   - Implement collection of LCP (Largest Contentful Paint)\n   - Track FID (First Input Delay) or its lab equivalent TBT (Total Blocking Time)\n   - Measure CLS (Cumulative Layout Shift)\n   - Capture INP (Interaction to Next Paint) where applicable\n\n3. **Memory Usage Monitoring**:\n   - Track JS heap size before and after key user flows\n   - Monitor for memory leaks during long-running tests\n   - Implement garbage collection forcing when needed for consistent measurements\n\n4. **Network Performance Analysis**:\n   - Capture request counts, sizes, and timing information\n   - Track API response times for critical endpoints\n   - Monitor for unnecessary network requests\n\n5. **Assertion Capabilities**:\n   - Create a flexible API for asserting performance thresholds\n   - Support both absolute thresholds and relative degradation checks\n   - Implement conditional test failures based on performance criteria\n\n6. **Reporting Infrastructure**:\n   - Store metrics in a structured format (JSON)\n   - Enable trend analysis across test runs\n   - Provide visualization capabilities or integration with existing dashboards\n\nThe framework should be configurable to run in different modes (basic/comprehensive) and should have minimal impact on the test execution time itself. Ensure backward compatibility with existing tests.",
+      "testStrategy": "The implementation should be verified through the following test approach:\n\n1. **Unit Tests**:\n   - Create unit tests for each metric collection function\n   - Verify threshold calculation logic works correctly\n   - Test reporting format generation\n\n2. **Integration Tests**:\n   - Create a sample application with known performance characteristics\n   - Verify all metrics are collected accurately against this reference app\n   - Test the framework with both passing and failing performance thresholds\n\n3. **Validation Tests**:\n   - Compare metrics collected by the framework against browser DevTools measurements\n   - Verify Core Web Vitals align with Lighthouse or similar tools\n   - Ensure memory measurements correlate with browser task manager values\n\n4. **Regression Testing**:\n   - Run the framework against existing E2E tests to ensure it doesn't break them\n   - Measure the overhead added by the performance monitoring\n   - Verify that results are consistent across multiple runs\n\n5. **Edge Cases**:\n   - Test behavior during network throttling conditions\n   - Verify metrics collection during page errors or timeouts\n   - Test with various browser window sizes and device emulations\n\nAcceptance criteria should include documentation of the API, examples of usage in existing tests, and demonstration of a complete metrics collection and reporting cycle with visualizations of the results.",
+      "status": "pending",
+      "dependencies": [
+        23
+      ],
+      "priority": "low"
+    },
+    {
+      "id": 26,
+      "title": "Develop E2E Test Recorder and Generator Tool",
+      "description": "Create a browser-based tool that records user interactions and automatically generates executable test scripts that integrate with the existing test registration system.",
+      "details": "Implement a comprehensive test recording and generation solution with the following components:\n\n1. Browser Extension/Bookmarklet:\n   - Develop a browser extension (supporting Chrome, Firefox, and Edge) or bookmarklet that can be activated on any page\n   - Implement recording capabilities that capture DOM events (clicks, form inputs, navigation, etc.)\n   - Include ability to add assertions during recording (element visibility, text content, etc.)\n   - Provide pause/resume/stop controls and visual indication of recording status\n   - Allow annotation of steps with custom descriptions\n\n2. Test Script Generator:\n   - Convert recorded actions into executable test code in a standard format (e.g., Cypress, Playwright, or TestCafe)\n   - Generate human-readable test scripts with appropriate selectors (preferring data-testid, aria attributes, then CSS selectors)\n   - Include timing configurations and wait statements for asynchronous operations\n   - Support parameterization of tests (extracting variables for data-driven testing)\n   - Implement smart selector generation that's resilient to UI changes\n\n3. Test Registration Integration:\n   - Create an API client that communicates with the existing test registration system\n   - Automatically register generated tests in the test catalog\n   - Support test metadata tagging (feature area, test type, priority)\n   - Implement version control integration to commit generated tests to repository\n\n4. User Interface:\n   - Design an intuitive UI for reviewing and editing recorded tests\n   - Provide options to customize generated code\n   - Include test preview functionality\n   - Support batch export of multiple recorded tests\n\nThe solution should be lightweight, require minimal setup, and produce tests that follow team coding standards and best practices.",
+      "testStrategy": "Verify the implementation through the following test approach:\n\n1. Functional Testing:\n   - Record interactions on 5 different types of pages (static content, forms, dynamic content, SPAs, and multi-page flows)\n   - Verify that all user interactions are correctly captured (clicks, typing, selections, drag-drop, etc.)\n   - Confirm generated test scripts run successfully and reproduce the recorded actions\n   - Test across multiple browsers (Chrome, Firefox, Safari, Edge)\n\n2. Integration Testing:\n   - Verify seamless integration with the test registration system\n   - Confirm that generated tests are properly registered with correct metadata\n   - Test version control integration by verifying commits of generated tests\n\n3. Usability Testing:\n   - Conduct sessions with 5+ developers to assess tool usability\n   - Measure time saved compared to manual test writing (target: 70% reduction)\n   - Collect feedback on UI intuitiveness and feature completeness\n\n4. Edge Cases:\n   - Test with iframes, shadow DOM, and dynamically generated content\n   - Verify handling of timeouts and loading states\n   - Test with very long sequences (100+ steps)\n   - Confirm behavior with network interruptions during recording\n\n5. Performance Testing:\n   - Measure overhead of recording tool on page performance (should be <5% impact)\n   - Test generation speed for large recordings (should complete in <10 seconds)\n\nAcceptance Criteria: The tool successfully records a complex user journey, generates a working test script that passes when executed, and properly registers the test in the test registration system, all within 5 minutes of developer time.",
+      "status": "pending",
+      "dependencies": [
+        24,
+        25
+      ],
+      "priority": "low"
+    },
+    {
+      "id": 27,
+      "title": "Implement Parallel E2E Test Execution Framework",
+      "description": "Develop a system for concurrent execution of end-to-end tests with Docker container orchestration, test queue management, and integration with JobsTracker.",
+      "details": "Create a parallel test execution framework with the following components:\n\n1. **Docker Container Orchestration**:\n   - Implement a container manager that can spawn and manage multiple browser instances in Docker containers\n   - Create a dynamic scaling mechanism based on available system resources\n   - Ensure proper cleanup of containers after test completion or failure\n\n2. **Test Queue Management**:\n   - Develop a queue system to manage test execution order and priority\n   - Implement mechanisms to handle test dependencies (tests that must run sequentially)\n   - Create a dispatcher that assigns tests to available containers\n\n3. **Resource Allocation**:\n   - Implement configurable limits for maximum concurrent tests\n   - Add resource monitoring to prevent system overload\n   - Create a throttling mechanism for when system resources are constrained\n\n4. **Test Isolation**:\n   - Ensure tests running in parallel don't interfere with each other\n   - Implement data isolation strategies (separate test databases or schemas)\n   - Add mechanisms to prevent race conditions in shared resources\n\n5. **JobsTracker Integration**:\n   - Extend the JobsTracker API to support multiple concurrent test jobs\n   - Add real-time status updates for all running tests\n   - Implement aggregated reporting for test results\n\n6. **Configuration**:\n   - Create configuration options for controlling parallelism level\n   - Add ability to specify which tests can run in parallel and which must run sequentially\n   - Implement environment-specific settings (dev/staging/production)\n\nThe implementation should be optimized for both speed and stability, with appropriate error handling and recovery mechanisms.",
+      "testStrategy": "Testing should verify both functionality and performance of the parallel execution framework:\n\n1. **Functional Testing**:\n   - Verify correct execution of tests in parallel (create a set of 20+ sample tests that run successfully in parallel)\n   - Confirm test isolation by creating tests that would interfere if not properly isolated\n   - Test error scenarios (container failure, resource exhaustion) to ensure proper recovery\n   - Validate that test dependencies are respected (sequential tests run in correct order)\n\n2. **Performance Testing**:\n   - Measure execution time improvements compared to sequential execution\n   - Benchmark with different parallelism levels (2, 4, 8, 16 concurrent tests)\n   - Test resource utilization under various loads\n   - Verify system stability during extended test runs (100+ tests)\n\n3. **Integration Testing**:\n   - Confirm JobsTracker correctly displays all concurrent test jobs\n   - Verify real-time updates are working for all parallel tests\n   - Test that aggregated reporting correctly combines results from all tests\n\n4. **Edge Cases**:\n   - Test behavior when maximum resource limits are reached\n   - Verify system handles tests with varying durations appropriately\n   - Confirm proper cleanup after abnormal termination (kill -9)\n\nDocument performance improvements with metrics comparing sequential vs parallel execution times for the test suite.",
+      "status": "pending",
+      "dependencies": [
+        26
+      ],
+      "priority": "low"
+    },
+    {
+      "id": 28,
+      "title": "Create Comprehensive E2E Testing Documentation",
+      "description": "Develop complete documentation for the E2E testing system that follows PenPal's existing documentation patterns and covers all aspects from test creation to troubleshooting.",
+      "details": "Create a comprehensive documentation suite for the E2E testing framework with the following components:\n\n1. **Plugin Developer Guide**:\n   - Step-by-step instructions for registering new tests\n   - Integration points with the existing testing framework\n   - Configuration options and parameters\n   - Lifecycle hooks and events\n\n2. **Test Writing Best Practices**:\n   - Code organization and structure\n   - Naming conventions\n   - Handling asynchronous operations\n   - Managing test data and state\n   - Isolation techniques\n   - Performance considerations\n\n3. **API Reference Documentation**:\n   - Complete documentation of all available methods, classes, and interfaces\n   - Parameter descriptions and return types\n   - Usage examples for each API component\n   - Version compatibility information\n\n4. **Troubleshooting Guide**:\n   - Common error scenarios and their solutions\n   - Debugging techniques\n   - Performance optimization tips\n   - Environment-specific considerations\n\n5. **Example Test Implementations**:\n   - Basic test examples\n   - Complex scenarios with multiple components\n   - Mock and stub usage examples\n   - Data-driven test examples\n\nAll documentation should follow PenPal's existing documentation patterns for consistency, including formatting, terminology, and organization. Use the same documentation tooling and ensure cross-referencing between related sections. The documentation should be accessible both within the codebase and in a compiled format for the documentation portal.",
+      "testStrategy": "The documentation should be validated through the following methods:\n\n1. **Technical Review**:\n   - Have at least two senior developers review the documentation for technical accuracy\n   - Verify all API references match the actual implementation\n   - Ensure all code examples are functional and follow best practices\n\n2. **Usability Testing**:\n   - Select 2-3 developers unfamiliar with the E2E testing system\n   - Assign them tasks that require using the documentation\n   - Collect feedback on clarity, completeness, and ease of use\n   - Document areas of confusion or missing information\n\n3. **Documentation Completeness Checklist**:\n   - Verify all required sections are present\n   - Confirm all API methods are documented\n   - Check that all examples are working and up-to-date\n   - Ensure troubleshooting covers common issues\n\n4. **Integration with Documentation System**:\n   - Verify the documentation builds correctly in PenPal's documentation system\n   - Check that all links, references, and navigation work properly\n   - Ensure proper formatting and readability on all supported devices\n\n5. **Practical Application Test**:\n   - Have a developer implement a new E2E test using only the documentation\n   - Document any points where additional information was needed",
+      "status": "pending",
+      "dependencies": [
+        27
+      ],
+      "priority": "medium"
+    },
+    {
+      "id": 29,
+      "title": "Implement Comprehensive Error Handling and Recovery System for E2E Tests",
+      "description": "Develop a robust error handling framework for the E2E testing system that can gracefully manage browser crashes, timeouts, network failures, and ensure proper resource cleanup while providing detailed error reports.",
+      "details": "Create a centralized error handling system that addresses the following scenarios:\n\n1. Browser Crash Recovery:\n   - Implement detection mechanisms for browser crashes during test execution\n   - Create recovery procedures to restart browser sessions automatically\n   - Preserve test state where possible to resume from checkpoint rather than restart\n   - Add configurable retry logic with exponential backoff\n\n2. Test Timeout Management:\n   - Implement tiered timeout system (global test suite, individual test, and operation-level timeouts)\n   - Add timeout detection with appropriate error messages identifying the specific operation that timed out\n   - Create hooks for custom timeout handling based on test context\n\n3. Network Failure Resilience:\n   - Add interceptors to detect network failures during API calls or page loads\n   - Implement configurable retry mechanisms for transient network issues\n   - Create mock responses for critical network dependencies when in fallback mode\n\n4. Resource Cleanup:\n   - Implement 'finally' blocks or equivalent cleanup mechanisms for all resource-intensive operations\n   - Create a resource registry to track opened connections, created files, or database transactions\n   - Develop an emergency cleanup routine that runs on test failure\n   - Add process hooks to ensure cleanup runs even during abnormal termination\n\n5. Error Reporting:\n   - Create structured error objects with standardized fields (error type, location, timestamp, context)\n   - Implement screenshot capture on failure with browser state information\n   - Add console log and network request capturing during failures\n   - Develop a reporting mechanism that aggregates error data into actionable reports\n\nThe implementation should use a modular approach allowing components to be used independently or as a complete system. All error handling should be non-intrusive to existing test code where possible.",
+      "testStrategy": "Testing should verify the error handling system works correctly across all failure scenarios:\n\n1. Browser Crash Testing:\n   - Simulate browser crashes using process termination during test execution\n   - Verify the system detects the crash and attempts recovery\n   - Confirm tests can continue execution after recovery\n   - Validate that the correct error information is logged\n\n2. Timeout Testing:\n   - Create deliberately slow-responding test components\n   - Verify timeout detection at different levels (global, test, operation)\n   - Confirm timeout errors include specific information about what operation timed out\n   - Test that cleanup routines execute properly after timeouts\n\n3. Network Failure Testing:\n   - Use network throttling tools to simulate connection issues\n   - Create proxy servers that can simulate different types of network failures\n   - Verify retry mechanisms work correctly for transient issues\n   - Confirm permanent failures are reported clearly\n\n4. Resource Cleanup Validation:\n   - Instrument resource creation to track what should be cleaned up\n   - Force test failures at different stages and verify all resources are properly released\n   - Monitor for resource leaks across multiple test runs\n   - Test abnormal termination scenarios to ensure cleanup hooks execute\n\n5. Error Reporting Verification:\n   - Review error reports for completeness and clarity\n   - Verify screenshots are captured correctly on failures\n   - Confirm console logs and network requests are included in reports\n   - Test that error aggregation provides actionable information\n\nCreate a test matrix covering all combinations of failure types and test scenarios to ensure comprehensive coverage. Implement metrics to measure the effectiveness of the error handling system, such as recovery success rate and mean time to recovery.",
+      "status": "pending",
+      "dependencies": [
+        27
+      ],
+      "priority": "medium"
+    },
+    {
+      "id": 30,
+      "title": "Implement CI/CD Integration Framework for E2E Tests",
+      "description": "Develop a comprehensive framework that enables seamless integration of end-to-end tests with CI/CD pipelines, supporting both local development and automated testing environments.",
+      "details": "Create a modular integration framework that addresses the following components:\n\n1. Headless Execution Mode:\n   - Implement a command-line flag (--headless) that runs tests without UI\n   - Ensure browser automation works in headless environments\n   - Add logging enhancements for debugging headless runs\n\n2. Test Result Reporting:\n   - Develop exporters for common formats (JUnit XML, JSON, HTML)\n   - Include test duration, status, error messages, and screenshots\n   - Implement real-time reporting for long-running test suites\n\n3. CI System Integration:\n   - Configure proper exit codes (0 for success, non-zero for failures)\n   - Add environment detection to auto-configure for common CI systems (Jenkins, GitHub Actions, CircleCI, GitLab CI)\n   - Implement retry mechanisms for flaky tests with configurable thresholds\n\n4. Environment Configuration:\n   - Create a configuration system that supports different environments (dev, staging, production)\n   - Implement secure credential management for test environments\n   - Add configuration validation to prevent misconfiguration\n\n5. Local Development Support:\n   - Develop a watch mode for rapid test-code-test cycles\n   - Create simplified reporting for developer feedback\n   - Implement selective test running based on changed files\n\nThe framework should be implemented as a separate module that can be imported into the main test codebase. Documentation should include examples for all major CI systems and local development workflows.",
+      "testStrategy": "Testing should verify all aspects of the CI/CD integration framework:\n\n1. Functional Testing:\n   - Verify headless mode works across all supported browsers\n   - Confirm all reporting formats contain accurate test results\n   - Test exit code behavior with passing, failing, and mixed test results\n   - Validate environment configuration loading for all target environments\n\n2. Integration Testing:\n   - Create mock CI environments for each supported system\n   - Run test suites in each environment and verify proper integration\n   - Test credential handling with mock secrets\n\n3. Performance Testing:\n   - Measure overhead added by the reporting mechanisms\n   - Benchmark headless vs. headed mode execution times\n   - Test with large test suites (100+ tests) to ensure scalability\n\n4. Usability Testing:\n   - Have developers use the local development features and gather feedback\n   - Verify documentation clarity with team members not involved in development\n\n5. Validation Scenarios:\n   - Simulate network failures during test reporting\n   - Test behavior when configuration files are malformed\n   - Verify retry mechanism correctly handles flaky tests\n\nCreate a dedicated test suite that can be run to verify the framework independently of the actual application tests. Include a CI workflow that tests the framework itself on each commit.",
+      "status": "pending",
+      "dependencies": [
+        28,
+        29
+      ],
+      "priority": "low"
+    },
+    {
+      "id": 31,
+      "title": "Optimize E2E Testing Performance with Caching and Resource Management",
+      "description": "Implement performance optimizations for the end-to-end testing system to reduce execution time while maintaining test reliability and isolation.",
+      "details": "This task involves implementing several key optimizations to the E2E testing infrastructure:\n\n1. Docker Image Optimization:\n   - Configure Docker layer caching for test images\n   - Implement a caching strategy for base images\n   - Minimize image size by removing unnecessary dependencies\n   - Use multi-stage builds to reduce final image size\n\n2. Browser Instance Management:\n   - Implement browser instance pooling to reuse browser contexts between tests\n   - Configure parallel browser sessions with resource limits\n   - Add warm-up mechanisms to pre-initialize browser instances\n   - Implement proper cleanup of browser resources\n\n3. Test Execution Optimization:\n   - Analyze and optimize test boot time\n   - Implement parallel test execution where appropriate\n   - Add test sharding capabilities for distributing tests across runners\n   - Optimize test dependencies to minimize setup/teardown overhead\n\n4. Resource Monitoring:\n   - Add CPU/memory usage tracking during test runs\n   - Implement logging of test execution times\n   - Create dashboards for visualizing performance metrics\n   - Set up alerts for performance regressions\n\n5. Cleanup Automation:\n   - Implement automatic cleanup of test artifacts\n   - Add garbage collection for orphaned Docker containers/volumes\n   - Schedule periodic cleanup of cached resources\n\nThe implementation should include configuration options to balance between maximum performance and test isolation. Document all optimization strategies and their impact on test reliability.",
+      "testStrategy": "Testing this optimization work should include:\n\n1. Benchmark Testing:\n   - Establish baseline metrics for current E2E test execution time\n   - Measure execution time before and after each optimization\n   - Run the full test suite 5 times and compare average execution times\n   - Document performance improvements with statistical significance\n\n2. Resource Usage Validation:\n   - Monitor and record CPU, memory, and disk usage during test runs\n   - Verify that resource consumption is reduced or maintained within acceptable limits\n   - Test under various system load conditions to ensure stability\n\n3. Reliability Testing:\n   - Verify that test results remain consistent after optimizations\n   - Run the test suite 10 consecutive times to ensure no flakiness is introduced\n   - Compare test failure rates before and after optimization\n\n4. Isolation Verification:\n   - Confirm that tests remain properly isolated despite resource sharing\n   - Validate that test data doesn't leak between test runs\n   - Verify that browser state is properly reset between tests\n\n5. Scalability Testing:\n   - Test performance with increasing numbers of parallel tests\n   - Measure resource usage at different concurrency levels\n   - Determine optimal parallelization settings\n\nDocument all metrics in a performance report that compares before and after states, with recommendations for further optimizations.",
+      "status": "pending",
+      "dependencies": [
+        30
+      ],
+      "priority": "low"
+    },
+    {
+      "id": 32,
+      "title": "Implement ICMP Ping Plugin for Network Host Discovery",
+      "description": "Develop a containerized Ping plugin that performs fast ICMP sweeps to discover hosts in a network, integrating with PenPal's existing architecture and services.",
+      "details": "Create a new Ping plugin that leverages ICMP protocol for efficient host discovery across network ranges. The plugin should:\n\n1. Be containerized using Docker with a Dockerfile that includes necessary dependencies for ICMP operations\n2. Subscribe to MQTT topics for new network discoveries (e.g., 'penpal/discoveries/networks')\n3. Upon receiving network information, queue scans using the ScanQueue service\n4. Implement fast ICMP sweep functionality that can handle various network sizes efficiently\n5. Track scan jobs using the JobsTracker service, updating status as appropriate\n6. Process scan results and upsert discovered hosts to CoreAPI\n7. Extend the GraphQL schema to support:\n   - Querying ping results by network, IP range, or specific hosts\n   - Checking scan status and history\n   - Retrieving latency statistics for discovered hosts\n8. Implement proper error handling and logging\n9. Include configuration options for scan parameters (timeout, retry count, parallel scan limit)\n10. Follow PenPal's plugin architecture patterns for consistency\n\nThe plugin should be optimized for performance, especially when scanning large networks, and should handle rate limiting to prevent network flooding.",
+      "testStrategy": "Testing should verify both functionality and integration with PenPal's ecosystem:\n\n1. Unit tests:\n   - Test ICMP sweep functionality with mock network responses\n   - Verify proper parsing and handling of ICMP responses\n   - Test error handling for various failure scenarios\n\n2. Integration tests:\n   - Verify MQTT subscription and message handling\n   - Test ScanQueue integration for job submission\n   - Validate JobsTracker updates during scan lifecycle\n   - Confirm CoreAPI upsert operations work correctly\n\n3. End-to-end tests:\n   - Deploy the plugin in a test environment with known hosts\n   - Trigger a network discovery and verify hosts are correctly identified\n   - Test GraphQL queries to retrieve ping results and status\n   - Verify latency measurements are accurate using controlled test hosts\n\n4. Performance tests:\n   - Measure scan performance on networks of various sizes\n   - Test concurrent scanning capabilities\n   - Verify resource usage remains within acceptable limits\n\n5. Security tests:\n   - Ensure the plugin handles permissions correctly for ICMP operations\n   - Verify no sensitive information is exposed in logs or responses\n\nAll tests should be automated where possible and included in CI/CD pipeline.",
+      "status": "done",
+      "dependencies": [],
+      "priority": "high",
+      "subtasks": [
+        {
+          "id": 1,
+          "title": "Implement Core ICMP Ping Sweep Functionality",
+          "description": "Develop the core ICMP ping sweep engine that efficiently discovers hosts across network ranges using asynchronous, non-blocking operations for optimal performance.",
+          "dependencies": [],
+          "details": "1. Create a Python module using aioping or scapy for asynchronous ICMP operations\n2. Implement worker pool pattern with configurable concurrency limits\n3. Build network range parser to convert CIDR notation to individual IPs\n4. Add rate limiting mechanism to prevent network flooding\n5. Implement timeout and retry logic with configurable parameters\n6. Create structured result format with host status and latency metrics\n7. Add proper error handling for network issues and permission errors\n8. Test with various network sizes to verify performance\n9. Testing approach: Unit test individual components and perform integration tests against test networks of varying sizes",
+          "status": "done",
+          "parentTaskId": 32
+        },
+        {
+          "id": 2,
+          "title": "Containerize the Ping Plugin with Docker",
+          "description": "Package the ICMP ping functionality into a Docker container with appropriate permissions and minimal footprint, following security best practices.",
+          "dependencies": [
+            1
+          ],
+          "details": "1. Create a Dockerfile using Python Alpine as base image\n2. Install necessary dependencies for ICMP operations\n3. Configure container with CAP_NET_RAW capability for raw socket access\n4. Implement proper user permissions (non-root user when possible)\n5. Add health check endpoint to verify plugin status\n6. Optimize container size by removing unnecessary packages\n7. Include proper logging configuration\n8. Document required Docker run parameters\n9. Testing approach: Build container and verify it can perform ICMP operations with correct permissions, validate security using container scanning tools",
+          "status": "done",
+          "parentTaskId": 32
+        },
+        {
+          "id": 3,
+          "title": "Integrate with PenPal's MQTT and ScanQueue Services",
+          "description": "Connect the plugin to PenPal's messaging infrastructure to receive scan requests and queue network discovery jobs.",
+          "dependencies": [
+            1,
+            2
+          ],
+          "details": "1. Implement MQTT client to subscribe to 'penpal/discoveries/networks' topic\n2. Create message parser to extract network information from MQTT messages\n3. Develop integration with ScanQueue service to queue ping sweep jobs\n4. Implement JobsTracker service integration to update scan status\n5. Add retry mechanism for failed service connections\n6. Create configuration for MQTT broker connection details\n7. Implement proper error handling for messaging failures\n8. Add logging for all service interactions\n9. Testing approach: Create mock MQTT broker and service endpoints to test integration, verify message handling and job tracking",
+          "status": "done",
+          "parentTaskId": 32
+        },
+        {
+          "id": 4,
+          "title": "Implement Results Processing and CoreAPI Integration",
+          "description": "Process scan results and integrate with PenPal's CoreAPI to store discovered hosts and their metadata.",
+          "dependencies": [
+            3
+          ],
+          "details": "1. Create result processor to format ping sweep findings\n2. Implement CoreAPI client for host data upsert operations\n3. Add data transformation logic to match CoreAPI schema\n4. Implement batch processing for efficient API usage\n5. Add conflict resolution for existing host records\n6. Create error handling for API failures with retry logic\n7. Implement transaction logging for audit purposes\n8. Add performance metrics collection\n9. Testing approach: Use mock CoreAPI endpoints to verify correct data transformation and upsert operations, test with various result scenarios",
+          "status": "done",
+          "parentTaskId": 32
+        },
+        {
+          "id": 5,
+          "title": "Extend GraphQL Schema and Implement Query Handlers",
+          "description": "Extend PenPal's GraphQL schema to support ping-related queries and implement the corresponding resolvers.",
+          "dependencies": [
+            4
+          ],
+          "details": "1. Define GraphQL schema extensions for ping operations\n2. Implement query resolvers for retrieving ping results by network/IP range\n3. Create mutation resolvers for triggering new ping scans\n4. Add subscription resolvers for real-time scan status updates\n5. Implement filtering and pagination for large result sets\n6. Create latency statistics aggregation functions\n7. Add proper error handling and validation\n8. Implement authentication and authorization checks\n9. Testing approach: Create GraphQL test suite to verify schema extensions, test queries with sample data, verify authorization controls",
+          "status": "done",
+          "parentTaskId": 32
+        }
+      ]
+    },
+    {
+      "id": 33,
+      "title": "Implement MQTT-Triggered Gobuster Plugin for HTTP Service Enumeration",
+      "description": "Develop a plugin that uses Gobuster to automatically enumerate directories and files on HTTP services when triggered by MQTT messages, utilizing SecLists wordlists and adding enrichments for discovered items.",
+      "details": "Create a plugin that integrates with our existing architecture to perform automated directory and file enumeration on HTTP services. The plugin should:\n\n1. Subscribe to relevant MQTT topics to receive triggers for scanning (e.g., when new HTTP services are discovered)\n2. Upon receiving a trigger, launch Gobuster with appropriate parameters to scan the target HTTP service\n3. Utilize SecLists wordlists for comprehensive enumeration (include directory-list-2.3-medium.txt for directories and web-extensions.txt for file types)\n4. Implement intelligent wordlist selection based on the target (e.g., different wordlists for different web technologies if detected)\n5. Process Gobuster results to identify interesting files and directories (status codes 200, 301, 302, 403 should be considered interesting)\n6. For each discovered item, create enrichments including:\n   - File/directory path\n   - Status code\n   - Size (if available)\n   - Content type\n   - Last modified date (if available)\n   - A brief assessment of potential security implications\n7. Publish results back to MQTT with appropriate topics for other components to consume\n8. Implement rate limiting and respect target limitations to avoid overwhelming services\n9. Include proper error handling for timeouts, connection issues, and other potential failures\n10. Log all activities with appropriate verbosity levels\n11. Ensure the plugin can be configured via environment variables or a configuration file\n\nThe plugin should be containerized for easy deployment and should follow our existing plugin architecture patterns.",
+      "testStrategy": "Testing should verify both functionality and reliability of the plugin:\n\n1. Unit Tests:\n   - Test MQTT message parsing and validation\n   - Test Gobuster command construction with various parameters\n   - Test result parsing and enrichment generation\n   - Test error handling for various failure scenarios\n\n2. Integration Tests:\n   - Set up a test HTTP server with known directories and files\n   - Trigger the plugin via MQTT and verify it correctly discovers the known items\n   - Verify enrichments are correctly generated and contain accurate information\n   - Test with different HTTP server configurations (Apache, Nginx, IIS)\n\n3. Performance Tests:\n   - Verify the plugin handles large wordlists efficiently\n   - Test memory usage during scanning of large targets\n   - Verify rate limiting functionality works as expected\n\n4. Edge Cases:\n   - Test behavior with malformed MQTT messages\n   - Test with unreachable HTTP services\n   - Test with HTTP services that return unusual status codes\n   - Test with extremely slow HTTP services\n\n5. End-to-End Tests:\n   - Verify the plugin integrates correctly with other components in the system\n   - Confirm MQTT messages are properly published and can be consumed by other components\n\nAll tests should be automated and included in the CI/CD pipeline. Documentation should include examples of expected MQTT messages and plugin outputs.",
+      "status": "pending",
+      "dependencies": [
+        32
+      ],
+      "priority": "high"
+    }
+  ],
+  "metadata": {
+    "projectName": "PenPal Implementation",
+    "totalTasks": 15,
+    "sourceFile": "/Users/jchristman/dev/PenPal/docs/product-requirements-document.md",
+    "generatedAt": "2023-11-09"
+  }
+}

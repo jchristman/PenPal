@@ -12,6 +12,12 @@ export const settings = {
     name: "penpal:httpx",
   },
   STATUS_SLEEP: 1000,
+  configuration: {
+    schema_root: "HttpXConfiguration",
+    getter: "getHttpXConfiguration",
+    setter: "setHttpXConfiguration",
+  },
+  datastores: [{ name: "Configuration" }],
 };
 
 const start_http_service_scan_batch = async (batchedArgs) => {
@@ -153,6 +159,7 @@ const HttpXPlugin = {
     PenPal.HttpX = {
       PerformScan: HttpX.performHttpScan,
       ParseResults: HttpX.parseAndUpsertResults,
+      AttachScreenshot: HttpX.attachScreenshotToHttpXEnrichment,
     };
 
     // Register test handlers if Tester plugin is available

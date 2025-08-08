@@ -22,6 +22,8 @@ import service_default_resolvers from "./service.default.js";
 import service_query_resolvers from "./service.queries.js";
 import network_service_default_resolvers from "./service-network.default.js";
 import scalar_resolvers from "./scalars.js";
+import ui_directives_default_resolvers from "./ui-directives.default.js";
+import ui_directive_query_resolvers from "./ui-directives.queries.js";
 
 export default {
   queries: {
@@ -32,6 +34,7 @@ export default {
     ...host_query_resolvers,
     ...project_query_resolvers,
     ...service_query_resolvers,
+    ...ui_directive_query_resolvers,
   },
   mutations: {
     ...customer_mutation_resolvers,
@@ -52,6 +55,7 @@ export default {
     network_service_default_resolvers,
     project_default_resolvers,
     service_default_resolvers,
+    ui_directives_default_resolvers,
   ],
   scalars: scalar_resolvers,
 };

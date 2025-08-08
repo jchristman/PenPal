@@ -1,16 +1,16 @@
 import { registerRoute } from "@penpal/core";
 
-import WorkIcon from "@mui/icons-material/Work";
+import WorkIcon from "@heroicons/react/24/outline/BriefcaseIcon";
 
 const registerRoutes = () => {
   const jobs = {
     name: "jobs",
     path: "/jobs",
-    componentName: "JobsPage",
+    componentName: "Jobs",
     prettyName: "Jobs",
     icon: WorkIcon,
   };
-  registerRoute(jobs);
+  registerRoute(jobs, 2);
 };
 
 export default registerRoutes;

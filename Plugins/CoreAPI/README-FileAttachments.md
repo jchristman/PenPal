@@ -123,9 +123,10 @@ console.log(result.download_url);
 #### Screenshot Helpers
 
 ```javascript
-// Attach screenshot to HttpX enrichment
-await PenPal.API.Services.AttachScreenshotToHttpXEnrichment(
+// Attach screenshot to any plugin enrichment (generic function)
+await PenPal.API.Services.AttachScreenshotToEnrichment(
   service_selector,
+  "HttpX", // or any plugin name
   screenshot_buffer,
   "screenshot.png",
   { description: "Web page screenshot" }
@@ -292,8 +293,8 @@ export const enhanceWithScreenshots = async (
         // Capture screenshot (using containerized tool)
         const screenshot_buffer = await captureScreenshot(result.url);
 
-        // Attach to enrichment
-        await PenPal.API.Services.AttachScreenshotToHttpXEnrichment(
+        // Attach to enrichment using HttpX-specific helper
+        await PenPal.HttpX.AttachScreenshot(
           {
             host: service.host_ip,
             port: service.port,

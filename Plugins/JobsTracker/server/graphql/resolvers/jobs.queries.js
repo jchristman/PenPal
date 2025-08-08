@@ -38,8 +38,13 @@ export default {
       jobs = await API.getJobsFiltered("active"); // Default to active filter
     }
 
-    // Sort jobs by updated_at descending (most recent first)
-    jobs.sort((a, b) => new Date(b.updated_at) - new Date(a.updated_at));
+    // Sort jobs by updated_at descending (most recent first), prioritize cancellation requests
+    jobs.sort((a, b) => {
+      const aCancel = a.cancellation_request ? 1 : 0;
+      const bCancel = b.cancellation_request ? 1 : 0;
+      if (bCancel !== aCancel) return bCancel - aCancel;
+      return new Date(b.updated_at) - new Date(a.updated_at);
+    });
 
     // Apply pagination
     const totalCount = jobs.length;

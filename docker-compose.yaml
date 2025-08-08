@@ -1,0 +1,93 @@
+services:
+  penpal-base:
+    build: ./PenPal
+    image: penpal/base
+    pull_policy: never
+
+  penpal-init:
+    image: debian:latest
+    user: root
+    group_add:
+      - "${LOCAL_USER_ID}"
+    volumes:
+      - penpal-plugin-share:/penpal-plugin-share
+    command: chown -R ${LOCAL_USER_ID} /penpal-plugin-share
+
+  penpal-frontend:
+    build:
+      context: .
+      dockerfile: ./PenPal/Dockerfile-frontend
+    pull_policy: never
+    working_dir: /penpal
+    volumes:
+      - penpal-frontend-bun-cache:/home/node/.bun/install/cache
+      - penpal-bun-global-cache:/root/.bun/install/cache
+      - ./PenPal/app/client/package.json:/penpal/package-tmp.json:ro
+      - ./PenPal/app/client/vite.config.js:/penpal/vite.config.js:ro
+      - ./PenPal/app/client/src:/penpal/src
+      - ./Plugins:/penpal/plugins
+    ports:
+      - "3000:3000"
+    command: bun run frontend
+    networks:
+      - penpal
+    environment:
+      - LOCAL_USER_ID=${LOCAL_USER_ID}
+      - CONTAINER_TYPE=frontend
+
+  penpal-server:
+    build:
+      context: .
+      dockerfile: ./PenPal/Dockerfile-server
+    pull_policy: never
+    working_dir: /penpal
+    volumes:
+      - penpal-server-bun-cache:/home/node/.bun/install/cache
+      - penpal-bun-global-cache:/root/.bun/install/cache
+      - penpal-plugin-share:/penpal-plugin-share
+      - ./PenPal/app/server/package.json:/penpal/package-tmp.json:ro
+      - ./PenPal/app/server/nodemon.config.json:/penpal/nodemon.config.json:ro
+      - ./PenPal/app/server/src:/penpal/src
+      - ./heap-snapshots:/penpal/heap-snapshots
+      - ./Plugins:/penpal/plugins
+    ports:
+      - "3001:3001"
+    environment:
+      - RUN_LOCATION=${RUN_LOCATION}
+      - LOCAL_USER_ID=${LOCAL_USER_ID}
+      - FORCE_COLOR=1
+      - CONTAINER_TYPE=server
+      - ENABLE_MEMORY_PROFILER=false
+    tty: true
+    command: bun run server
+    networks:
+      - penpal
+      - internal
+    depends_on:
+      penpal-init:
+        condition: service_completed_successfully
+
+  penpal-docker-api:
+    build:
+      context: ./PenPal
+      dockerfile: ./Dockerfile-socat
+    volumes:
+      - /var/run/docker.sock:/var/run/docker.sock
+    command: sh -c 'socat TCP-LISTEN:2376,reuseaddr,fork UNIX-CONNECT:/var/run/docker.sock'
+    networks:
+      - internal
+
+volumes:
+  penpal-frontend-bun-cache:
+    external: false
+  penpal-server-bun-cache:
+    external: false
+  penpal-bun-global-cache:
+    external: false
+  penpal-plugin-share:
+    external: false
+
+networks:
+  penpal:
+    driver: bridge
+  internal:

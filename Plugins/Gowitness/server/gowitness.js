@@ -168,6 +168,7 @@ export const performScreenshotScan = async ({
   http_services,
   project_id,
   update_job = () => {},
+  job_id = null,
 }) => {
   try {
     GowitnessLogger.log(
@@ -195,7 +196,7 @@ export const performScreenshotScan = async ({
 
     // Create target URLs file for Gowitness
     const targets = http_services.map((service) => service.url);
-    
+
     const targets_file = [outdir, `targets-${PenPal.Utils.Epoch()}.txt`].join(
       path.sep
     );
@@ -247,14 +248,39 @@ export const performScreenshotScan = async ({
 
     await update_job(20, "Gowitness screenshot capture in progress...");
 
-    // Wait for container to complete with timeout
-    const wait_result = await Promise.race([
-      PenPal.Docker.Wait(container_id),
-      new Promise(
-        (_, reject) =>
-          setTimeout(() => reject(new Error("Gowitness scan timeout")), 600000) // 10 minute timeout
-      ),
-    ]);
+    // Wait for container to complete with periodic checks for cancellation
+    while (true) {
+      try {
+        await PenPal.Docker.Wait(container_id, 10000);
+        break; // finished
+      } catch (e) {
+        if (e.message && e.message.includes("timed out")) {
+          // Respect cancellation requests
+          if (job_id) {
+            const currentJob = await PenPal.Jobs.Get(job_id);
+            if (currentJob?.cancellation_request) {
+              try {
+                await PenPal.Docker.Stop(container_id);
+              } catch (stopErr) {
+                GowitnessLogger.warn(
+                  `Error stopping Gowitness container on cancellation: ${stopErr.message}`
+                );
+              }
+              await PenPal.Jobs.Cancel(job_id);
+              try {
+                await PenPal.Docker.RemoveContainer(container_id);
+              } catch {
+                // ignore
+              }
+              return;
+            }
+          }
+          // continue waiting
+        } else {
+          throw e;
+        }
+      }
+    }
 
     await update_job(80, "Screenshot capture complete, processing results...");
 

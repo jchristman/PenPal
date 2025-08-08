@@ -8,14 +8,34 @@ import { Name as CardViewName } from "./views-card-view.jsx";
 import { Name as TableViewName } from "./views-table-view.jsx";
 import { Name as TimelineViewName } from "./views-timeline-view.jsx";
 
-const ProjectsView = ({ view }) => {
+const ProjectsView = ({
+  view,
+  onLoadingChange,
+  searchTerm,
+  debouncedSearchTerm,
+}) => {
   const [page, setPage] = useState(0);
   const [pageSize, setPageSize] = useState(10);
-  const [projectSummaries, setProjectSummaries] = useState({
+  const pageSizeOptions = [5, 10, 20, { label: "All", value: -1 }];
+
+  // Sorting state management
+  const [sort, setSort] = useState({ key: "name", direction: "asc" });
+
+  // Buffered data state to prevent flickering during page changes
+  const [bufferedData, setBufferedData] = useState({
     projects: [],
     totalCount: 0,
   });
-  const pageSizeOptions = [5, 10, 20, { label: "All", value: -1 }];
+
+  // Reset to first page when search changes
+  useEffect(() => {
+    setPage(0);
+  }, [debouncedSearchTerm]);
+
+  // Reset to first page when sort changes
+  useEffect(() => {
+    setPage(0);
+  }, [sort]);
 
   const {
     loading: projectSummariesLoading,
@@ -26,43 +46,54 @@ const ProjectsView = ({ view }) => {
     variables: {
       pageSize,
       pageNumber: page,
+      searchTerm: debouncedSearchTerm || undefined, // Only include if not empty
+      sortBy: sort.key,
+      sortDirection: sort.direction,
     },
+    // Force a fresh fetch when search term or sort changes to avoid cache conflicts
+    fetchPolicy:
+      debouncedSearchTerm || sort ? "cache-and-network" : "cache-first",
+    notifyOnNetworkStatusChange: true,
   });
 
-  // This is a way to essentially buffer the changes from the GraphQL query so that it looks smoother in the UI
+  // Notify parent of loading state changes
   useEffect(() => {
-    if (getProjects !== undefined) {
-      setProjectSummaries(getProjects);
+    if (onLoadingChange) {
+      onLoadingChange(projectSummariesLoading);
     }
-  }, [getProjects]);
+  }, [projectSummariesLoading, onLoadingChange]);
+
+  // Update buffered data only when new data is successfully loaded
+  useEffect(() => {
+    if (!projectSummariesLoading && getProjects) {
+      setBufferedData({
+        projects: getProjects.projects || [],
+        totalCount: getProjects.totalCount || 0,
+      });
+    }
+  }, [projectSummariesLoading, getProjects]);
+
+  const commonProps = {
+    page,
+    setPage,
+    pageSize,
+    setPageSize,
+    pageSizeOptions,
+    projects: bufferedData.projects,
+    totalCount: bufferedData.totalCount,
+    isLoading: projectSummariesLoading,
+    searchTerm,
+    debouncedSearchTerm,
+    sort,
+    setSort, // Pass sorting state and setter to table component
+  };
 
   return view === TableViewName ? (
-    <Components.ProjectsViewTableView
-      page={page}
-      setPage={setPage}
-      pageSize={pageSize}
-      setPageSize={setPageSize}
-      pageSizeOptions={pageSizeOptions}
-      projectSummaries={projectSummaries}
-    />
+    <Components.ProjectsViewTableView {...commonProps} />
   ) : view === TimelineViewName ? (
-    <Components.ProjectsViewTimelineView
-      page={page}
-      setPage={setPage}
-      pageSize={pageSize}
-      setPageSize={setPageSize}
-      pageSizeOptions={pageSizeOptions}
-      projectSummaries={projectSummaries}
-    />
+    <Components.ProjectsViewTimelineView {...commonProps} />
   ) : (
-    <Components.ProjectsViewCardView
-      page={page}
-      setPage={setPage}
-      pageSize={pageSize}
-      setPageSize={setPageSize}
-      pageSizeOptions={pageSizeOptions}
-      projectSummaries={projectSummaries}
-    />
+    <Components.ProjectsViewCardView {...commonProps} />
   );
 };
 

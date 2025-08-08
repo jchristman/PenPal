@@ -10,6 +10,7 @@ const GET_ALL_JOBS = gql`
         progress
         statusText
         status
+        cancellation_request
         stages {
           name
           plugin

@@ -8,7 +8,21 @@ product: service.product,
 version: service.version,
 extra_info: service.extra_info,
 """
-type NmapPluginEnrichment implements PluginEnrichment {
+type NmapPluginEnrichment implements PluginEnrichment
+  @uiGroup(name: "service_info", label: "Service Information", priority: 0)
+  @uiGroup(
+    name: "fingerprint_info"
+    label: "Service Fingerprint"
+    collapsible: true
+    priority: 10
+  )
+  @uiGroup(
+    name: "extra"
+    label: "Additional Information"
+    collapsible: true
+    priority: 20
+  )
+  @enrichmentDisplay(layout: "card", title: "Nmap Service Analysis") {
   "This allows the type resolver to determine if the PluginEnrichment"
   plugin_name: String!
   "Generic data field that holds all plugin-specific enrichment data"
@@ -17,12 +31,32 @@ type NmapPluginEnrichment implements PluginEnrichment {
   files: [EnrichmentFileAttachment]
   "The service associated with the Nmap Plugin Enrichment"
   service: String
+    @uiComponent(
+      type: BADGE
+      config: { group: "service_info", priority: 1, color: "primary" }
+    )
   "The fingerprint associated with the Nmap Plugin Enrichment"
   fingerprint: String
+    @uiComponent(
+      type: CODE_BLOCK
+      config: {
+        group: "fingerprint_info"
+        language: "text"
+        maxHeight: "200px"
+      }
+    )
   "The product associated with the Nmap Plugin Enrichment"
   product: String
+    @uiComponent(
+      type: BADGE
+      config: { group: "service_info", priority: 2, color: "success" }
+    )
   "The version associated with the Nmap Plugin Enrichment"
   version: String
+    @uiComponent(
+      type: BADGE
+      config: { group: "service_info", priority: 3, color: "info" }
+    )
   "The extra info associated with the Nmap Plugin Enrichment"
-  extra_info: String
+  extra_info: String @uiComponent(type: TEXT, config: { group: "extra" })
 }

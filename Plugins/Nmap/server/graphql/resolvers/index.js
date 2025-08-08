@@ -1,11 +1,12 @@
 import nmap_plugin_enrichment_default_resolvers from "./nmap-plugin-enrichment.default.js";
+import config_resolvers from "./nmap.config.js";
 
 export default {
   queries: {
-    // ...analytics_query_resolvers,
+    ...config_resolvers.queries,
   },
   mutations: {
-    // ...analytics_mutation_resolvers,
+    ...config_resolvers.mutations,
   },
   default_resolvers: [nmap_plugin_enrichment_default_resolvers],
   //scalars: scalar_resolvers,
