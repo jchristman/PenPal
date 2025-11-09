@@ -59,7 +59,11 @@ const ProjectViewServices = ({ project, disable_polling }) => {
     },
   ];
 
-  return <Components.VerticalTabs tabs={tabs} defaultTab="list" />;
+  return (
+    <div className="w-full h-full overflow-hidden">
+      <Components.VerticalTabs tabs={tabs} defaultTab="dashboard" />
+    </div>
+  );
 };
 
 registerComponent("ProjectViewServices", ProjectViewServices);

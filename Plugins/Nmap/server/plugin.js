@@ -43,6 +43,108 @@ export const work_queue = [];
 // File-level logger that can be imported by other files
 export const NmapLogger = PenPal.Utils.BuildLogger("Nmap");
 
+/**
+ * Check if Nmap plugin is enabled for a project
+ * Checks project's profile first, then falls back to global config
+ * @param {string} project_id - Project ID
+ * @returns {Promise<boolean>} True if plugin is enabled, false otherwise
+ */
+const isNmapEnabled = async (project_id) => {
+  try {
+    const config = await getEffectiveNmapConfig(project_id);
+    // If config is null, use defaults (enabled by default)
+    if (!config) return true;
+    // Default to enabled if config doesn't specify enabled field
+    return config?.ui?.enabled !== false;
+  } catch (e) {
+    NmapLogger.warn(`Error checking if Nmap is enabled: ${e.message}`);
+    // Default to enabled on error
+    return true;
+  }
+};
+
+/**
+ * Get effective Nmap configuration for a project
+ * Checks project's profile first, then falls back to global config, then defaults
+ * @param {string} project_id - Project ID
+ * @returns {Promise<object>} Effective Nmap configuration object
+ */
+const getEffectiveNmapConfig = async (project_id) => {
+  try {
+    // Get the project to check for profile
+    const project = await PenPal.API.Projects.Get(project_id);
+
+    if (project?.profile) {
+      // Project has a profile - try to get Nmap config from profile
+      try {
+        // Ensure DataStore adapters are ready
+        if (!PenPal.DataStore || !PenPal.DataStore.AdaptersReady()) {
+          NmapLogger.warn(
+            `DataStore adapters not ready, using global config for project ${project_id}`
+          );
+          // Fall through to global config
+        } else {
+          // Use fetch instead of fetchOne to avoid collection existence issues
+          // fetch returns empty array if collection doesn't exist, which is safe
+          const profiles = await PenPal.DataStore.fetch("Base", "Profiles", {
+            id: project.profile,
+          });
+          const profile = profiles?.[0];
+
+          if (profile?.plugin_configs) {
+            // Find Nmap configuration in profile
+            // Plugin ID format can be "Nmap@0.1.0" or just "Nmap" depending on how it was saved
+            const nmapPluginId = Object.keys(PenPal.LoadedPlugins).find(
+              (pid) => PenPal.LoadedPlugins[pid]?.name === "Nmap"
+            );
+
+            // Try multiple matching strategies
+            const profileConfig = profile.plugin_configs.find((pc) => {
+              if (!pc.plugin_id) return false;
+              // Exact match
+              if (pc.plugin_id === nmapPluginId) return true;
+              // Starts with "Nmap@"
+              if (pc.plugin_id.startsWith("Nmap@")) return true;
+              // Exact match to "Nmap"
+              if (pc.plugin_id === "Nmap") return true;
+              return false;
+            });
+
+            if (profileConfig?.configuration) {
+              NmapLogger.log(
+                `Using profile "${profile.name}" configuration for project ${project_id}`
+              );
+              return profileConfig.configuration;
+            } else {
+              NmapLogger.log(
+                `Profile "${profile.name}" found but no Nmap config, falling back to global`
+              );
+            }
+          }
+        }
+      } catch (e) {
+        NmapLogger.warn(
+          `Failed to load profile config, falling back to global: ${e.message}`
+        );
+      }
+    }
+
+    // Fall back to global configuration
+    const existing = await PenPal.DataStore.fetch("Nmap", "Configuration", {});
+    if (existing?.[0]) {
+      NmapLogger.log(`Using global configuration for project ${project_id}`);
+      return existing[0];
+    }
+
+    // Fall back to default settings
+    NmapLogger.log(`Using default configuration for project ${project_id}`);
+    return null;
+  } catch (e) {
+    NmapLogger.error(`Error getting effective config: ${e.message}`);
+    return null;
+  }
+};
+
 const start_detailed_hosts_scan = async ({ project, host_ids }) => {
   // Create job using the centralized Jobs API
   const job = await PenPal.Jobs.Create({
@@ -89,9 +191,9 @@ const start_detailed_hosts_scan = async ({ project, host_ids }) => {
   const hosts = (await PenPal.API.Hosts.GetMany(host_ids)) ?? [];
   const ips = hosts.map((host) => host.ip_address);
   if (ips.length > 0) {
-    // Determine effective detailed scan config from saved configuration if present
-    const existing = await PenPal.DataStore.fetch("Nmap", "Configuration", {});
-    const detCfg = existing?.[0]?.scan?.detailed;
+    // Get effective configuration (profile -> global -> default)
+    const config = await getEffectiveNmapConfig(project);
+    const detCfg = config?.scan?.detailed;
     const effectiveDetailed = detCfg
       ? detCfg.use_top_ports
         ? {
@@ -141,9 +243,9 @@ const start_initial_networks_scan = async ({ project, network_ids }) => {
     ) ?? [];
 
   if (networks.length > 0) {
-    // Determine effective fast scan config from saved configuration if present
-    const existing = await PenPal.DataStore.fetch("Nmap", "Configuration", {});
-    const fastCfg = existing?.[0]?.scan?.fast;
+    // Get effective configuration (profile -> global -> default)
+    const config = await getEffectiveNmapConfig(project);
+    const fastCfg = config?.scan?.fast;
     const effectiveFast = fastCfg
       ? fastCfg.use_top_ports
         ? {
@@ -232,10 +334,29 @@ const NmapPlugin = {
     // Wrap scan functions in ScanQueue
     const queueHostsScan = async (args) => {
       const { project, host_ids } = args;
+
+      // Check if Nmap is enabled for this project
+      const enabled = await isNmapEnabled(project);
+      if (!enabled) {
+        NmapLogger.log(
+          `Nmap is disabled for project ${project}, skipping detailed host scan`
+        );
+        return;
+      }
+
       const queueName = `Nmap Detailed Host Scan (${host_ids.length} hosts), Project: ${project}`;
 
-      // Be polite and wait 10 seconds before adding to the queue
-      await PenPal.Utils.Sleep(30000);
+      // Get effective config to check courtesy_sleep setting
+      const config = await getEffectiveNmapConfig(project);
+      const courtesySleep = config?.scan?.detailed?.courtesy_sleep ?? 30000; // Default 30 seconds
+
+      // Be polite and wait before adding to the queue (configurable courtesy sleep)
+      if (courtesySleep > 0) {
+        NmapLogger.log(
+          `Waiting ${courtesySleep}ms (courtesy sleep) before queuing detailed scan`
+        );
+        await PenPal.Utils.Sleep(courtesySleep);
+      }
 
       PenPal.ScanQueue.Add(
         async () => await start_detailed_hosts_scan(args),
@@ -245,6 +366,16 @@ const NmapPlugin = {
 
     const queueNetworksScan = async (args) => {
       const { project, network_ids } = args;
+
+      // Check if Nmap is enabled for this project
+      const enabled = await isNmapEnabled(project);
+      if (!enabled) {
+        NmapLogger.log(
+          `Nmap is disabled for project ${project}, skipping network scan`
+        );
+        return;
+      }
+
       const queueName = `Nmap Quick Network Scan (${network_ids.length} networks), Project: ${project}`;
 
       PenPal.ScanQueue.Add(

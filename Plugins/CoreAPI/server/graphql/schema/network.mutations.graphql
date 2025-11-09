@@ -1,0 +1,4 @@
+extend type Mutation {
+  createNetworks(project: ID!, subnets: [IPSubnet!]!): [Network]!
+  removeNetworks(ids: [ID!]!): Boolean!
+}

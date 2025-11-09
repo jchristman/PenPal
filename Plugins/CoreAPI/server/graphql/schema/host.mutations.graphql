@@ -1,6 +1,7 @@
 type Mutation {
-  createHost(projectID: ID!): Host!
-  createHosts(projectID: ID!): [Host]!
-  updateHost(id: ID!): Host!
+  createHost(projectID: ID!, host: HostInput!): Host!
+  createHosts(projectID: ID!, hosts: [HostInput!]!): [Host]!
+  updateHost(host: HostUpdateInput!): Host!
   removeHost(id: ID!): Boolean!
+  removeHosts(ids: [ID!]!): Boolean!
 }

@@ -1,11 +1,72 @@
 import React, { useState } from "react";
 import { Components, registerComponent, Utils } from "@penpal/core";
+import { useQuery } from "@apollo/client";
+import GetProfiles from "../../../../Base/client/pages/configuration/queries/get-profiles.js";
 import { format } from "date-fns";
 import { Calendar as CalendarIcon } from "lucide-react";
 
 const { cn } = Utils;
-const { Input, Label, Button, Popover, PopoverContent, PopoverTrigger } =
-  Components;
+const {
+  Input,
+  Label,
+  Button,
+  Popover,
+  PopoverContent,
+  PopoverTrigger,
+  Command,
+  CommandInput,
+  CommandList,
+  CommandItem,
+  CommandEmpty,
+} = Components;
+
+const ProfileSelector = ({ value, onChange }) => {
+  const { data: { getPluginProfiles = [] } = {} } = useQuery(GetProfiles);
+  const [open, setOpen] = useState(false);
+
+  const selectedProfile = getPluginProfiles.find((p) => p.id === value);
+
+  return (
+    <Popover open={open} onOpenChange={setOpen} modal={true}>
+      <PopoverTrigger asChild>
+        <Button variant="outline" className="w-full justify-between">
+          {selectedProfile ? selectedProfile.name : "Select profile (optional)"}
+        </Button>
+      </PopoverTrigger>
+      <PopoverContent className="w-full p-0 bg-white border border-gray-200 rounded-xl shadow-lg">
+        <Command>
+          <CommandInput placeholder="Search profiles..." className="h-9" />
+          <CommandList>
+            <CommandEmpty>No profiles found.</CommandEmpty>
+            <CommandItem
+              value=""
+              onSelect={() => {
+                setOpen(false);
+                onChange("");
+              }}
+              className="cursor-pointer"
+            >
+              No Profile
+            </CommandItem>
+            {getPluginProfiles.map((p) => (
+              <CommandItem
+                key={p.id}
+                value={p.name}
+                onSelect={() => {
+                  setOpen(false);
+                  onChange(p.id);
+                }}
+                className="cursor-pointer"
+              >
+                {p.name}
+              </CommandItem>
+            ))}
+          </CommandList>
+        </Command>
+      </PopoverContent>
+    </Popover>
+  );
+};
 
 const ProjectDetailsForm = ({
   projectName,
@@ -16,6 +77,8 @@ const ProjectDetailsForm = ({
   setProjectStartDate,
   projectEndDate,
   setProjectEndDate,
+  projectProfile,
+  setProjectProfile,
 }) => {
   const [popoverOpen, setPopoverOpen] = useState(false);
   const handleProjectNameChange = (event) => setProjectName(event.target.value);
@@ -95,6 +158,11 @@ const ProjectDetailsForm = ({
             />
           </PopoverContent>
         </Popover>
+      </div>
+
+      <div className="w-full">
+        <Label htmlFor="project-profile">Plugin Profile</Label>
+        <ProfileSelector value={projectProfile} onChange={setProjectProfile} />
       </div>
     </div>
   );

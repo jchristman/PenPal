@@ -23,6 +23,8 @@ type Project implements Annotatable & Auditable {
   dates: ProjectDates!
   "Project description"
   description: String
+  "Active Plugin Profile for this project (controls per-plugin behavior)"
+  profile: ID
   "All WebappUsers associated with this project"
   users: ProjectUsers!
   "Project annotations"
@@ -43,6 +45,8 @@ input CreateProjectInput {
   description: String!
   "Sets the appropriate dates for the project"
   dates: ProjectInputDates
+  "Sets the active plugin profile for the project"
+  profile: ID
   "Sets the scope for the project"
   scope: ProjectInputScope!
 }
@@ -59,6 +63,8 @@ input UpdateProjectInput {
   description: String
   "Sets the appropriate dates for the project"
   dates: ProjectInputDates
+  "Updates the active plugin profile for the project"
+  profile: ID
 }
 
 "Important dates with regards to a project"

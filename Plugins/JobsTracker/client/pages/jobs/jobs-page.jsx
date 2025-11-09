@@ -375,7 +375,7 @@ const JobsPage = () => {
   const [showCompleted, setShowCompleted] = useState(true);
 
   const { loading, error, data, refetch } = useQuery(GetAllJobs, {
-    variables: { filter: "all" }, // Always fetch all, filter on client
+    variables: { filterMode: "all" }, // Always fetch all, filter on client
     fetchPolicy: "cache-and-network",
     onCompleted: (data) => {
       if (!freezeSort) {
@@ -385,7 +385,7 @@ const JobsPage = () => {
   });
 
   const [clearAllJobs] = useMutation(ClearAllJobs, {
-    refetchQueries: [{ query: GetAllJobs, variables: { filter: "all" } }],
+    refetchQueries: [{ query: GetAllJobs, variables: { filterMode: "all" } }],
   });
 
   useSubscription(JobsSubscription, {

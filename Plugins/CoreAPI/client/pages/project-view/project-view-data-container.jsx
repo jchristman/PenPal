@@ -1,6 +1,8 @@
 import React, { useState } from "react";
 import { Components, registerComponent } from "@penpal/core";
+import PenPal from "@penpal/core";
 import { useSearchParams } from "react-router-dom";
+import ProjectViewConfiguration from "./project-view-configuration";
 
 const { Tabs, TabsContent, TabsList, TabsTrigger } = Components;
 
@@ -19,11 +21,24 @@ export const TabPanel = (props) => {
   );
 };
 
+// Initialize a simple registry API for contributing tabs to the Project view
+if (!PenPal.API) PenPal.API = {};
+if (!PenPal.API.ProjectViewTabsRegistry) {
+  PenPal.API.ProjectViewTabsRegistry = [];
+}
+
+// Register function allows other plugins to add tabs
+PenPal.API.registerProjectViewTab = (tabDescriptor) => {
+  const { value, label, render, order = 100 } = tabDescriptor || {};
+  if (!value || !label || typeof render !== "function") return;
+  PenPal.API.ProjectViewTabsRegistry.push({ value, label, render, order });
+};
+
 const ProjectViewDataContainer = ({ project, disable_polling }) => {
   const [searchParams, setSearchParams] = useSearchParams();
 
-  // Get active tab from URL, default to "networks"
-  const activeTab = searchParams.get("tab") || "networks";
+  // Get active tab from URL, default to "details"
+  const activeTab = searchParams.get("tab") || "details";
 
   const handleTabChange = (value) => {
     setSearchParams((prev) => {
@@ -35,7 +50,28 @@ const ProjectViewDataContainer = ({ project, disable_polling }) => {
     });
   };
 
-  const tabs = [
+  // Core tabs + contributed tabs
+  const coreTabs = [
+    {
+      value: "details",
+      label: "Project Details",
+      content: () => (
+        <Components.ProjectViewDetails
+          project={project}
+          disable_polling={disable_polling}
+        />
+      ),
+    },
+    {
+      value: "configuration",
+      label: "Configuration",
+      content: () => (
+        <ProjectViewConfiguration
+          project={project}
+          disable_polling={disable_polling}
+        />
+      ),
+    },
     {
       value: "networks",
       label: "Networks",
@@ -63,6 +99,16 @@ const ProjectViewDataContainer = ({ project, disable_polling }) => {
     },
   ];
 
+  const contributedTabs = (PenPal.API.ProjectViewTabsRegistry || [])
+    .sort((a, b) => (a.order ?? 100) - (b.order ?? 100))
+    .map((tab) => ({
+      value: tab.value,
+      label: tab.label,
+      content: () => tab.render({ project, disable_polling, Components }),
+    }));
+
+  const tabs = [...coreTabs, ...contributedTabs];
+
   return (
     <div className="flex flex-col h-full">
       {/* Horizontal tabs using Tabs components with black border */}
@@ -87,7 +133,7 @@ const ProjectViewDataContainer = ({ project, disable_polling }) => {
       </div>
 
       {/* Tab content */}
-      <div className="flex-1 flex flex-col h-full">
+      <div className="flex-1 flex flex-col h-full overflow-hidden min-h-0">
         {tabs.find((tab) => tab.value === activeTab)?.content()}
       </div>
     </div>

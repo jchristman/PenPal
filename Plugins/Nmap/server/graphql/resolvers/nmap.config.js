@@ -15,6 +15,7 @@ const parsePorts = (value) => {
 const DEFAULT_CONFIG = {
   ui: {
     STATUS_SLEEP: 900,
+    enabled: true, // Plugins are enabled by default
   },
   scan: {
     fast: {
@@ -29,6 +30,7 @@ const DEFAULT_CONFIG = {
       top_ports: null,
       tcp_ports: ["1-65535"],
       udp_ports: [53, 111, 135, "137-139", "161-162"],
+      courtesy_sleep: 30000, // 30 seconds default wait before queuing detailed scans
     },
   },
 };
@@ -36,7 +38,36 @@ const DEFAULT_CONFIG = {
 const getStoredConfig = async () => {
   const existing = await PenPal.DataStore.fetch("Nmap", "Configuration", {});
   if (existing.length === 0) return DEFAULT_CONFIG;
-  return { ...DEFAULT_CONFIG, ...existing[0] };
+  
+  // Deep merge to preserve default values for new fields
+  const merged = {
+    ...DEFAULT_CONFIG,
+    ...existing[0],
+    ui: {
+      ...DEFAULT_CONFIG.ui,
+      ...existing[0].ui,
+      // Ensure enabled is always a boolean (defaults to true)
+      enabled: existing[0].ui?.enabled !== undefined ? !!existing[0].ui.enabled : DEFAULT_CONFIG.ui.enabled,
+    },
+    scan: {
+      ...DEFAULT_CONFIG.scan,
+      ...existing[0].scan,
+      fast: {
+        ...DEFAULT_CONFIG.scan.fast,
+        ...existing[0].scan?.fast,
+      },
+      detailed: {
+        ...DEFAULT_CONFIG.scan.detailed,
+        ...existing[0].scan?.detailed,
+        // Ensure courtesy_sleep defaults to 30000 if not present
+        courtesy_sleep: existing[0].scan?.detailed?.courtesy_sleep !== undefined 
+          ? Number(existing[0].scan.detailed.courtesy_sleep)
+          : DEFAULT_CONFIG.scan.detailed.courtesy_sleep,
+      },
+    },
+  };
+  
+  return merged;
 };
 
 const saveConfig = async (config) => {
@@ -78,6 +109,12 @@ export default {
         ],
         conditional: [
           {
+            path: "ui",
+            controller: "enabled",
+            showWhenTrue: ["STATUS_SLEEP", "scan"],
+            showWhenFalse: [],
+          },
+          {
             path: "scan.fast",
             controller: "use_top_ports",
             showWhenTrue: ["top_ports"],
@@ -86,8 +123,8 @@ export default {
           {
             path: "scan.detailed",
             controller: "use_top_ports",
-            showWhenTrue: ["top_ports"],
-            showWhenFalse: ["tcp_ports", "udp_ports"],
+            showWhenTrue: ["top_ports", "courtesy_sleep"],
+            showWhenFalse: ["tcp_ports", "udp_ports", "courtesy_sleep"],
           },
         ],
       };
@@ -106,6 +143,9 @@ export default {
         next.ui.STATUS_SLEEP = Number(
           configuration.ui.STATUS_SLEEP ?? next.ui.STATUS_SLEEP
         );
+        if (configuration.ui.enabled !== undefined) {
+          next.ui.enabled = !!configuration.ui.enabled;
+        }
       }
       if (configuration?.scan?.fast) {
         const f = configuration.scan.fast;
@@ -155,6 +195,9 @@ export default {
           next.scan.detailed.udp_ports = parsePorts(
             d.udp_ports ?? next.scan.detailed.udp_ports
           );
+        }
+        if (d.courtesy_sleep !== undefined) {
+          next.scan.detailed.courtesy_sleep = Number(d.courtesy_sleep);
         }
       }
 
@@ -222,6 +265,12 @@ export default {
         ],
         conditional: [
           {
+            path: "ui",
+            controller: "enabled",
+            showWhenTrue: ["STATUS_SLEEP", "scan"],
+            showWhenFalse: [],
+          },
+          {
             path: "scan.fast",
             controller: "use_top_ports",
             showWhenTrue: ["top_ports"],
@@ -230,8 +279,8 @@ export default {
           {
             path: "scan.detailed",
             controller: "use_top_ports",
-            showWhenTrue: ["top_ports"],
-            showWhenFalse: ["tcp_ports", "udp_ports"],
+            showWhenTrue: ["top_ports", "courtesy_sleep"],
+            showWhenFalse: ["tcp_ports", "udp_ports", "courtesy_sleep"],
           },
         ],
       };

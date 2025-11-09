@@ -1,5 +1,6 @@
 type NmapUIConfig {
   STATUS_SLEEP: Int
+  enabled: Boolean
 }
 
 type NmapScanModeConfig {
@@ -8,6 +9,7 @@ type NmapScanModeConfig {
   tcp_ports: [String]
   udp_ports: [String]
   fast_scan: Boolean
+  courtesy_sleep: Int
 }
 
 type NmapScanConfig {
@@ -23,6 +25,7 @@ type NmapConfiguration {
 
 input NmapUIConfigInput {
   STATUS_SLEEP: Int
+  enabled: Boolean
 }
 
 input NmapScanModeConfigInput {
@@ -31,6 +34,7 @@ input NmapScanModeConfigInput {
   tcp_ports: String
   udp_ports: String
   fast_scan: Boolean
+  courtesy_sleep: Int
 }
 
 input NmapScanConfigInput {

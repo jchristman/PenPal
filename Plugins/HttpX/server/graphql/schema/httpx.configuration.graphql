@@ -1,5 +1,6 @@
 type HttpXConfigurationUI {
   STATUS_SLEEP: Int
+  enabled: Boolean
 }
 
 type HttpXConfiguration {
@@ -9,6 +10,7 @@ type HttpXConfiguration {
 
 input HttpXConfigurationUIInput {
   STATUS_SLEEP: Int
+  enabled: Boolean
 }
 
 input HttpXConfigurationInput {

@@ -158,36 +158,108 @@ export const performHttpScan = async ({
 
     PenPal.Utils.MkdirP(outdir);
 
-    // Create target URLs for httpx
-    const targets = services.map((service) => {
-      const protocol = [80, 8080, 8000, 3000].includes(service.port)
-        ? "http"
-        : "https";
-      return `${protocol}://${service.host_ip}:${service.port}`;
-    });
+    // Known non-HTTP ports to skip (SSH, FTP, RPC, database ports, etc.)
+    const non_http_ports = [
+      22, 21, 23, 25, 53, 111, 135, 139, 445, 1433, 3306, 5432, 6379, 27017,
+    ];
 
-    const targets_file = [outdir, `targets-${PenPal.Utils.Epoch()}.txt`].join(
-      path.sep
-    );
-    const output_file = [outdir, `results-${PenPal.Utils.Epoch()}.json`].join(
-      path.sep
-    );
+    // Create target URLs for httpx - try both HTTP and HTTPS for each service
+    const targets = [];
+    const epoch = PenPal.Utils.Epoch();
+
+    for (const service of services) {
+      // Skip known non-HTTP ports (convert port to number for comparison)
+      const portNum = parseInt(service.port, 10);
+      if (non_http_ports.includes(portNum)) {
+        continue;
+      }
+
+      // Standard HTTP ports - try HTTP
+      if (
+        portNum === 80 ||
+        portNum === 8080 ||
+        portNum === 8000 ||
+        portNum === 3000
+      ) {
+        targets.push(`http://${service.host_ip}:${service.port}`);
+      }
+      // Standard HTTPS ports - try HTTPS
+      else if (
+        portNum === 443 ||
+        portNum === 8443 ||
+        portNum === 8001 ||
+        portNum === 3001
+      ) {
+        targets.push(`https://${service.host_ip}:${service.port}`);
+      }
+      // For all other ports, try both HTTP and HTTPS (common for custom web services)
+      else {
+        targets.push(`http://${service.host_ip}:${service.port}`);
+        targets.push(`https://${service.host_ip}:${service.port}`);
+      }
+    }
+
+    if (targets.length === 0) {
+      HttpXLogger.warn("No valid HTTP targets created after filtering");
+      return {
+        success: true,
+        message: "No HTTP-capable services to scan",
+        results_count: 0,
+      };
+    }
+
+    // HttpXLogger.log(
+    //   `Created ${targets.length} target URLs from ${services.length} services`
+    // );
+
+    const targets_file = [outdir, `targets-${epoch}.txt`].join(path.sep);
+    const output_file = [outdir, `results-${epoch}.json`].join(path.sep);
+
+    // Ensure directory exists
+    if (!fs.existsSync(outdir)) {
+      HttpXLogger.warn(`Output directory does not exist, creating: ${outdir}`);
+      PenPal.Utils.MkdirP(outdir);
+    }
 
     // Write targets to file
-    fs.writeFileSync(targets_file, targets.join("\n"));
-    HttpXLogger.log(
-      `Created targets file with ${targets.length} URLs: ${targets_file}`
-    );
+    try {
+      const targets_content = targets.join("\n");
 
-    // Convert to container paths
-    let container_targets_file = targets_file.replace(
-      outdir_base,
-      "/penpal-plugin-share"
-    );
-    let container_output_file = output_file.replace(
-      outdir_base,
-      "/penpal-plugin-share"
-    );
+      // Ensure parent directory exists
+      const parentDir = path.dirname(targets_file);
+      if (!fs.existsSync(parentDir)) {
+        PenPal.Utils.MkdirP(parentDir);
+      }
+
+      // HttpXLogger.log(`Debug: Targets content: ${targets_content}`);
+      fs.writeFileSync(targets_file, targets_content, "utf8");
+
+      // Force sync to ensure file is written to disk
+      const fd = fs.openSync(targets_file, "r+");
+      fs.fsyncSync(fd);
+      fs.closeSync(fd);
+
+      // Verify file was written and is readable
+      if (!fs.existsSync(targets_file)) {
+        throw new Error(`File does not exist after write: ${targets_file}`);
+      }
+
+      const stats = fs.statSync(targets_file);
+      if (stats.size === 0) {
+        throw new Error(`File is empty after write: ${targets_file}`);
+      }
+
+      HttpXLogger.log(
+        `Created targets file with ${targets.length} URLs (${stats.size} bytes): ${targets_file}`
+      );
+    } catch (error) {
+      HttpXLogger.error(`Error writing targets file: ${error.message}`);
+      throw error;
+    }
+
+    // Container paths are the same as host paths since volume is mounted at /penpal-plugin-share
+    const container_targets_file = targets_file;
+    const container_output_file = output_file;
 
     // Build httpx command
     const httpx_command = [
@@ -205,6 +277,43 @@ export const performHttpScan = async ({
     ].join(" ");
 
     HttpXLogger.log(`Running httpx command: ${httpx_command}`);
+
+    // Verify file exists and add delay to ensure volume sync
+    if (!fs.existsSync(targets_file)) {
+      throw new Error(
+        `Targets file does not exist before container start: ${targets_file}`
+      );
+    }
+
+    // Read file back to verify it's accessible
+    try {
+      const verifyContent = fs.readFileSync(targets_file, "utf8");
+      if (!verifyContent || verifyContent.trim().length === 0) {
+        throw new Error(
+          `Targets file is empty when verifying before container start`
+        );
+      }
+      HttpXLogger.log(
+        `Verified targets file is readable (${verifyContent.length} chars) before container start`
+      );
+    } catch (error) {
+      HttpXLogger.error(
+        `Failed to verify targets file before container start: ${error.message}`
+      );
+      throw error;
+    }
+
+    // Small delay to ensure Docker volume sync completes
+    // Docker volumes can have slight delays in propagation between containers
+    await PenPal.Utils.Sleep(500);
+
+    // Final verification before starting container
+    const finalStats = fs.statSync(targets_file);
+    HttpXLogger.log(
+      `Final pre-container check: File exists (${
+        finalStats.size
+      } bytes, mtime: ${new Date(finalStats.mtime).toISOString()})`
+    );
 
     await update_job(10, "Starting HTTP discovery scan...");
 

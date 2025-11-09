@@ -15,6 +15,7 @@ import host_default_resolvers from "./host.default.js";
 import host_query_resolvers from "./host.queries.js";
 import host_mutation_resolvers from "./host.mutations.js";
 import network_default_resolvers from "./network.default.js";
+import network_mutation_resolvers from "./network.mutations.js";
 import project_default_resolvers from "./project.default.js";
 import project_mutation_resolvers from "./project.mutations.js";
 import project_query_resolvers from "./project.queries.js";
@@ -41,6 +42,7 @@ export default {
     ...configuration_mutation_resolvers,
     ...file_attachments_mutation_resolvers,
     ...host_mutation_resolvers,
+    ...network_mutation_resolvers,
     ...project_mutation_resolvers,
   },
   default_resolvers: [

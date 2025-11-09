@@ -19,19 +19,18 @@ const VerticalTabs = ({ tabs, defaultTab = "list" }) => {
   };
 
   return (
-    <div className="w-full h-full">
+    <div className="w-full h-full flex flex-col overflow-hidden min-h-0">
       <Tabs
         value={activeTab}
         onValueChange={handleTabChange}
         orientation="vertical"
-        className="w-full h-full flex"
+        className="w-full h-full flex flex-1 overflow-hidden min-h-0"
       >
-        <div className="border-r border-black">
+        <div className="border-r border-black overflow-y-auto flex-shrink-0 min-h-0">
           <TabsList className="h-full w-48 flex-col justify-start items-start bg-transparent p-0 rounded-none">
             {tabs.map((tab) => (
-              <div className="w-full">
+              <div key={tab.value} className="w-full">
                 <TabsTrigger
-                  key={tab.value}
                   value={tab.value}
                   className={`w-full justify-start border-b-2 rounded-none px-4 py-3 font-medium text-sm relative ${
                     activeTab === tab.value
@@ -45,7 +44,7 @@ const VerticalTabs = ({ tabs, defaultTab = "list" }) => {
             ))}
           </TabsList>
         </div>
-        <div className="flex-1 pl-8 pr-8">
+        <div className="flex-1 pl-8 pr-8 overflow-y-auto min-h-0">
           {tabs.map((tab) => (
             <TabsContent key={tab.value} value={tab.value} className="mt-4">
               {tab.content}

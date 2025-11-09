@@ -139,6 +139,13 @@ alwaysApply: true
   - Don’t add plugin-specific branches to Base.
   - Don’t use `__ui` (GraphQL reserves `__*`).
 
+- **Client-Side Configuration Summarization**
+
+  - The Project Configuration tab displays plugin configurations in human-readable format.
+  - The summarization system is **plugin-agnostic** - CoreAPI uses pattern recognition, not hardcoded plugin knowledge.
+  - Plugins can optionally register custom summarizers using `registerPluginSummarizer()` and `registerPluginDetailedSummarizer()`.
+  - See `[ui-development-guide.mdc](mdc:.cursor/rules/ui-development-guide.mdc)` for details on the configuration summarization system.
+
 - **Testing & Tips**
   - After saving, confirm values persist (DataStore update) and UI reflects sections immediately.
   - For runtime usage, ensure your plugin reads saved settings on startup and also updates in-memory settings after save.

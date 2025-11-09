@@ -12,6 +12,13 @@ const BasePlugin = {
         types,
         resolvers,
       },
+      settings: {
+        datastores: [
+          {
+            name: "Profiles",
+          },
+        ],
+      },
     };
   },
 };

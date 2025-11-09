@@ -86,18 +86,41 @@ export const parseAndUpsertResults = async (project_id, xml_data) => {
         (extra_port) => extra_port.$.state === "filtered"
       )?.$?.count ?? 0;
 
+    const allPorts = host.ports?.[0].port ?? [];
+    logger.debug(`Host ${ip}: Found ${allPorts.length} individual ports`);
+    
     const services =
-      host.ports?.[0].port?.map((port) => {
-        return {
-          port: port.$.portid,
-          protocol: port.$.protocol,
-          service: port.service?.[0].$.name ?? null,
-          fingerprint: port.service?.[0].$.servicefp ?? null,
-          product: port.service?.[0].$.product ?? null,
-          version: port.service?.[0].$.version ?? null,
-          extra_info: port.service?.[0].$.extrainfo ?? null,
-        };
-      }) ?? [];
+      host.ports?.[0].port
+        ?.filter((port) => {
+          // Only include ports that are open or open|filtered
+          // If a port is listed individually (not in extraports), it's typically open
+          // If state attribute exists, filter by it; otherwise include it
+          const state = port.$.state;
+          if (!state) {
+            // No state attribute - port is listed individually, likely open
+            logger.debug(`Port ${port.$.portid}/${port.$.protocol} has no state attribute, including`);
+            return true;
+          }
+          // Filter out closed and filtered ports
+          const isOpen = state === "open" || state === "open|filtered";
+          if (!isOpen) {
+            logger.debug(`Port ${port.$.portid}/${port.$.protocol} has state "${state}", filtering out`);
+          }
+          return isOpen;
+        })
+        ?.map((port) => {
+          return {
+            port: port.$.portid,
+            protocol: port.$.protocol,
+            service: port.service?.[0].$.name ?? null,
+            fingerprint: port.service?.[0].$.servicefp ?? null,
+            product: port.service?.[0].$.product ?? null,
+            version: port.service?.[0].$.version ?? null,
+            extra_info: port.service?.[0].$.extrainfo ?? null,
+          };
+        }) ?? [];
+
+    logger.debug(`Host ${ip}: Filtered to ${services.length} open services (from ${allPorts.length} total ports)`);
 
     if (services.length > 0) {
       live_hosts[ip] = {

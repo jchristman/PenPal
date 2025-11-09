@@ -8,6 +8,7 @@ export const ProjectDetails = `
       name
     }
     description
+    profile
     dates {
       created_at
       start

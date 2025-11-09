@@ -52,3 +52,22 @@ type HostOS {
   "The method by which the OS was determined (TODO make this more granular based on a new 'Tool' type)"
   method: String!
 }
+
+"Input type for creating a host"
+input HostInput {
+  project: ID!
+  network: ID
+  ip_address: IPAddress!
+  mac_address: String
+  hostnames: [String!]
+}
+
+"Input type for updating a host"
+input HostUpdateInput {
+  id: ID!
+  project: ID
+  network: ID
+  ip_address: IPAddress
+  mac_address: String
+  hostnames: [String!]
+}
