@@ -1,8 +1,9 @@
 ---
 description: Provides a comprehensive guide for developing User Interface (UI) plugins and components within the PenPal framework. This rule details essential patterns, including client-side plugin structure, component and route registration, the view-based architecture for UI extensibility, and the service enrichment display system. Load this rule when tasked with creating or modifying UI features, extending existing components, or understanding PenPal's front-end architecture.
-globs: 
+globs:
 alwaysApply: false
 ---
+
 # PenPal UI Development Guide
 
 This guide outlines the patterns and best practices for developing user interface components and plugins within the PenPal ecosystem. It is based on the architecture established in the CoreAPI plugin.
@@ -12,7 +13,9 @@ This guide outlines the patterns and best practices for developing user interfac
 A client-side plugin requires a specific file structure to be correctly loaded by the PenPal application.
 
 1.  **`index.js`**: The main entry point that registers the plugin with the core system. It should be kept simple.
-    -   **Example**: `[index.js](mdc:Plugins/CoreAPI/client/index.js)`
+
+    - **Example**: `[index.js](mdc:Plugins/CoreAPI/client/index.js)`
+
     ```javascript
     // Overall PenPal coordinating server code
     import PenPal from "@penpal/core";
@@ -26,9 +29,11 @@ A client-side plugin requires a specific file structure to be correctly loaded b
     ```
 
 2.  **`plugin.js`**: The core of the client-side plugin. It loads all React components and registers the plugin's routes.
-    -   **`import.meta.glob`**: This Vite function is used to eagerly load all `.jsx` components within the plugin, making them available for registration.
-    -   **`registerRoutes`**: A function exported from `routes.js` is returned to inform the core application of the plugin's pages.
-    -   **Example**: `[plugin.js](mdc:Plugins/CoreAPI/client/plugin.js)`
+
+    - **`import.meta.glob`**: This Vite function is used to eagerly load all `.jsx` components within the plugin, making them available for registration.
+    - **`registerRoutes`**: A function exported from `routes.js` is returned to inform the core application of the plugin's pages.
+    - **Example**: `[plugin.js](mdc:Plugins/CoreAPI/client/plugin.js)`
+
     ```javascript
     import.meta.glob("./**/*.jsx", { eager: true });
     import registerRoutes from "./routes.js";
@@ -45,7 +50,9 @@ A client-side plugin requires a specific file structure to be correctly loaded b
     ```
 
 3.  **`routes.js`**: This file defines the navigation routes for the plugin's pages.
-    -   **Example**: `[routes.js](mdc:Plugins/CoreAPI/client/routes.js)`
+
+    - **Example**: `[routes.js](mdc:Plugins/CoreAPI/client/routes.js)`
+
     ```javascript
     import { registerRoute } from "@penpal/core";
     import { FolderIcon } from "@heroicons/react/24/outline";
@@ -68,18 +75,18 @@ A client-side plugin requires a specific file structure to be correctly loaded b
 
 To ensure components are available throughout the application, they must be registered with the core system.
 
--   **`registerComponent(name, component)`**: Use this function from `@penpal/core` in every component file.
--   **Usage**: Once registered, a component like `'MyComponent'` can be rendered anywhere using `<Components.MyComponent />`.
+- **`registerComponent(name, component)`**: Use this function from `@penpal/core` in every component file.
+- **Usage**: Once registered, a component like `'MyComponent'` can be rendered anywhere using `<Components.MyComponent />`.
 
 ```javascript
 // ✅ Correct: MyComponent.jsx
-import React from 'react';
-import { Components, registerComponent } from '@penpal/core';
+import React from "react";
+import { Components, registerComponent } from "@penpal/core";
 
 const MyComponent = () => <div>Hello from my plugin!</div>;
 
 // Register the component
-registerComponent('MyComponent', MyComponent);
+registerComponent("MyComponent", MyComponent);
 
 // Also export for fast refresh
 export default MyComponent;
@@ -92,34 +99,345 @@ export default MyComponent;
 
 For complex pages, PenPal uses a "view-based" architecture. This allows users to switch between different representations of the same data (e.g., Table, Cards, Graph).
 
--   **View Container**: A primary component manages the state for the current view, often using URL search parameters (`?view=table`). Example: `[project-view-hosts.jsx](mdc:Plugins/CoreAPI/client/pages/project-view/project-view-hosts.jsx)`.
--   **View Components**: Each specific view is a separate component. Examples: `[project-view-hosts-table.jsx](mdc:Plugins/CoreAPI/client/pages/project-view/project-view-hosts-table.jsx)`, `[project-view-hosts-graph.jsx](mdc:Plugins/CoreAPI/client/pages/project-view/project-view-hosts-graph.jsx)`.
--   **Extensibility**: This pattern is highly extensible. A new plugin can contribute its own view to an existing page by registering its view component and providing a way to select it (e.g., a new button in a `ToggleGroup`).
+- **View Container**: A primary component manages the state for the current view, often using URL search parameters (`?view=table`). Example: `[project-view-hosts.jsx](mdc:Plugins/CoreAPI/client/pages/project-view/project-view-hosts.jsx)`.
+- **View Components**: Each specific view is a separate component. Examples: `[project-view-hosts-table.jsx](mdc:Plugins/CoreAPI/client/pages/project-view/project-view-hosts-table.jsx)`, `[project-view-hosts-graph.jsx](mdc:Plugins/CoreAPI/client/pages/project-view/project-view-hosts-graph.jsx)`.
+- **Extensibility**: This pattern is highly extensible. A new plugin can contribute its own view to an existing page by registering its view component and providing a way to select it (e.g., a new button in a `ToggleGroup`).
 
 ## Service Enrichment Display System
 
 A critical extensibility point is the Service Enrichments UI. Plugins can provide custom React components to display their unique data for discovered services.
 
--   **Registration**: Plugins register their display component using `PenPal.API.registerEnrichmentDisplay(pluginName, component)`.
--   **Implementation**: The `[project-view-services-enrichments.jsx](mdc:Plugins/CoreAPI/client/pages/project-view/project-view-services-enrichments.jsx)` component looks up the appropriate display component from the registry based on the enrichment's `plugin_name`. If none is found, it uses a `DefaultEnrichmentDisplay`.
+- **Registration**: Plugins register their display component using `PenPal.API.registerEnrichmentDisplay(pluginName, component)`.
+- **Implementation**: The `[project-view-services-enrichments.jsx](mdc:Plugins/CoreAPI/client/pages/project-view/project-view-services-enrichments.jsx)` component looks up the appropriate display component from the registry based on the enrichment's `plugin_name`. If none is found, it uses a `DefaultEnrichmentDisplay`.
 
 See the `[README-services-extensibility.md](mdc:Plugins/CoreAPI/client/pages/project-view/README-services-extensibility.md)` for a detailed guide on this system.
+
+## Plugin Configuration Summarization System
+
+The Project Configuration tab displays plugin configurations in a human-readable format. The system is **fully modular** - CoreAPI has no hardcoded knowledge of specific plugins.
+
+### Architecture Principles
+
+- **Plugin-Agnostic Core**: CoreAPI uses pattern recognition, not plugin-specific logic
+- **Extensible Registry**: Plugins can optionally register custom summarizers
+- **Generic Fallback**: Unknown plugins get intelligent summaries based on common patterns
+
+### How It Works
+
+The system provides two types of summaries:
+
+1. **Main Summary**: High-level overview (e.g., "Fast: Top 50 ports | Detailed: Top 1000 ports")
+2. **Detailed Summary**: Additional technical details (e.g., "Status updates every 900s • Fast scan: thorough mode")
+
+### Generic Pattern Recognition
+
+The system automatically recognizes common configuration patterns without knowing specific plugins:
+
+- **Port Scanning**: `scan.fast`, `scan.detailed`, `use_top_ports`, `tcp_ports`, `udp_ports`
+- **HTTP/Web**: `status_codes`, `content_types`, `tech_detect`
+- **Directory Scanning**: `mode`, `wordlist`
+- **Performance**: `threads`, `timeout`
+- **Output**: `quiet`, `silent`, `json`, `json_output`
+
+### Registering Custom Summarizers (Optional)
+
+Plugins can register custom summarization functions if they need plugin-specific logic:
+
+```javascript
+// In your plugin's client code
+import { 
+  registerPluginSummarizer,
+  registerPluginDetailedSummarizer 
+} from "../../CoreAPI/client/pages/project-view/project-configuration-utils.js";
+
+// Register custom main summary
+registerPluginSummarizer("MyPlugin", (config) => {
+  // Return a human-readable summary string
+  if (config.mySpecialSetting) {
+    return `Custom Mode: ${config.mySpecialSetting}`;
+  }
+  return "Default configuration";
+});
+
+// Register custom detailed summary
+registerPluginDetailedSummarizer("MyPlugin", (config) => {
+  const details = [];
+  if (config.customTimeout) {
+    details.push(`Timeout: ${config.customTimeout}s`);
+  }
+  return details.join(" • ") || "Using standard settings";
+});
+```
+
+### Implementation Details
+
+- **File Location**: `[project-configuration-utils.js](mdc:Plugins/CoreAPI/client/pages/project-view/project-configuration-utils.js)`
+- **Usage**: Used by `[project-view-configuration.jsx](mdc:Plugins/CoreAPI/client/pages/project-view/project-view-configuration.jsx)` to display profile summaries
+- **Registry System**: Uses `Map` objects to store plugin-specific summarizers
+- **Fallback Logic**: If no custom summarizer is registered, uses `generateGenericSummary()` or `getGenericDetailedSummary()`
+
+### Best Practices
+
+1. **Don't Hardcode Plugin Names**: Core plugins should never have hardcoded knowledge of subordinate plugins
+2. **Use Pattern Recognition**: Rely on configuration structure patterns, not plugin names
+3. **Register When Needed**: Only register custom summarizers if generic patterns don't work well
+4. **Keep Summaries Concise**: Main summaries should be brief (one line), detailed summaries can be longer
+5. **Consistent Formatting**: Use " • " for detailed summary separators, " | " for main summary separators
+
+### Example Output
+
+**Main Summary:**
+- `"Fast: Top 50 ports | Detailed: Top 1000 ports"`
+- `"3 status codes | 2 content types | Tech detection"`
+- `"Mode: dir | Wordlist: common.txt"`
+
+**Detailed Summary:**
+- `"Status updates every 900s • Fast scan: thorough mode"`
+- `"Timeout: 30s • 5 threads • JSON output"`
+- `"Using standard configuration settings"`
+
+## Component Source Patterns
+
+### ⚠️ **CRITICAL: Component Destructuring Rules**
+
+**Always destructure components from the correct source to avoid undefined component errors:**
+
+```javascript
+// ✅ CORRECT: Components from Components registry
+const {
+  Button,
+  Card,
+  CardContent,
+  CardHeader,
+  CardTitle,
+  Popover,
+  PopoverTrigger,
+  PopoverContent,
+  Command,
+  CommandInput,
+  CommandList,
+  CommandEmpty,
+  CommandItem,
+  Badge,
+} = Components;
+
+// ✅ CORRECT: Hooks from Hooks registry
+const { useToast } = Hooks;
+
+// ✅ CORRECT: Utils from Utils registry
+const { cn } = Utils;
+
+// ❌ WRONG: Card components from Hooks (will cause "Element type is invalid" error)
+const { useToast, Card, CardContent, CardHeader, CardTitle } = Hooks;
+
+// ❌ WRONG: Button from Components (if not available)
+const { NonExistentButton } = Components; // Will cause undefined component error
+```
+
+### **Available Component Categories**
+
+**UI Components (from Components):**
+
+- Layout: `Card`, `CardContent`, `CardHeader`, `CardTitle`
+- Controls: `Button`, `Badge`, `Input`, `Label`, `Separator`
+- Popover System: `Popover`, `PopoverTrigger`, `PopoverContent`
+- Command System: `Command`, `CommandInput`, `CommandList`, `CommandEmpty`, `CommandItem`
+- Navigation: `Tabs`, `TabsContent`, `TabsList`, `TabsTrigger`
+
+**Hooks (from Hooks):**
+
+- State: `useToast`, `useIntrospection`
+- Apollo: `useImperativeQuery`
+
+**Utils (from Utils):**
+
+- Styling: `cn` (className utility)
+
+### **Common Component Errors & Solutions**
+
+**Error: "Element type is invalid: expected a string... but got: undefined"**
+
+**Debugging Checklist:**
+
+1. **Check Component Source**: Verify component is destructured from correct registry
+2. **Verify Component Availability**: Check if component exists in PenPal's registry
+3. **Review Import Statements**: Ensure all required components are imported
+4. **Check Component Registration**: Confirm component is properly registered with `registerComponent()`
+5. **Validate Props**: Ensure all required props are passed to components
+
+**Common Mistakes:**
+
+- ❌ Destructuring Card components from Hooks instead of Components
+- ❌ Using Select components that don't exist (use Popover/Command pattern instead)
+- ❌ Forgetting to register components with `registerComponent()`
+- ❌ Mixing component sources (some from Components, some from Hooks)
+- ❌ Querying non-existent GraphQL fields (e.g., `updated_at` on Project type)
+- ❌ Assuming API response structure without validation (e.g., destructuring undefined `rejected`)
 
 ## UI Toolkit
 
 To maintain a consistent look and feel, always use the shared UI toolkit.
 
--   **Shared Components**: Use the pre-styled components available from `@penpal/core`, accessed via the `Components` object (e.g., `<Components.Button />`, `<Components.Card />`).
--   **Styling**: Use **Tailwind CSS** for all styling. The `cn` utility from `@penpal/core`'s `Utils` should be used for conditionally applying classes.
--   **Icons**: Use icons from `lucide-react` or `@heroicons/react/24/outline` for consistency.
+- **Shared Components**: Use the pre-styled components available from `@penpal/core`, accessed via the `Components` object (e.g., `<Components.Button />`, `<Components.Card />`).
+- **Styling**: Use **Tailwind CSS** for all styling. The `cn` utility from `@penpal/core`'s `Utils` should be used for conditionally applying classes.
+- **Icons**: Use icons from `lucide-react` or `@heroicons/react/24/outline` for consistency.
 
 ## State Management
 
--   **Local State**: Use standard React hooks like `useState` and `useMemo` for component-level state.
--   **URL State**: For state that should be bookmarkable or reflected in the browser history (like active tabs or views), use the `useSearchParams` hook from `react-router-dom`. This is the preferred method for managing view state.
+- **Local State**: Use standard React hooks like `useState` and `useMemo` for component-level state.
+- **URL State**: For state that should be bookmarkable or reflected in the browser history (like active tabs or views), use the `useSearchParams` hook from `react-router-dom`. This is the preferred method for managing view state.
+
+## Debugging PenPal React Components
+
+### **Systematic Error Resolution Process**
+
+**When encountering "Element type is invalid" errors:**
+
+1. **Identify Error Location**: Check browser console stack trace for exact line/component
+2. **Verify Component Sources**: Ensure all components are destructured from correct registry
+3. **Check Component Availability**: Search codebase for usage patterns of suspected components
+4. **Review Import Paths**: Verify relative import paths are correct for plugin architecture
+5. **Test Component Registration**: Confirm components are registered with `registerComponent()`
+6. **Validate Props**: Ensure all required props are passed and have correct types
+
+**Example Debugging Session:**
+
+```javascript
+// Step 1: Check component destructuring
+const { Card, CardContent } = Components; // ✅ Correct
+const { useToast } = Hooks; // ✅ Correct
+
+// Step 2: Verify component usage exists elsewhere
+grep "Card.*Components" Plugins/ // Check if Card is used by other components
+
+// Step 3: Test with minimal component
+const TestComponent = () => <Components.Card>Test</Components.Card>;
+```
+
+### **PenPal-Specific Error Patterns**
+
+**Pattern 1: Component Source Confusion**
+
+```javascript
+// ❌ WRONG: Card from Hooks
+const { Card } = Hooks; // undefined
+
+// ✅ CORRECT: Card from Components
+const { Card } = Components;
+```
+
+**Pattern 2: Missing Components**
+
+```javascript
+// ❌ WRONG: Select components don't exist
+const { Select, SelectContent } = Components;
+
+// ✅ CORRECT: Use Popover/Command pattern
+const { Popover, PopoverTrigger, Command } = Components;
+```
+
+**Pattern 3: Import Path Issues**
+
+```javascript
+// ❌ WRONG: Incorrect relative paths
+import Component from "../../Plugins/Other/component";
+
+// ✅ CORRECT: Plugin-relative paths
+import Component from "../../../../Other/client/component";
+```
+
+**Pattern 4: GraphQL Field Validation**
+
+```javascript
+// ❌ WRONG: Querying non-existent field
+query GetProject($id: ID!) {
+  getProject(id: $id) {
+    id
+    name
+    updated_at  # Field doesn't exist on Project type
+  }
+}
+
+// ✅ CORRECT: Query only existing fields
+query GetProject($id: ID!) {
+  getProject(id: $id) {
+    id
+    name
+    dates {      # Use nested dates object
+      created_at
+    }
+  }
+}
+```
+
+**Debugging GraphQL Validation Errors:**
+
+- Check the GraphQL schema for exact field names and types
+- Verify interfaces implemented by types (e.g., Annotatable, Auditable)
+- Use nested objects when direct fields don't exist (e.g., `dates.created_at` instead of `updated_at`)
+- Remove fields that don't exist on the queried type
+
+**Pattern 5: API Response Handling**
+
+```javascript
+// ❌ WRONG: Assuming API response structure
+const { accepted, rejected } = await PenPalCachingAPI.SomeEntity.Update(data);
+if (accepted.length > 0) {
+  return accepted[0];
+} else {
+  throw rejected[0].error; // Can fail if rejected is undefined
+}
+
+// ✅ CORRECT: Robust API response handling
+try {
+  const result = await PenPalCachingAPI.SomeEntity.Update(data);
+
+  if (result && typeof result === "object") {
+    // Check for expected structure
+    if (result.accepted && result.rejected) {
+      const { accepted, rejected } = result;
+      if (accepted && accepted.length > 0) {
+        return accepted[0];
+      } else if (rejected && rejected.length > 0) {
+        throw rejected[0].error || new Error("Update failed");
+      } else {
+        // If both accepted and rejected are empty, the update might have succeeded
+        // but returned an empty result. Verify by fetching the updated entity.
+        console.log(
+          "Update returned empty result, fetching entity to verify..."
+        );
+        const updatedEntity = await PenPalCachingAPI.EntityName.Get(entityId);
+        if (updatedEntity) {
+          return updatedEntity;
+        } else {
+          throw new Error(
+            "Update returned empty result and entity could not be refetched"
+          );
+        }
+      }
+    } else {
+      // Handle direct object return
+      return result;
+    }
+  } else {
+    throw new Error("Invalid response from API");
+  }
+} catch (error) {
+  console.error("API Error:", error);
+  throw new Error(`Operation failed: ${error.message}`);
+}
+```
+
+**Debugging API Response Issues:**
+
+- Verify API method exists and is correctly called
+- Check if response has expected `{ accepted, rejected }` structure
+- Handle cases where API returns direct object instead of structured response
+- **Empty Result Handling**: When `accepted: []` and `rejected: []`, the operation might have succeeded but returned empty results - verify by refetching the entity
+- Add comprehensive error logging and user-friendly error messages
 
 ## GraphQL Integration
 
--   **Hooks**: Use `useQuery` and `useMutation` from `@apollo/client` for data fetching and updates.
--   **File Structure**: Keep GraphQL queries, mutations, and fragments in separate `.js` files using the `gql` tag.
--   **Fragments**: Use fragments to reuse common sets of fields across multiple queries, as seen in `[project-summary-fragment.js](mdc:Plugins/CoreAPI/client/pages/projects/queries/project-summary-fragment.js)`.
+- **Hooks**: Use `useQuery` and `useMutation` from `@apollo/client` for data fetching and updates.
+- **File Structure**: Keep GraphQL queries, mutations, and fragments in separate `.js` files using the `gql` tag.
+- **Fragments**: Use fragments to reuse common sets of fields across multiple queries, as seen in `[project-summary-fragment.js](mdc:Plugins/CoreAPI/client/pages/projects/queries/project-summary-fragment.js)`.

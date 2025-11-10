@@ -11,6 +11,8 @@ type Job {
   updated_at: String!
   project_id: String
   metadata: JSON
+  stdout: String
+  stderr: String
 }
 
 type JobStage {
@@ -59,6 +61,8 @@ input JobUpdateInput {
   cancellation_request: Boolean
   stages: [JobStageInput!]
   metadata: JSON
+  stdout: String
+  stderr: String
 }
 
 input JobStageUpdateInput {

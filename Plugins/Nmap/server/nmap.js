@@ -86,18 +86,50 @@ export const parseAndUpsertResults = async (project_id, xml_data) => {
         (extra_port) => extra_port.$.state === "filtered"
       )?.$?.count ?? 0;
 
+    const allPorts = host.ports?.[0].port ?? [];
+    logger.debug(`Host ${ip}: Found ${allPorts.length} individual ports`);
+
     const services =
-      host.ports?.[0].port?.map((port) => {
-        return {
-          port: port.$.portid,
-          protocol: port.$.protocol,
-          service: port.service?.[0].$.name ?? null,
-          fingerprint: port.service?.[0].$.servicefp ?? null,
-          product: port.service?.[0].$.product ?? null,
-          version: port.service?.[0].$.version ?? null,
-          extra_info: port.service?.[0].$.extrainfo ?? null,
-        };
-      }) ?? [];
+      host.ports?.[0].port
+        ?.filter((port) => {
+          // In Nmap XML, state is stored in a <state> child element, not as a port attribute
+          // Structure: <port><state state="open"/></port>
+          const stateElement = port.state?.[0];
+          const state = stateElement?.$?.state;
+
+          if (!state) {
+            // No state element found - this shouldn't happen in normal Nmap XML
+            // But if it does, port is listed individually so likely open
+            logger.debug(
+              `Port ${port.$.portid}/${port.$.protocol} has no state element, including`
+            );
+            return true;
+          }
+
+          // Filter out closed and filtered ports
+          const isOpen = state === "open" || state === "open|filtered";
+          if (!isOpen) {
+            logger.debug(
+              `Port ${port.$.portid}/${port.$.protocol} has state "${state}", filtering out`
+            );
+          }
+          return isOpen;
+        })
+        ?.map((port) => {
+          return {
+            port: port.$.portid,
+            protocol: port.$.protocol,
+            service: port.service?.[0].$.name ?? null,
+            fingerprint: port.service?.[0].$.servicefp ?? null,
+            product: port.service?.[0].$.product ?? null,
+            version: port.service?.[0].$.version ?? null,
+            extra_info: port.service?.[0].$.extrainfo ?? null,
+          };
+        }) ?? [];
+
+    logger.debug(
+      `Host ${ip}: Filtered to ${services.length} open services (from ${allPorts.length} total ports)`
+    );
 
     if (services.length > 0) {
       live_hosts[ip] = {
@@ -156,6 +188,8 @@ export const parseAndUpsertResults = async (project_id, xml_data) => {
       }) ?? [];
 
     if (services.length > 0) {
+      // CoreAPI's upsertServices will automatically preserve existing enrichments
+      // and merge Nmap enrichments intelligently
       services_result.push(await PenPal.API.Services.UpsertMany(services));
     }
   }
@@ -376,10 +410,32 @@ export const performScan = async ({
 
   logger.info(`nmap finished: ${container_id}`);
 
+  // Capture container logs before removing container
+  let container_logs = { stdout: "", stderr: "" };
+  try {
+    const logs = await PenPal.Docker.Logs(container_id);
+    container_logs.stdout = logs.combined || logs.stdout || "";
+    container_logs.stderr = logs.stderr || "";
+  } catch (logError) {
+    logger.warn(`Failed to capture logs from container ${container_id}:`, logError.message);
+  }
+
   // Read the file at ${output}.xml
   const xml_file = `${output_file}.xml`;
   const xml_data = fs.readFileSync(xml_file, "utf8");
 
   await PenPal.Docker.RemoveContainer(container_id);
   await parseAndUpsertResults(project_id, xml_data);
+
+  // Attach logs to job if job_id is provided
+  if (job_id) {
+    try {
+      await PenPal.Jobs.Update(job_id, {
+        stdout: container_logs.stdout,
+        stderr: container_logs.stderr,
+      });
+    } catch (updateError) {
+      logger.warn(`Failed to attach logs to job ${job_id}:`, updateError.message);
+    }
+  }
 };

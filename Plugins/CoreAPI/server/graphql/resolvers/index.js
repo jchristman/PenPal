@@ -15,6 +15,7 @@ import host_default_resolvers from "./host.default.js";
 import host_query_resolvers from "./host.queries.js";
 import host_mutation_resolvers from "./host.mutations.js";
 import network_default_resolvers from "./network.default.js";
+import network_mutation_resolvers from "./network.mutations.js";
 import project_default_resolvers from "./project.default.js";
 import project_mutation_resolvers from "./project.mutations.js";
 import project_query_resolvers from "./project.queries.js";
@@ -22,6 +23,9 @@ import service_default_resolvers from "./service.default.js";
 import service_query_resolvers from "./service.queries.js";
 import network_service_default_resolvers from "./service-network.default.js";
 import scalar_resolvers from "./scalars.js";
+import vulnerability_default_resolvers from "./vulnerability.default.js";
+import vulnerability_query_resolvers from "./vulnerability.queries.js";
+import vulnerability_mutation_resolvers from "./vulnerability.mutations.js";
 import ui_directives_default_resolvers from "./ui-directives.default.js";
 import ui_directive_query_resolvers from "./ui-directives.queries.js";
 
@@ -35,13 +39,16 @@ export default {
     ...project_query_resolvers,
     ...service_query_resolvers,
     ...ui_directive_query_resolvers,
+    ...vulnerability_query_resolvers,
   },
   mutations: {
     ...customer_mutation_resolvers,
     ...configuration_mutation_resolvers,
     ...file_attachments_mutation_resolvers,
     ...host_mutation_resolvers,
+    ...network_mutation_resolvers,
     ...project_mutation_resolvers,
+    ...vulnerability_mutation_resolvers,
   },
   default_resolvers: [
     analytics_default_resolvers,
@@ -56,6 +63,7 @@ export default {
     project_default_resolvers,
     service_default_resolvers,
     ui_directives_default_resolvers,
+    vulnerability_default_resolvers,
   ],
   scalars: scalar_resolvers,
 };

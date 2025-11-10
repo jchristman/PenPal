@@ -49,42 +49,92 @@ export const parseAndUpsertResults = async (
     }
 
     // Convert HttpX results to enrichment format
-    const enrichment_updates = http_results.map((result) => ({
-      // Service identification using natural identifiers
-      host:
-        result.host || result.input?.replace(/^https?:\/\//, "").split(":")[0],
-      port: result.port || (result.url?.includes("https://") ? 443 : 80),
-      ip_protocol: "TCP",
-      project_id: project_id,
+    const enrichment_updates = http_results.map((result) => {
+      // Extract host and port from httpx output
+      // httpx JSON output typically has: host, port, url fields
+      const host =
+        result.host || result.input?.replace(/^https?:\/\//, "").split(":")[0];
+      const port = result.port || (result.url?.includes("https://") ? 443 : 80);
 
-      // HttpX enrichment data
-      enrichment: {
-        plugin_name: "HttpX",
-        url: result.url,
-        status_code: result.status_code,
-        content_type: result.content_type,
-        content_length: result.content_length,
-        title: result.title,
-        server: result.server,
-        tech: result.tech,
-        method: result.method,
-        scheme: result.scheme,
-        path: result.path,
-      },
-    }));
+      HttpXLogger.log(
+        `Preparing enrichment for host=${host}, port=${port}, url=${result.url}`
+      );
 
-    // Add enrichments using CoreAPI function
-    const result = await PenPal.API.Services.AddEnrichments(enrichment_updates);
-    HttpXLogger.log(`Successfully added ${result.accepted.length} enrichments`);
+      return {
+        // Service identification using natural identifiers
+        host,
+        port,
+        ip_protocol: "TCP",
+        project_id: project_id,
 
-    if (result.rejected?.length > 0) {
+        // HttpX enrichment data
+        enrichment: {
+          plugin_name: "HttpX",
+          url: result.url,
+          status_code: result.status_code,
+          content_type: result.content_type,
+          content_length: result.content_length,
+          title: result.title,
+          server: result.server,
+          tech: result.tech,
+          method: result.method,
+          scheme: result.scheme,
+          path: result.path,
+        },
+      };
+    });
+
+    HttpXLogger.log(
+      `Prepared ${enrichment_updates.length} enrichment updates for project ${project_id}`
+    );
+
+    // Upsert enrichments using CoreAPI function (replaces existing HttpX enrichments)
+    // This ensures we don't create duplicates if HttpX runs multiple times
+    const upsertResults = [];
+    const upsertErrors = [];
+
+    for (const enrichment_update of enrichment_updates) {
+      try {
+        const { enrichment, ...service_selector } = enrichment_update;
+        const result = await PenPal.API.Services.UpsertEnrichment(
+          service_selector,
+          enrichment
+        );
+        upsertResults.push(result);
+        HttpXLogger.log(
+          `Upserted HttpX enrichment: service_id=${result.service_id}, operation=${result.operation}, url=${enrichment.url}`
+        );
+      } catch (error) {
+        upsertErrors.push({ enrichment_update, error: error.message });
+        HttpXLogger.warn(
+          `Failed to upsert enrichment for host=${enrichment_update.host}, port=${enrichment_update.port}: ${error.message}`
+        );
+      }
+    }
+
+    HttpXLogger.log(
+      `Successfully upserted ${upsertResults.length} enrichments, ${upsertErrors.length} failed`
+    );
+
+    // Log rejected enrichments
+    if (upsertErrors.length > 0) {
       HttpXLogger.warn(
         "Some enrichments were rejected:",
-        result.rejected.map(
-          (r) => `${r.selector.host}:${r.selector.port} - ${r.error}`
+        upsertErrors.map(
+          (r) =>
+            `host=${r.enrichment_update.host}, port=${r.enrichment_update.port} - ${r.error}`
         )
       );
     }
+
+    // Create a result object compatible with the existing code
+    const result = {
+      accepted: upsertResults.map((r) => ({
+        service_id: r.service_id,
+        enrichment: r.enrichment,
+      })),
+      rejected: upsertErrors,
+    };
 
     // Publish MQTT event for discovered HTTP services
     if (result.accepted?.length > 0) {
@@ -138,6 +188,7 @@ export const performHttpScan = async ({
   update_job = () => {},
   job_id = null,
 }) => {
+  let container_id = null; // Declare outside try block for error handling
   try {
     HttpXLogger.log(`Starting HTTP scan for ${services.length} services`);
 
@@ -158,36 +209,117 @@ export const performHttpScan = async ({
 
     PenPal.Utils.MkdirP(outdir);
 
-    // Create target URLs for httpx
-    const targets = services.map((service) => {
-      const protocol = [80, 8080, 8000, 3000].includes(service.port)
-        ? "http"
-        : "https";
-      return `${protocol}://${service.host_ip}:${service.port}`;
-    });
+    // Known non-HTTP ports to skip (SSH, FTP, RPC, database ports, etc.)
+    const non_http_ports = [
+      22, 21, 23, 25, 53, 111, 135, 139, 445, 1433, 3306, 5432, 6379, 27017,
+    ];
 
-    const targets_file = [outdir, `targets-${PenPal.Utils.Epoch()}.txt`].join(
-      path.sep
-    );
-    const output_file = [outdir, `results-${PenPal.Utils.Epoch()}.json`].join(
-      path.sep
-    );
+    // Create target URLs for httpx - try both HTTP and HTTPS for each service
+    const targets = [];
+    const epoch = PenPal.Utils.Epoch();
+
+    for (const service of services) {
+      // Skip non-TCP services (HTTP/HTTPS only work over TCP)
+      const protocol = (service.ip_protocol || "").toLowerCase();
+      if (protocol !== "tcp") {
+        HttpXLogger.log(
+          `Skipping non-TCP service (${protocol}) on port ${service.port} for ${service.host_ip}`
+        );
+        continue;
+      }
+
+      // Skip known non-HTTP ports (convert port to number for comparison)
+      const portNum = parseInt(service.port, 10);
+      if (non_http_ports.includes(portNum)) {
+        continue;
+      }
+
+      // Standard HTTP ports - try HTTP
+      if (
+        portNum === 80 ||
+        portNum === 8080 ||
+        portNum === 8000 ||
+        portNum === 3000
+      ) {
+        targets.push(`http://${service.host_ip}:${service.port}`);
+      }
+      // Standard HTTPS ports - try HTTPS
+      else if (
+        portNum === 443 ||
+        portNum === 8443 ||
+        portNum === 8001 ||
+        portNum === 3001
+      ) {
+        targets.push(`https://${service.host_ip}:${service.port}`);
+      }
+      // For all other ports, try both HTTP and HTTPS (common for custom web services)
+      else {
+        targets.push(`http://${service.host_ip}:${service.port}`);
+        targets.push(`https://${service.host_ip}:${service.port}`);
+      }
+    }
+
+    if (targets.length === 0) {
+      HttpXLogger.warn("No valid HTTP targets created after filtering");
+      return {
+        success: true,
+        message: "No HTTP-capable services to scan",
+        results_count: 0,
+      };
+    }
+
+    // HttpXLogger.log(
+    //   `Created ${targets.length} target URLs from ${services.length} services`
+    // );
+
+    const targets_file = [outdir, `targets-${epoch}.txt`].join(path.sep);
+    const output_file = [outdir, `results-${epoch}.json`].join(path.sep);
+
+    // Ensure directory exists
+    if (!fs.existsSync(outdir)) {
+      HttpXLogger.warn(`Output directory does not exist, creating: ${outdir}`);
+      PenPal.Utils.MkdirP(outdir);
+    }
 
     // Write targets to file
-    fs.writeFileSync(targets_file, targets.join("\n"));
-    HttpXLogger.log(
-      `Created targets file with ${targets.length} URLs: ${targets_file}`
-    );
+    try {
+      const targets_content = targets.join("\n");
 
-    // Convert to container paths
-    let container_targets_file = targets_file.replace(
-      outdir_base,
-      "/penpal-plugin-share"
-    );
-    let container_output_file = output_file.replace(
-      outdir_base,
-      "/penpal-plugin-share"
-    );
+      // Ensure parent directory exists
+      const parentDir = path.dirname(targets_file);
+      if (!fs.existsSync(parentDir)) {
+        PenPal.Utils.MkdirP(parentDir);
+      }
+
+      // HttpXLogger.log(`Debug: Targets content: ${targets_content}`);
+      fs.writeFileSync(targets_file, targets_content, "utf8");
+
+      // Force sync to ensure file is written to disk
+      const fd = fs.openSync(targets_file, "r+");
+      fs.fsyncSync(fd);
+      fs.closeSync(fd);
+
+      // Verify file was written and is readable
+      if (!fs.existsSync(targets_file)) {
+        throw new Error(`File does not exist after write: ${targets_file}`);
+      }
+
+      const stats = fs.statSync(targets_file);
+      if (stats.size === 0) {
+        throw new Error(`File is empty after write: ${targets_file}`);
+      }
+
+      HttpXLogger.log(
+        `Created targets file with ${targets.length} URLs (${stats.size} bytes): ${targets_file}`
+      );
+    } catch (error) {
+      HttpXLogger.error(`Error writing targets file: ${error.message}`);
+      throw error;
+    }
+
+    // Container paths are the same as host paths since volume is mounted at /penpal-plugin-share
+    const container_targets_file = targets_file;
+    const container_output_file = output_file;
 
     // Build httpx command
     const httpx_command = [
@@ -206,6 +338,43 @@ export const performHttpScan = async ({
 
     HttpXLogger.log(`Running httpx command: ${httpx_command}`);
 
+    // Verify file exists and add delay to ensure volume sync
+    if (!fs.existsSync(targets_file)) {
+      throw new Error(
+        `Targets file does not exist before container start: ${targets_file}`
+      );
+    }
+
+    // Read file back to verify it's accessible
+    try {
+      const verifyContent = fs.readFileSync(targets_file, "utf8");
+      if (!verifyContent || verifyContent.trim().length === 0) {
+        throw new Error(
+          `Targets file is empty when verifying before container start`
+        );
+      }
+      HttpXLogger.log(
+        `Verified targets file is readable (${verifyContent.length} chars) before container start`
+      );
+    } catch (error) {
+      HttpXLogger.error(
+        `Failed to verify targets file before container start: ${error.message}`
+      );
+      throw error;
+    }
+
+    // Small delay to ensure Docker volume sync completes
+    // Docker volumes can have slight delays in propagation between containers
+    await PenPal.Utils.Sleep(500);
+
+    // Final verification before starting container
+    const finalStats = fs.statSync(targets_file);
+    HttpXLogger.log(
+      `Final pre-container check: File exists (${
+        finalStats.size
+      } bytes, mtime: ${new Date(finalStats.mtime).toISOString()})`
+    );
+
     await update_job(10, "Starting HTTP discovery scan...");
 
     // Run httpx in Docker container
@@ -220,7 +389,7 @@ export const performHttpScan = async ({
       network: "penpal_penpal",
     });
 
-    const container_id = docker_result.stdout.trim();
+    container_id = docker_result.stdout.trim();
     HttpXLogger.log(`Started httpx container: ${container_id}`);
 
     await update_job(20, "HTTP discovery scan in progress...");
@@ -278,6 +447,28 @@ export const performHttpScan = async ({
 
     await update_job(100, "HTTP discovery scan complete");
 
+    // Capture container logs before cleaning up
+    let container_logs = { stdout: "", stderr: "" };
+    try {
+      const logs = await PenPal.Docker.Logs(container_id);
+      container_logs.stdout = logs.combined || logs.stdout || "";
+      container_logs.stderr = logs.stderr || "";
+    } catch (logError) {
+      HttpXLogger.warn(`Failed to capture logs from container ${container_id}:`, logError.message);
+    }
+
+    // Attach logs to job if job_id is provided
+    if (job_id) {
+      try {
+        await PenPal.Jobs.Update(job_id, {
+          stdout: container_logs.stdout,
+          stderr: container_logs.stderr,
+        });
+      } catch (updateError) {
+        HttpXLogger.warn(`Failed to attach logs to job ${job_id}:`, updateError.message);
+      }
+    }
+
     // Clean up files
     try {
       if (fs.existsSync(targets_file)) fs.unlinkSync(targets_file);
@@ -294,6 +485,19 @@ export const performHttpScan = async ({
   } catch (error) {
     HttpXLogger.error("Error in HTTP scan:", error);
     await update_job(100, `HTTP scan failed: ${error.message}`, "failed");
+
+    // Try to capture logs even on error
+    if (container_id && job_id) {
+      try {
+        const logs = await PenPal.Docker.Logs(container_id);
+        await PenPal.Jobs.Update(job_id, {
+          stdout: logs.combined || logs.stdout || "",
+          stderr: logs.stderr || error.message || "",
+        });
+      } catch (logError) {
+        HttpXLogger.warn(`Failed to capture logs on error:`, logError.message);
+      }
+    }
 
     return {
       success: false,

@@ -1,0 +1,62 @@
+# Task ID: 41
+# Title: Implement Nuclei Plugin GraphQL Schema and Resolvers
+# Status: pending
+# Dependencies: 35, 37
+# Priority: medium
+# Description: Design and implement the GraphQL schema and resolvers for the Nuclei vulnerability scanner plugin, including types, queries, mutations, and subscriptions for scan management.
+# Details:
+Create a complete GraphQL implementation for the Nuclei vulnerability scanner plugin following these requirements:
+
+1. Schema Definition:
+   - Define a `NucleiPluginEnrichment` type that implements the `PluginEnrichment` interface
+   - Include fields for vulnerability details (severity, name, description, affected components)
+   - Define types for scan results, configuration options, and scan status
+
+2. Queries:
+   - Implement `getNucleiScanResults(serviceId: ID!, filters: NucleiResultFilters): [NucleiScanResult!]!`
+   - Implement `getNucleiConfiguration(serviceId: ID!): NucleiConfiguration!`
+   - Include pagination, filtering, and sorting options where appropriate
+
+3. Mutations:
+   - Implement `triggerNucleiScan(serviceId: ID!, options: NucleiScanOptions): ScanJobResponse!`
+   - Implement `updateNucleiConfiguration(serviceId: ID!, config: NucleiConfigInput!): NucleiConfiguration!`
+   - Ensure proper input validation and error handling
+
+4. Subscriptions:
+   - Implement `nucleiScanProgress(serviceId: ID!): NucleiScanStatus!` for real-time updates
+   - Include status fields (progress percentage, current state, errors)
+
+5. Resolvers:
+   - Create resolver functions for all defined queries, mutations, and subscriptions
+   - Implement proper authentication and authorization checks
+   - Follow the plugin architecture patterns from existing plugins
+
+Ensure the implementation is consistent with the existing GraphQL schema structure and follows best practices for GraphQL API design.
+
+# Test Strategy:
+Testing should cover all aspects of the GraphQL implementation:
+
+1. Schema Validation:
+   - Verify schema compiles without errors
+   - Confirm `NucleiPluginEnrichment` properly implements the `PluginEnrichment` interface
+   - Use GraphQL introspection to validate type definitions
+
+2. Query Testing:
+   - Test `getNucleiScanResults` with various filter combinations
+   - Test `getNucleiConfiguration` returns correct configuration
+   - Verify error handling for invalid service IDs
+
+3. Mutation Testing:
+   - Test `triggerNucleiScan` initiates scans correctly
+   - Test `updateNucleiConfiguration` properly updates and returns configuration
+   - Verify input validation rejects malformed inputs
+
+4. Subscription Testing:
+   - Test `nucleiScanProgress` emits events during scan execution
+   - Verify subscription terminates properly when scan completes
+
+5. Integration Testing:
+   - Create end-to-end tests that trigger scans and verify results appear in queries
+   - Test authorization by attempting operations with insufficient permissions
+
+Use Jest for unit tests and Apollo Server testing utilities for GraphQL-specific tests. Mock the underlying Nuclei scanner service for isolated testing.

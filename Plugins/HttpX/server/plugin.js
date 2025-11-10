@@ -20,6 +20,103 @@ export const settings = {
   datastores: [{ name: "Configuration" }],
 };
 
+/**
+ * Get effective HttpX configuration for a project
+ * Checks project's profile first, then falls back to global config, then defaults
+ * @param {string} project_id - Project ID
+ * @returns {Promise<object>} Effective HttpX configuration object
+ */
+const getEffectiveHttpXConfig = async (project_id) => {
+  try {
+    // Get the project to check for profile
+    const project = await PenPal.API.Projects.Get(project_id);
+
+    if (project?.profile) {
+      // Project has a profile - try to get HttpX config from profile
+      try {
+        // Ensure DataStore adapters are ready
+        if (!PenPal.DataStore || !PenPal.DataStore.AdaptersReady()) {
+          HttpXLogger.warn(
+            `DataStore adapters not ready, using global config for project ${project_id}`
+          );
+          // Fall through to global config
+        } else {
+          // Use fetch instead of fetchOne to avoid collection existence issues
+          const profiles = await PenPal.DataStore.fetch("Base", "Profiles", {
+            id: project.profile,
+          });
+          const profile = profiles?.[0];
+
+          if (profile?.plugin_configs) {
+            // Find HttpX configuration in profile
+            const httpXPluginId = Object.keys(PenPal.LoadedPlugins).find(
+              (pid) => PenPal.LoadedPlugins[pid]?.name === "HttpX"
+            );
+
+            // Try multiple matching strategies
+            const profileConfig = profile.plugin_configs.find((pc) => {
+              if (!pc.plugin_id) return false;
+              if (pc.plugin_id === httpXPluginId) return true;
+              if (pc.plugin_id.startsWith("HttpX@")) return true;
+              if (pc.plugin_id === "HttpX") return true;
+              return false;
+            });
+
+            if (profileConfig?.configuration) {
+              HttpXLogger.log(
+                `Using profile "${profile.name}" configuration for project ${project_id}`
+              );
+              return profileConfig.configuration;
+            } else {
+              HttpXLogger.log(
+                `Profile "${profile.name}" found but no HttpX config, falling back to global`
+              );
+            }
+          }
+        }
+      } catch (e) {
+        HttpXLogger.warn(
+          `Failed to load profile config, falling back to global: ${e.message}`
+        );
+      }
+    }
+
+    // Fall back to global configuration
+    const existing = await PenPal.DataStore.fetch("HttpX", "Configuration", {});
+    if (existing?.[0]) {
+      HttpXLogger.log(`Using global configuration for project ${project_id}`);
+      return existing[0];
+    }
+
+    // Fall back to default settings
+    HttpXLogger.log(`Using default configuration for project ${project_id}`);
+    return null;
+  } catch (e) {
+    HttpXLogger.error(`Error getting effective config: ${e.message}`);
+    return null;
+  }
+};
+
+/**
+ * Check if HttpX plugin is enabled for a project
+ * Checks project's profile first, then falls back to global config
+ * @param {string} project_id - Project ID
+ * @returns {Promise<boolean>} True if plugin is enabled, false otherwise
+ */
+const isHttpXEnabled = async (project_id) => {
+  try {
+    const config = await getEffectiveHttpXConfig(project_id);
+    // If config is null, use defaults (enabled by default)
+    if (!config) return true;
+    // Default to enabled if config doesn't specify enabled field
+    return config?.ui?.enabled !== false;
+  } catch (e) {
+    HttpXLogger.warn(`Error checking if HttpX is enabled: ${e.message}`);
+    // Default to enabled on error
+    return true;
+  }
+};
+
 const start_http_service_scan_batch = async (batchedArgs) => {
   HttpXLogger.log("HttpX: Processing batched events:", batchedArgs.length);
 
@@ -36,6 +133,13 @@ const start_http_service_scan_batch = async (batchedArgs) => {
   // Process each project's services in bulk
   for (const [project, serviceIdSet] of projectServiceMap) {
     const service_ids = Array.from(serviceIdSet);
+
+    // Check if HttpX is enabled for this project
+    const enabled = await isHttpXEnabled(project);
+    if (!enabled) {
+      HttpXLogger.log(`HttpX is disabled for project ${project}, skipping HTTP scan`);
+      continue;
+    }
 
     HttpXLogger.log(
       "HttpX: New Services for project",

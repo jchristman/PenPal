@@ -6,11 +6,20 @@ import {
   registerComponent,
 } from "@penpal/core";
 import { useParams, useNavigate } from "react-router-dom";
-import { useQuery, useMutation } from "@apollo/client";
+import { useQuery, useMutation, useApolloClient } from "@apollo/client";
 
 import GetConfigurablePluginsQuery from "./configuration/queries/get-configurable-plugins.js";
 import GetDashboardablePluginsQuery from "./dashboard/queries/get-dashboardable-plugins.js";
 import gql from "graphql-tag";
+import GetProfiles from "./configuration/queries/get-profiles.js";
+import {
+  CreateProfile,
+  UpdateProfile,
+  DeleteProfile,
+  UpsertPluginConfigInProfile,
+  ExportPluginProfile,
+  ImportPluginProfile,
+} from "./configuration/queries/profile-mutations.js";
 
 const GET_PLUGINS = gql`
   {
@@ -29,6 +38,7 @@ const Configuration = () => {
   const { useIntrospection, useImperativeQuery } = Hooks;
   const { generateQueryFromSchema, generateMutationFromSchema } = GraphQLUtils;
   const { toast } = Hooks.useToast();
+  const apolloClient = useApolloClient();
 
   const {
     loading: introspection_loading,
@@ -42,6 +52,8 @@ const Configuration = () => {
     GetDashboardablePluginsQuery
   );
   const { data: { getPlugins = [] } = {} } = useQuery(GET_PLUGINS);
+  const { data: { getPluginProfiles = [] } = {}, refetch: refetchProfiles } =
+    useQuery(GetProfiles);
 
   const loading = introspection_loading || cfg_loading;
 
@@ -74,8 +86,18 @@ const Configuration = () => {
 
   const getConfig = Hooks.useImperativeQuery(query);
   const [setConfig] = useMutation(mutation);
+  const [createProfile] = useMutation(CreateProfile);
+  const [updateProfile] = useMutation(UpdateProfile);
+  const [deleteProfile] = useMutation(DeleteProfile);
+  const [upsertPluginConfigInProfile] = useMutation(
+    UpsertPluginConfigInProfile
+  );
+  const [exportPluginProfile] = useMutation(ExportPluginProfile);
+  const [importPluginProfile] = useMutation(ImportPluginProfile);
   const [localConfig, setLocalConfig] = useState({});
   const [configSinceLastSave, setConfigSinceLastSave] = useState({});
+  const [selectedProfileId, setSelectedProfileId] = useState("");
+  const [profilesOpen, setProfilesOpen] = useState(false);
 
   const stripTypenamesDeep = (obj) => {
     if (Array.isArray(obj)) {
@@ -96,8 +118,35 @@ const Configuration = () => {
     (async () => {
       if (loading) return;
       if (!selectedPlugin) return;
+      
+      // If a profile is selected, load from profile snapshot instead of global config
+      if (selectedProfileId) {
+        const profile = getPluginProfiles.find((p) => p.id === selectedProfileId);
+        if (profile) {
+          const pc = (profile.plugin_configs || []).find(
+            (c) => c.plugin_id === selectedPlugin.id
+          );
+          if (pc && pc.configuration) {
+            const conf = stripTypenamesDeep(pc.configuration);
+            const merged = {
+              ...conf,
+              _ui: localConfig?._ui || conf._ui || undefined,
+            };
+            setLocalConfig(merged);
+            setConfigSinceLastSave(merged);
+            return; // Don't load from global config when profile is selected
+          }
+        }
+      }
+      
+      // Load from global plugin configuration (when no profile or profile doesn't have this plugin's config)
+      // Use fetchPolicy: 'network-only' to bypass cache and get fresh data
       try {
-        const raw = (await getConfig())?.data?.[configuration.getter] ?? {};
+        const result = await apolloClient.query({
+          query,
+          fetchPolicy: 'network-only',
+        });
+        const raw = result?.data?.[configuration.getter] ?? {};
         const config = stripTypenamesDeep(raw);
         setLocalConfig(config);
         setConfigSinceLastSave(config);
@@ -109,7 +158,7 @@ const Configuration = () => {
         });
       }
     })();
-  }, [loading, selectedPlugin?.name]);
+  }, [loading, selectedPlugin?.id, selectedProfileId, configuration.getter]);
 
   const handleConfigChange = (path, newValue) => {
     const newLocalConfig = JSON.parse(JSON.stringify(localConfig));
@@ -169,12 +218,82 @@ const Configuration = () => {
         title: "Saved",
         description: `${selectedPlugin.name} configuration saved`,
       });
+      // If a profile is selected, update the profile snapshot for this plugin
+      if (selectedPlugin && selectedProfileId) {
+        try {
+          const profilePayload = stripTypenamesDeep(
+            JSON.parse(JSON.stringify(newLocalConfig))
+          );
+          if (profilePayload.__ui) delete profilePayload.__ui;
+          if (profilePayload._ui) delete profilePayload._ui;
+          await upsertPluginConfigInProfile({
+            variables: {
+              profile_id: selectedProfileId,
+              plugin_id: selectedPlugin.id,
+              configuration: profilePayload,
+            },
+          });
+          refetchProfiles?.();
+        } catch (e) {
+          // Non-fatal
+        }
+      }
     } catch (e) {
       toast({ title: "Error", description: e.message, variant: "destructive" });
     }
   };
 
   const onSelectPlugin = (name) => navigate(`/configure/${name}`);
+
+  const handleCreateProfile = async () => {
+    const name = prompt("Profile name");
+    if (!name) return;
+    await createProfile({ variables: { input: { name } } });
+    await refetchProfiles();
+  };
+
+  const handleLoadProfile = async (profileId) => {
+    setSelectedProfileId(profileId);
+    
+    // If "No Profile" selected, load from global plugin configuration
+    // Use fetchPolicy: 'network-only' to bypass cache and get fresh data
+    if (!profileId || !selectedPlugin) {
+      try {
+        const result = await apolloClient.query({
+          query,
+          fetchPolicy: 'network-only',
+        });
+        const raw = result?.data?.[configuration.getter] ?? {};
+        const config = stripTypenamesDeep(raw);
+        setLocalConfig(config);
+        setConfigSinceLastSave(config);
+      } catch (e) {
+        toast({
+          title: "Error",
+          description: e.message,
+          variant: "destructive",
+        });
+      }
+      return;
+    }
+    
+    // When profile selected and plugin selected, try to load that plugin's config snapshot
+    const profile = getPluginProfiles.find((p) => p.id === profileId);
+    if (!profile) return;
+    const pc = (profile.plugin_configs || []).find(
+      (c) => c.plugin_id === selectedPlugin.id
+    );
+    if (pc && pc.configuration) {
+      const conf = stripTypenamesDeep(pc.configuration);
+      const merged = {
+        ...conf,
+        _ui: localConfig?._ui || conf._ui || undefined,
+      };
+      setLocalConfig(merged);
+      setConfigSinceLastSave(merged);
+    }
+  };
+
 
   return (
     <Components.Card className="w-full h-full">
@@ -211,8 +330,166 @@ const Configuration = () => {
           {/* Content */}
           <div className="flex-1 p-3">
             <div className="flex items-center justify-between mb-4">
-              <div className="text-lg font-semibold">
-                {selectedPlugin ? selectedPlugin.name : "Configuration"}
+              <div className="flex items-center space-x-3">
+                <div className="text-lg font-semibold">
+                  {selectedPlugin ? selectedPlugin.name : "Configuration"}
+                </div>
+                {/* Profile selector using Popover + Command */}
+                <Components.Popover
+                  open={profilesOpen}
+                  onOpenChange={setProfilesOpen}
+                >
+                  <Components.PopoverTrigger asChild>
+                    <Components.Button
+                      variant="outline"
+                      className="w-56 justify-between"
+                    >
+                      {selectedProfileId
+                        ? getPluginProfiles.find(
+                            (p) => p.id === selectedProfileId
+                          )?.name || "Select profile"
+                        : "Select profile"}
+                    </Components.Button>
+                  </Components.PopoverTrigger>
+                  <Components.PopoverContent className="w-64 p-0 bg-white border border-gray-200 rounded-xl shadow-lg">
+                    <Components.Command>
+                      <Components.CommandInput
+                        placeholder="Search profiles..."
+                        className="h-9"
+                      />
+                      <Components.CommandList>
+                        <Components.CommandItem
+                          key="none"
+                          value=""
+                          onSelect={() => {
+                            setProfilesOpen(false);
+                            handleLoadProfile("");
+                          }}
+                          className="cursor-pointer"
+                        >
+                          No Profile
+                        </Components.CommandItem>
+                        {getPluginProfiles.map((p) => (
+                          <Components.CommandItem
+                            key={p.id}
+                            value={p.name}
+                            onSelect={() => {
+                              setProfilesOpen(false);
+                              handleLoadProfile(p.id);
+                            }}
+                            className="cursor-pointer"
+                          >
+                            {p.name}
+                          </Components.CommandItem>
+                        ))}
+                      </Components.CommandList>
+                    </Components.Command>
+                  </Components.PopoverContent>
+                </Components.Popover>
+                <Components.Button
+                  variant="outline"
+                  onClick={handleCreateProfile}
+                >
+                  New Profile
+                </Components.Button>
+                {selectedProfileId && (
+                  <>
+                    <Components.Button
+                      variant="outline"
+                      onClick={async () => {
+                        const name = prompt(
+                          "Rename profile",
+                          getPluginProfiles.find(
+                            (p) => p.id === selectedProfileId
+                          )?.name || ""
+                        );
+                        if (!name) return;
+                        await updateProfile({
+                          variables: { id: selectedProfileId, input: { name } },
+                        });
+                        await refetchProfiles();
+                      }}
+                    >
+                      Rename
+                    </Components.Button>
+                    <Components.Button
+                      variant="outline"
+                      onClick={async () => {
+                        if (!selectedProfileId) return;
+                        try {
+                          const { data } = await exportPluginProfile({
+                            variables: { id: selectedProfileId },
+                          });
+                          const blob = new Blob(
+                            [
+                              JSON.stringify(
+                                data?.exportPluginProfile,
+                                null,
+                                2
+                              ),
+                            ],
+                            { type: "application/json" }
+                          );
+                          const url = URL.createObjectURL(blob);
+                          const a = document.createElement("a");
+                          a.href = url;
+                          const fname =
+                            getPluginProfiles.find(
+                              (p) => p.id === selectedProfileId
+                            )?.name || `profile-${selectedProfileId}`;
+                          a.download = `${fname}.profile.json`;
+                          document.body.appendChild(a);
+                          a.click();
+                          document.body.removeChild(a);
+                          URL.revokeObjectURL(url);
+                        } catch (e) {
+                          // ignore
+                        }
+                      }}
+                    >
+                      Export
+                    </Components.Button>
+                    <Components.Button
+                      variant="destructive"
+                      onClick={async () => {
+                        if (!confirm("Delete this profile?")) return;
+                        await deleteProfile({
+                          variables: { id: selectedProfileId },
+                        });
+                        setSelectedProfileId("");
+                        await refetchProfiles();
+                      }}
+                    >
+                      Delete
+                    </Components.Button>
+                  </>
+                )}
+                <Components.Button
+                  variant="outline"
+                  onClick={async () => {
+                    try {
+                      const file = await new Promise((resolve) => {
+                        const input = document.createElement("input");
+                        input.type = "file";
+                        input.accept = ".json,application/json";
+                        input.onchange = () =>
+                          resolve(input.files?.[0] ?? null);
+                        input.click();
+                      });
+                      if (!file) return;
+                      const text = await file.text();
+                      const json = JSON.parse(text);
+                      await importPluginProfile({
+                        variables: { profile: json, overwrite: false },
+                      });
+                      await refetchProfiles();
+                    } catch (e) {
+                      // ignore
+                    }
+                  }}
+                >
+                  Import
+                </Components.Button>
               </div>
               {selectedPlugin && (
                 <Components.Button

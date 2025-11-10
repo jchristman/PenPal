@@ -1,0 +1,78 @@
+type PortMapping {
+  hostPort: Int!
+  containerPort: Int!
+  protocol: String
+}
+
+type Container {
+  id: String!
+  fullId: String!
+  name: String!
+  status: String!
+  image: String!
+  ipAddress: String
+  network: String
+  portMappings: [PortMapping!]
+}
+
+type ContainerInfo {
+  id: String!
+  name: String!
+  status: String!
+  image: String!
+  ipAddress: String
+  network: String
+  created: String!
+  labels: JSON
+  ports: JSON
+  portMappings: [PortMapping!]
+}
+
+type AvailableContainer {
+  id: String!
+  category: String!
+  name: String!
+  path: String!
+  relativePath: String!
+  dockerComposePath: String!
+}
+
+type RecentContainer {
+  id: String!
+  containerId: String!
+  containerName: String!
+  image: String!
+  vulhubPath: String!
+  deployedAt: String!
+  portMappings: [PortMapping!]
+  created_at: String
+  updated_at: String
+}
+
+type ContainerOperationResult {
+  success: Boolean!
+  message: String
+}
+
+type DeployResult {
+  success: Boolean!
+  containers: [Container!]!
+  portMappings: JSON
+  message: String
+}
+
+extend type Query {
+  getRunningContainers: [Container!]!
+  getContainerInfo(containerId: String!): ContainerInfo!
+  getAvailableContainers: [AvailableContainer!]!
+  getRecentContainers(limit: Int): [RecentContainer!]!
+}
+
+extend type Mutation {
+  startContainer(containerId: String!): ContainerOperationResult!
+  stopContainer(containerId: String!): ContainerOperationResult!
+  removeContainer(containerId: String!): ContainerOperationResult!
+  restartContainer(containerId: String!): ContainerOperationResult!
+  deployVulhubContainer(containerPath: String!, containerName: String!): DeployResult!
+}
+

@@ -49,6 +49,9 @@ const settings = {
       name: "Services",
     },
     {
+      name: "Vulnerabilities",
+    },
+    {
       name: "Configuration",
     },
   ],
@@ -146,6 +149,21 @@ const CoreAPIPlugin = {
       GetEnrichmentScreenshots: API.getEnrichmentScreenshots,
       GetEnrichmentCertificates: API.getEnrichmentCertificates,
       GetEnrichmentLogs: API.getEnrichmentLogs,
+    };
+
+    PenPal.API.Vulnerabilities = {
+      Get: API.getVulnerability,
+      GetMany: API.getVulnerabilities,
+      GetManyByProjectID: API.getVulnerabilitiesByProjectID,
+      GetManyByHostID: API.getVulnerabilitiesByHostID,
+      GetManyByServiceID: API.getVulnerabilitiesByServiceID,
+      Insert: API.insertVulnerability,
+      InsertMany: API.insertVulnerabilities,
+      Update: API.updateVulnerability,
+      UpdateMany: API.updateVulnerabilities,
+      UpsertMany: API.upsertVulnerabilities,
+      Remove: API.removeVulnerability,
+      RemoveMany: API.removeVulnerabilities,
     };
 
     PenPal.API.UIDirectives = {

@@ -1,7 +1,7 @@
 import PenPal from "#penpal/core";
 import { settings as HttpXSettings } from "../../plugin.js";
 
-const DEFAULT_CONFIG = { ui: { STATUS_SLEEP: 1000 } };
+const DEFAULT_CONFIG = { ui: { STATUS_SLEEP: 1000, enabled: true } };
 
 const getStoredConfig = async () => {
   const existing = await PenPal.DataStore.fetch("HttpX", "Configuration", {});
@@ -30,7 +30,20 @@ export default {
   queries: {
     async getHttpXConfiguration() {
       const cfg = await getStoredConfig();
-      return { ...cfg, _ui: { sections: [{ path: "ui", label: "General" }] } };
+      return {
+        ...cfg,
+        _ui: {
+          sections: [{ path: "ui", label: "General" }],
+          conditional: [
+            {
+              path: "ui",
+              controller: "enabled",
+              showWhenTrue: ["STATUS_SLEEP"],
+              showWhenFalse: [],
+            },
+          ],
+        },
+      };
     },
   },
   mutations: {
@@ -41,6 +54,9 @@ export default {
         next.ui.STATUS_SLEEP = Number(
           configuration.ui.STATUS_SLEEP ?? next.ui.STATUS_SLEEP
         );
+        if (configuration.ui.enabled !== undefined) {
+          next.ui.enabled = !!configuration.ui.enabled;
+        }
       }
       const saved = await saveConfig(next);
       if (saved?.ui?.STATUS_SLEEP !== undefined) {
@@ -48,7 +64,17 @@ export default {
       }
       return {
         ...saved,
-        _ui: { sections: [{ path: "ui", label: "General" }] },
+        _ui: {
+          sections: [{ path: "ui", label: "General" }],
+          conditional: [
+            {
+              path: "ui",
+              controller: "enabled",
+              showWhenTrue: ["STATUS_SLEEP"],
+              showWhenFalse: [],
+            },
+          ],
+        },
       };
     },
   },

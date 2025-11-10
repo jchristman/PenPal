@@ -170,6 +170,7 @@ export const performScreenshotScan = async ({
   update_job = () => {},
   job_id = null,
 }) => {
+  let container_id = null; // Declare outside try block for error handling
   try {
     GowitnessLogger.log(
       `Starting Gowitness screenshot scan for ${http_services.length} HTTP services`
@@ -243,7 +244,7 @@ export const performScreenshotScan = async ({
       network: "penpal_penpal",
     });
 
-    const container_id = docker_result.stdout.trim();
+    container_id = docker_result.stdout.trim();
     GowitnessLogger.log(`Started Gowitness container: ${container_id}`);
 
     await update_job(20, "Gowitness screenshot capture in progress...");
@@ -295,6 +296,28 @@ export const performScreenshotScan = async ({
 
     await update_job(100, "Gowitness screenshot scan complete");
 
+    // Capture container logs before cleaning up
+    let container_logs = { stdout: "", stderr: "" };
+    try {
+      const logs = await PenPal.Docker.Logs(container_id);
+      container_logs.stdout = logs.combined || logs.stdout || "";
+      container_logs.stderr = logs.stderr || "";
+    } catch (logError) {
+      GowitnessLogger.warn(`Failed to capture logs from container ${container_id}:`, logError.message);
+    }
+
+    // Attach logs to job if job_id is provided
+    if (job_id) {
+      try {
+        await PenPal.Jobs.Update(job_id, {
+          stdout: container_logs.stdout,
+          stderr: container_logs.stderr,
+        });
+      } catch (updateError) {
+        GowitnessLogger.warn(`Failed to attach logs to job ${job_id}:`, updateError.message);
+      }
+    }
+
     // Clean up files
     // try {
     //   if (fs.existsSync(targets_file)) fs.unlinkSync(targets_file);
@@ -319,6 +342,19 @@ export const performScreenshotScan = async ({
   } catch (error) {
     GowitnessLogger.error("Error in Gowitness scan:", error);
     await update_job(100, `Gowitness scan failed: ${error.message}`, "failed");
+
+    // Try to capture logs even on error
+    if (container_id && job_id) {
+      try {
+        const logs = await PenPal.Docker.Logs(container_id);
+        await PenPal.Jobs.Update(job_id, {
+          stdout: logs.combined || logs.stdout || "",
+          stderr: logs.stderr || error.message || "",
+        });
+      } catch (logError) {
+        GowitnessLogger.warn(`Failed to capture logs on error:`, logError.message);
+      }
+    }
 
     return {
       success: false,

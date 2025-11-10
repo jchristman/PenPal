@@ -9,25 +9,26 @@ const EnhancedEnrichmentDisplay = ({ enrichment }) => {
     return null;
   }
 
-  // Flatten enrichment: spread data fields to top-level if present, with data fields taking precedence
-  const { data: enrichmentData, ...rest } = enrichment;
+  // Flatten enrichment: spread data fields to top-level if present
+  // Typed fields (from GraphQL fragments) take precedence over data fields
+  const { data: enrichmentData, __typename, plugin_name, ...rest } = enrichment;
+  
+  // Fallback: if __typename is missing, derive it from plugin_name
+  // This handles cases where GraphQL interface resolution didn't set __typename
+  const resolvedTypename = __typename || (plugin_name ? `${plugin_name}PluginEnrichment` : null);
+  
   const flatEnrichment =
     enrichmentData && typeof enrichmentData === "object"
-      ? { ...rest, ...enrichmentData }
-      : enrichment;
+      ? { __typename: resolvedTypename, plugin_name, ...enrichmentData, ...rest }
+      : { __typename: resolvedTypename, plugin_name, ...enrichment };
 
-  // DEBUG: Log enrichment flattening and service value
-  // if (process.env.NODE_ENV !== "production") {
-  //   console.log("[EnhancedEnrichmentDisplay] Original enrichment:", enrichment);
-  //   console.log(
-  //     "[EnhancedEnrichmentDisplay] Flattened enrichment:",
-  //     flatEnrichment
-  //   );
-  //   console.log(
-  //     "[EnhancedEnrichmentDisplay] Service value:",
-  //     flatEnrichment.service
-  //   );
-  // }
+  // DEBUG: Log enrichment structure for troubleshooting
+  if (process.env.NODE_ENV !== "production") {
+    console.log("[EnhancedEnrichmentDisplay] Original enrichment:", enrichment);
+    console.log("[EnhancedEnrichmentDisplay] __typename:", __typename);
+    console.log("[EnhancedEnrichmentDisplay] plugin_name:", plugin_name);
+    console.log("[EnhancedEnrichmentDisplay] Resolved __typename:", resolvedTypename);
+  }
 
   return (
     <div>

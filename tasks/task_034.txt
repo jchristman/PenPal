@@ -1,0 +1,75 @@
+# Task ID: 34
+# Title: Design and Implement Vulnerability Data Model with GraphQL Schema Integration
+# Status: pending
+# Dependencies: None
+# Priority: high
+# Description: Create a comprehensive Vulnerability data model in CoreAPI that can be attached to Hosts and Services, with a complete GraphQL schema implementation following CoreAPI patterns.
+# Details:
+Implement a Vulnerability data model with the following requirements:
+
+1. Create a Vulnerability entity with these fields:
+   - id: Unique identifier
+   - title: Short vulnerability title
+   - description: Detailed explanation of the vulnerability
+   - severity: Enum with values (CRITICAL, HIGH, MEDIUM, LOW, INFO)
+   - cveIds: Array of CVE identifiers
+   - cvssScore: Numeric score (0.0-10.0)
+   - affectedHosts: References to Host entities
+   - affectedServices: References to Service entities
+   - discoveredBy: Plugin name that found the vulnerability
+   - discoveredAt: Timestamp when vulnerability was found
+   - status: Enum with values (NEW, CONFIRMED, FALSE_POSITIVE, MITIGATED)
+   - references: Array of links/references to vulnerability documentation
+   - metadata: JSON object for additional data
+
+2. Implement CoreAPI interfaces:
+   - Annotatable: Allow adding notes/annotations to vulnerabilities
+   - Auditable: Track creation, modification timestamps and users
+
+3. Update GraphQL schema:
+   - Create Vulnerability type with all fields listed above
+   - Add vulnerabilitiesConnection field to Host schema
+   - Add vulnerabilitiesConnection field to Service schema
+   - Implement proper pagination, filtering, and sorting for connections
+   - Create input types for creating/updating vulnerabilities
+   - Implement mutations for CRUD operations
+
+4. Database considerations:
+   - Design appropriate database schema with proper indexes
+   - Implement efficient queries for vulnerability retrieval
+   - Consider performance implications for hosts with many vulnerabilities
+
+5. Follow existing CoreAPI patterns for:
+   - Error handling
+   - Validation
+   - Authorization checks
+   - Event emission for vulnerability state changes
+
+# Test Strategy:
+1. Unit Tests:
+   - Test Vulnerability model validation (required fields, enum constraints)
+   - Test relationship integrity between Vulnerability and Host/Service
+   - Verify Annotatable and Auditable interfaces function correctly
+   - Test serialization/deserialization of metadata field
+
+2. GraphQL Schema Tests:
+   - Verify all fields are properly exposed in the GraphQL schema
+   - Test query resolution for vulnerabilities directly and through Host/Service connections
+   - Validate pagination, filtering, and sorting functionality
+   - Test all mutations (create, update, delete) with valid and invalid inputs
+
+3. Integration Tests:
+   - Test complete flow of creating vulnerabilities and attaching to hosts/services
+   - Verify proper authorization controls (who can view/edit vulnerabilities)
+   - Test performance with large datasets (many vulnerabilities per host)
+   - Verify proper event emission when vulnerability status changes
+
+4. Manual Testing:
+   - Create sample vulnerabilities through GraphQL API
+   - Verify they appear correctly when querying hosts and services
+   - Test filtering by severity, status, and other key fields
+   - Validate that UI components can properly display vulnerability data
+
+5. Security Testing:
+   - Verify proper access controls for vulnerability data
+   - Test for potential GraphQL query depth/complexity issues

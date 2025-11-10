@@ -10,6 +10,7 @@ export default gql`
     $end_date: Date
     $project_ips: [IPAddress]
     $project_networks: [IPSubnet]
+    $profile: ID
   ) {
     createProject(
       project: {
@@ -17,6 +18,7 @@ export default gql`
         name: $name
         description: $description
         dates: { start: $start_date, end: $end_date }
+        profile: $profile
         scope: { hosts: $project_ips, networks: $project_networks }
       }
     ) {

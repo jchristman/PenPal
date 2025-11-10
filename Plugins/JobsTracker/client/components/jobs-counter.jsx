@@ -14,7 +14,7 @@ const JobsCounter = () => {
   const [jobs, setJobs] = useState([]);
 
   useQuery(GetAllJobs, {
-    variables: { filter: "all" },
+    variables: { filterMode: "all" },
     onCompleted: (data) => {
       setJobs(data.getAllJobs.jobs);
     },

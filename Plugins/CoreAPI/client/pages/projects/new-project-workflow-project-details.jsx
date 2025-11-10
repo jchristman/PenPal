@@ -20,6 +20,8 @@ const ProjectDetails = ({
   setProjectIPs,
   projectNetworks,
   setProjectNetworks,
+  projectProfile,
+  setProjectProfile,
 }) => {
   useEffect(() => {
     if (projectName.length !== 0 && projectDescription.length !== 0) {
@@ -45,6 +47,8 @@ const ProjectDetails = ({
             setProjectStartDate={setProjectStartDate}
             projectEndDate={projectEndDate}
             setProjectEndDate={setProjectEndDate}
+            projectProfile={projectProfile}
+            setProjectProfile={setProjectProfile}
           />
         </div>
       </div>

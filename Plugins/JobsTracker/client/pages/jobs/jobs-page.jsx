@@ -37,6 +37,120 @@ import ClearAllJobs from "./mutations/clear-all-jobs.js";
 
 const { cn } = Utils;
 
+/**
+ * Convert ANSI color codes to HTML spans with CSS classes
+ * Supports basic ANSI colors and common escape sequences
+ */
+const ansiToHtml = (text) => {
+  if (!text) return "";
+
+  // ANSI color code regex
+  const ansiRegex = /\x1b\[([0-9;]+)m/g;
+  
+  // ANSI color mappings - optimized for dark terminal backgrounds
+  const colorMap = {
+    // Reset
+    0: { reset: true },
+    // Text colors (standard)
+    30: { color: "#3c3c3c" }, // Black
+    31: { color: "#cd3131" }, // Red
+    32: { color: "#0dbc79" }, // Green
+    33: { color: "#e5e510" }, // Yellow
+    34: { color: "#2472c8" }, // Blue
+    35: { color: "#bc3fbc" }, // Magenta
+    36: { color: "#11a8cd" }, // Cyan
+    37: { color: "#e5e5e5" }, // White
+    // Bright text colors
+    90: { color: "#666666" }, // Bright Black (Gray)
+    91: { color: "#f14c4c" }, // Bright Red
+    92: { color: "#23d18b" }, // Bright Green
+    93: { color: "#f5f543" }, // Bright Yellow
+    94: { color: "#3b8eea" }, // Bright Blue
+    95: { color: "#d670d6" }, // Bright Magenta
+    96: { color: "#29b8db" }, // Bright Cyan
+    97: { color: "#ffffff" }, // Bright White
+    // Styles
+    1: { fontWeight: "bold" },
+    2: { opacity: "0.7" }, // Dim
+    3: { fontStyle: "italic" },
+    4: { textDecoration: "underline" },
+  };
+
+  let html = "";
+  let lastIndex = 0;
+  let currentStyles = {};
+  let match;
+
+  while ((match = ansiRegex.exec(text)) !== null) {
+    // Add text before the ANSI code
+    if (match.index > lastIndex) {
+      const textSegment = text.substring(lastIndex, match.index);
+      if (textSegment) {
+        if (Object.keys(currentStyles).length > 0) {
+          const styleString = Object.entries(currentStyles)
+            .map(([key, value]) => `${key}: ${value}`)
+            .join("; ");
+          html += `<span style="${styleString}">${escapeHtml(textSegment)}</span>`;
+        } else {
+          html += escapeHtml(textSegment);
+        }
+      }
+    }
+
+    // Parse ANSI codes
+    const codes = match[1].split(";").map(Number);
+    
+    for (const code of codes) {
+      if (code === 0) {
+        // Reset all styles
+        currentStyles = {};
+      } else if (colorMap[code]) {
+        const style = colorMap[code];
+        if (style.reset) {
+          currentStyles = {};
+        } else if (style.color) {
+          currentStyles.color = style.color;
+        } else {
+          Object.assign(currentStyles, style);
+        }
+      }
+    }
+
+    lastIndex = match.index + match[0].length;
+  }
+
+  // Add remaining text
+  if (lastIndex < text.length) {
+    const textSegment = text.substring(lastIndex);
+    if (textSegment) {
+      if (Object.keys(currentStyles).length > 0) {
+        const styleString = Object.entries(currentStyles)
+          .map(([key, value]) => `${key}: ${value}`)
+          .join("; ");
+        html += `<span style="${styleString}">${escapeHtml(textSegment)}</span>`;
+      } else {
+        html += escapeHtml(textSegment);
+      }
+    }
+  }
+
+  return html || escapeHtml(text);
+};
+
+/**
+ * Escape HTML special characters
+ */
+const escapeHtml = (text) => {
+  const map = {
+    "&": "&amp;",
+    "<": "&lt;",
+    ">": "&gt;",
+    '"': "&quot;",
+    "'": "&#039;",
+  };
+  return text.replace(/[&<>"']/g, (m) => map[m]);
+};
+
 const JOB_STATUS_DETAILS = {
   [JobStatus.PENDING]: {
     icon: <Clock size={16} className="text-gray-500" />,
@@ -182,6 +296,8 @@ const REQUEST_CANCEL_MUTATION = gql`
 
 const JobCard = ({ job, isExpanded, onToggleExpand }) => {
   const [requestCancel] = useMutation(REQUEST_CANCEL_MUTATION);
+  const [showLogs, setShowLogs] = useState(false);
+  const [logTab, setLogTab] = useState("stdout"); // "stdout" or "stderr"
   const activeStageIndex = useMemo(
     () => findActiveStageIndex(job.stages),
     [job.stages]
@@ -205,6 +321,9 @@ const JobCard = ({ job, isExpanded, onToggleExpand }) => {
   const completedStages = job.stages.filter((s) =>
     COMPLETED_STATUSES.includes(s.status)
   ).length;
+
+  const hasLogs = (job.stdout && job.stdout.trim().length > 0) || 
+                  (job.stderr && job.stderr.trim().length > 0);
 
   return (
     <Components.Card
@@ -238,6 +357,18 @@ const JobCard = ({ job, isExpanded, onToggleExpand }) => {
                 }}
               >
                 {job.cancellation_request ? "Cancellation Requested" : "Cancel"}
+              </Components.Button>
+            )}
+            {hasLogs && (
+              <Components.Button
+                variant="ghost"
+                size="sm"
+                onClick={(e) => {
+                  e.stopPropagation();
+                  setShowLogs(!showLogs);
+                }}
+              >
+                {showLogs ? "Hide Logs" : "Show Logs"}
               </Components.Button>
             )}
             {job.stages.length > 0 && (
@@ -290,6 +421,40 @@ const JobCard = ({ job, isExpanded, onToggleExpand }) => {
                 />
               </div>
             ))}
+          </div>
+        </div>
+      )}
+      {showLogs && hasLogs && (
+        <div className="p-4 bg-gray-50/70 border-t">
+          <div className="flex gap-2 mb-3">
+            <Components.Button
+              variant={logTab === "stdout" ? "default" : "ghost"}
+              size="sm"
+              onClick={() => setLogTab("stdout")}
+              disabled={!job.stdout || job.stdout.trim().length === 0}
+            >
+              stdout {job.stdout && `(${job.stdout.split('\n').length} lines)`}
+            </Components.Button>
+            <Components.Button
+              variant={logTab === "stderr" ? "default" : "ghost"}
+              size="sm"
+              onClick={() => setLogTab("stderr")}
+              disabled={!job.stderr || job.stderr.trim().length === 0}
+            >
+              stderr {job.stderr && `(${job.stderr.split('\n').length} lines)`}
+            </Components.Button>
+          </div>
+          <div className="bg-gray-900 text-green-400 p-4 rounded-md font-mono text-xs overflow-auto max-h-96">
+            <pre 
+              className="whitespace-pre-wrap break-words"
+              dangerouslySetInnerHTML={{
+                __html: ansiToHtml(
+                  logTab === "stdout" 
+                    ? (job.stdout || "(No stdout output)") 
+                    : (job.stderr || "(No stderr output)")
+                )
+              }}
+            />
           </div>
         </div>
       )}
@@ -375,7 +540,7 @@ const JobsPage = () => {
   const [showCompleted, setShowCompleted] = useState(true);
 
   const { loading, error, data, refetch } = useQuery(GetAllJobs, {
-    variables: { filter: "all" }, // Always fetch all, filter on client
+    variables: { filterMode: "all" }, // Always fetch all, filter on client
     fetchPolicy: "cache-and-network",
     onCompleted: (data) => {
       if (!freezeSort) {
@@ -385,7 +550,7 @@ const JobsPage = () => {
   });
 
   const [clearAllJobs] = useMutation(ClearAllJobs, {
-    refetchQueries: [{ query: GetAllJobs, variables: { filter: "all" } }],
+    refetchQueries: [{ query: GetAllJobs, variables: { filterMode: "all" } }],
   });
 
   useSubscription(JobsSubscription, {

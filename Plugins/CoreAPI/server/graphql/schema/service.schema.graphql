@@ -13,6 +13,13 @@ interface Service implements Annotatable & Auditable & Enrichable {
   annotations: Annotations
   "Enrichments for the service from Plugins"
   enrichments: [PluginEnrichment]
+  "Vulnerabilities associated with this service"
+  vulnerabilitiesConnection(
+    first: Int
+    after: String
+    last: Int
+    before: String
+  ): VulnerabilitiesConnection
   "Audits for the service"
   changes: [Audit]
 }
@@ -54,6 +61,13 @@ type NetworkService implements Service & Annotatable & Auditable & Enrichable {
   annotations: Annotations
   "Enrichments for the service from Plugins"
   enrichments: [PluginEnrichment]
+  "Vulnerabilities associated with this service"
+  vulnerabilitiesConnection(
+    first: Int
+    after: String
+    last: Int
+    before: String
+  ): VulnerabilitiesConnection
   "Which IP Protocol on which the service operates"
   ip_protocol: IPProtocol!
   "The port number on which the service operates"

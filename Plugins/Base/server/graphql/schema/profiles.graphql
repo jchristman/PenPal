@@ -1,0 +1,55 @@
+# Configuration profiles that can store per-plugin configuration snapshots
+type PluginProfileConfig {
+  plugin_id: ID!
+  configuration: JSON
+}
+
+input PluginProfileConfigInput {
+  plugin_id: ID!
+  configuration: JSON
+}
+
+type PluginProfile {
+  id: ID!
+  name: String!
+  description: String
+  plugin_configs: [PluginProfileConfig]!
+  created_at: String
+  updated_at: String
+}
+
+input CreatePluginProfileInput {
+  name: String!
+  description: String
+}
+
+input UpdatePluginProfileInput {
+  name: String
+  description: String
+  plugin_configs: [PluginProfileConfigInput]
+}
+
+extend type Query {
+  getPluginProfiles: [PluginProfile]
+  getPluginProfile(id: ID!): PluginProfile
+}
+
+extend type Mutation {
+  createPluginProfile(input: CreatePluginProfileInput!): PluginProfile
+  updatePluginProfile(id: ID!, input: UpdatePluginProfileInput!): PluginProfile
+  deletePluginProfile(id: ID!): Boolean
+
+  # Upsert a single plugin's configuration into a profile
+  upsertPluginConfigInProfile(
+    profile_id: ID!
+    plugin_id: ID!
+    configuration: JSON!
+  ): PluginProfile
+
+  # Remove a single plugin's configuration from a profile
+  removePluginConfigFromProfile(profile_id: ID!, plugin_id: ID!): PluginProfile
+
+  # Export/import profiles to/from files (JSON payload)
+  exportPluginProfile(id: ID!): JSON
+  importPluginProfile(profile: JSON!, overwrite: Boolean = false): PluginProfile
+}

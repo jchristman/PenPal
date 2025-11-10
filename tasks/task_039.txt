@@ -1,0 +1,31 @@
+# Task ID: 39
+# Title: Implement Nuclei MQTT Event Subscription for HTTP Services
+# Status: pending
+# Dependencies: 35, 37
+# Priority: high
+# Description: Create a plugin that subscribes to MQTT events for new HTTP services and queues them for Nuclei scanning, with appropriate batching and filtering mechanisms.
+# Details:
+Implement a new plugin that subscribes to the PenPal.API.MQTT.Topics.New.HTTPServices topic to receive notifications when new HTTP services are discovered. Use the BatchFunction utility to batch rapid events and prevent duplicate processing. The plugin should:
+
+1. Create a subscription to PenPal.API.MQTT.Topics.New.HTTPServices similar to how the Gowitness plugin does
+2. Implement filtering logic to identify suitable HTTP services for Nuclei scanning (e.g., validate URL format, check for duplicates)
+3. For each valid HTTP service, use PenPal.ScanQueue.Add to queue a Nuclei scan with descriptive names (e.g., "Nuclei Scan for http://example.com:8080")
+4. Add project-level configuration options to enable/disable the plugin functionality, similar to the HttpX plugin implementation
+5. Include appropriate error handling for MQTT connection issues and malformed messages
+6. Add logging for important events (subscription started, scans queued, errors encountered)
+7. Implement graceful shutdown to properly close MQTT connections when the plugin is disabled
+
+The implementation should be efficient and avoid queuing duplicate scans for the same target within a reasonable timeframe.
+
+# Test Strategy:
+Testing should verify the following aspects:
+
+1. MQTT Subscription: Verify the plugin correctly subscribes to PenPal.API.MQTT.Topics.New.HTTPServices by publishing test messages and confirming they're received
+2. Batching: Test that multiple rapid events for the same service are properly batched and only result in a single scan being queued
+3. Filtering: Verify that only valid HTTP services are queued for scanning by testing with various input formats (valid URLs, invalid URLs, non-HTTP services)
+4. Queue Integration: Confirm scans are properly added to the queue with correct parameters by checking the queue contents after events are processed
+5. Configuration: Test that enabling/disabling the plugin at the project level correctly starts/stops the MQTT subscription
+6. Error Handling: Simulate connection failures and malformed messages to ensure the plugin handles errors gracefully
+7. End-to-end Test: Publish a real HTTP service discovery event and verify it flows through the system correctly, resulting in a Nuclei scan being queued
+
+Implement unit tests for individual components and integration tests for the complete workflow.

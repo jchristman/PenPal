@@ -809,6 +809,63 @@ export const Copy = async ({ container, container_file, output_file }) => {
   return output;
 };
 
+/**
+ * Get logs from a Docker container
+ * @param {string} container_id - Container ID or name
+ * @param {object} options - Options for log retrieval
+ * @param {boolean} options.stderr - Include stderr (default: true)
+ * @param {boolean} options.stdout - Include stdout (default: true)
+ * @param {boolean} options.tail - Number of lines to show from the end (default: all)
+ * @returns {Promise<{stdout: string, stderr: string}>} Container logs
+ */
+export const Logs = async (container_id, options = {}) => {
+  await PenPal.Utils.AsyncNOOP();
+
+  const {
+    stderr: includeStderr = true,
+    stdout: includeStdout = true,
+    tail = null,
+  } = options;
+
+  try {
+    // Build docker logs command
+    const logArgs = [];
+    if (tail) {
+      logArgs.push(`--tail ${tail}`);
+    }
+    if (includeStdout && includeStderr) {
+      // Default: get both stdout and stderr
+      logArgs.push("--details");
+    } else if (includeStdout && !includeStderr) {
+      // Only stdout
+      logArgs.push("--details");
+    } else if (!includeStdout && includeStderr) {
+      // Only stderr - docker logs doesn't have a direct way to filter
+      // We'll get both and filter in post-processing
+      logArgs.push("--details");
+    }
+
+    const command = `docker ${docker_host} logs ${logArgs.join(" ")} ${container_id}`;
+    const output = await exec(command);
+
+    // Docker logs combines stdout and stderr by default
+    // We'll return both in stdout for now, and empty stderr
+    // Plugins can parse if needed, or we can enhance this later
+    return {
+      stdout: output.stdout || "",
+      stderr: output.stderr || "",
+      combined: output.stdout || "", // Combined output for convenience
+    };
+  } catch (error) {
+    logger.error(`Failed to get logs for container ${container_id}:`, error.message);
+    return {
+      stdout: "",
+      stderr: error.message || "",
+      combined: error.message || "",
+    };
+  }
+};
+
 export const Raw = async (cmd) => {
   await PenPal.Utils.AsyncNOOP();
   let res = await exec(`docker ${docker_host} ${cmd}`);

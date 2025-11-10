@@ -1,0 +1,54 @@
+type NucleiSeverities {
+  critical: Boolean
+  high: Boolean
+  medium: Boolean
+  low: Boolean
+  info: Boolean
+}
+
+type NucleiConfigurationUI {
+  enabled: Boolean
+  severities: NucleiSeverities
+  excluded_templates: [String]
+  rate_limit: Int
+  timeout: Int
+  retries: Int
+  tags: [String]
+}
+
+type NucleiConfiguration {
+  ui: NucleiConfigurationUI
+  _ui: JSON
+}
+
+input NucleiSeveritiesInput {
+  critical: Boolean
+  high: Boolean
+  medium: Boolean
+  low: Boolean
+  info: Boolean
+}
+
+input NucleiConfigurationUIInput {
+  enabled: Boolean
+  severities: NucleiSeveritiesInput
+  excluded_templates: [String]
+  rate_limit: Int
+  timeout: Int
+  retries: Int
+  tags: [String]
+}
+
+input NucleiConfigurationInput {
+  ui: NucleiConfigurationUIInput
+  _ui: JSON
+}
+
+extend type Query {
+  getNucleiConfiguration: NucleiConfiguration
+}
+extend type Mutation {
+  setNucleiConfiguration(
+    configuration: NucleiConfigurationInput!
+  ): NucleiConfiguration
+}

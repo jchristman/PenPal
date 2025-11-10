@@ -1,9 +1,9 @@
 #!/bin/bash
 
 # Use environment variable to determine which deps to install
-echo
-echo "Container type: ${CONTAINER_TYPE:-unknown}"
-echo "Current working directory: $(pwd)"
+# echo
+# echo "Container type: ${CONTAINER_TYPE:-unknown}"
+# echo "Current working directory: $(pwd)"
 
 cd /penpal/
 

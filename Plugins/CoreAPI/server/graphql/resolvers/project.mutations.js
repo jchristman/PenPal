@@ -4,11 +4,22 @@ export default {
     { project: { scope: { hosts = [], networks = [] } = {}, ...project } },
     { PenPalCachingAPI }
   ) {
-    const { accepted, rejected } = await PenPalCachingAPI.Projects.Insert(
-      project
-    );
+    const insertResult = await PenPalCachingAPI.Projects.Insert(project);
 
-    if (accepted.length > 0) {
+    // Handle different response formats
+    let accepted, rejected;
+    if (
+      insertResult &&
+      typeof insertResult === "object" &&
+      insertResult.accepted &&
+      insertResult.rejected
+    ) {
+      ({ accepted, rejected } = insertResult);
+    } else {
+      throw new Error("Invalid response from Projects.Insert");
+    }
+
+    if (accepted && accepted.length > 0) {
       // We need to get the project so we can update it
       const project = await PenPalCachingAPI.Projects.Get(accepted[0].id);
 
@@ -41,20 +52,88 @@ export default {
       });
 
       return project;
+    } else if (rejected && rejected.length > 0) {
+      throw rejected[0].error || new Error("Project creation failed");
     } else {
-      throw rejected[0].error;
+      throw new Error("Project creation returned empty result");
     }
   },
 
   async updateProject(root, { project }, { PenPalCachingAPI }) {
-    const { accepted, rejected } = await PenPalCachingAPI.Projects.Update(
-      project
-    );
+    try {
+      console.log(
+        "updateProject called with:",
+        JSON.stringify(project, null, 2)
+      );
 
-    if (accepted.length > 0) {
-      return accepted[0];
-    } else {
-      throw rejected[0].error;
+      // Validate input
+      if (!project.id) {
+        throw new Error("Project ID is required");
+      }
+
+      // First check if the project exists
+      const existingProject = await PenPalCachingAPI.Projects.Get(project.id);
+      console.log("Existing project found:", existingProject ? "YES" : "NO");
+      if (existingProject) {
+        console.log(
+          "Existing project data:",
+          JSON.stringify(existingProject, null, 2)
+        );
+      } else {
+        throw new Error(`Project with ID ${project.id} not found`);
+      }
+
+      // If updating profile, check if the profile exists
+      if (project.profile) {
+        console.log("Checking if profile exists:", project.profile);
+        // Note: We can't easily check profile existence here without importing the Base plugin
+        // But we can at least log it for debugging
+      }
+
+      const result = await PenPalCachingAPI.Projects.Update(project);
+      console.log("updateProject result:", JSON.stringify(result, null, 2));
+
+      // Handle different response formats
+      if (result && typeof result === "object") {
+        // Check if it has the expected { accepted, rejected } structure
+        if (result.accepted && result.rejected) {
+          const { accepted, rejected } = result;
+          if (accepted && accepted.length > 0) {
+            return accepted[0];
+          } else if (rejected && rejected.length > 0) {
+            throw rejected[0].error || new Error("Update failed");
+          } else {
+            // If both accepted and rejected are empty, the update might have succeeded
+            // but returned an empty result. Let's verify by fetching the project again.
+            console.log(
+              "Update returned empty result, fetching project to verify..."
+            );
+            const updatedProject = await PenPalCachingAPI.Projects.Get(
+              project.id
+            );
+            if (updatedProject) {
+              console.log(
+                "Project fetched after update:",
+                JSON.stringify(updatedProject, null, 2)
+              );
+              return updatedProject;
+            } else {
+              throw new Error(
+                "Update returned empty result and project could not be refetched"
+              );
+            }
+          }
+        }
+        // If it doesn't have accepted/rejected, it might be the updated object directly
+        else {
+          return result;
+        }
+      } else {
+        throw new Error("Invalid response from Projects.Update");
+      }
+    } catch (error) {
+      console.error("Error in updateProject:", error);
+      throw new Error(`Failed to update project: ${error.message}`);
     }
   },
 

@@ -11,6 +11,8 @@ const GET_ALL_JOBS = gql`
         statusText
         status
         cancellation_request
+        stdout
+        stderr
         stages {
           name
           plugin

@@ -38,6 +38,10 @@ export default {
   },
 
   async removeHost(root, { id }, { PenPalCachingAPI }) {
-    return await PenPalCachingAPI.Customers.Remove(id);
+    return await PenPalCachingAPI.Hosts.Remove(id);
+  },
+
+  async removeHosts(root, { ids }, { PenPalCachingAPI }) {
+    return await PenPalCachingAPI.Hosts.RemoveMany(ids);
   },
 };

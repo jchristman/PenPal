@@ -1,0 +1,67 @@
+# Task ID: 38
+# Title: Implement Nuclei Results Parser and Vulnerability Creation System
+# Status: pending
+# Dependencies: 33, 34, 37
+# Priority: high
+# Description: Develop a module that parses Nuclei scanner JSON output and creates vulnerability records in the CoreAPI database, mapping scanner findings to the appropriate data model and linking them to affected hosts and services.
+# Details:
+Create a new module for processing Nuclei scanner results with the following components:
+
+1. **JSON Parser**:
+   - Parse Nuclei JSON output to extract key fields: template ID, name, severity, CVE IDs, description, matched URL, HTTP response details, and any extracted data
+   - Handle various Nuclei output formats and ensure robust error handling for malformed JSON
+   - Implement logging for parsing errors and statistics
+
+2. **Data Mapping**:
+   - Create a mapper that transforms Nuclei findings to the CoreAPI Vulnerability model
+   - Implement severity normalization (Critical, High, Medium, Low, Info)
+   - Extract and format CVE IDs into a consistent format
+   - Generate a standardized description that includes all relevant details
+   - Parse matched URLs to determine affected hosts and services
+
+3. **Vulnerability Creation**:
+   - Use PenPal.API.Vulnerabilities.InsertMany for efficient batch creation
+   - Implement logic to link vulnerabilities to the appropriate hosts/services based on matched URLs/IPs
+   - Create proper relationships in the database between vulnerabilities and affected assets
+
+4. **Duplicate Management**:
+   - Implement detection logic for identifying duplicate or similar findings
+   - Create update mechanism for existing vulnerabilities when new information is available
+   - Maintain vulnerability history/versioning if applicable
+
+5. **Performance Considerations**:
+   - Optimize for handling large Nuclei result sets (potentially thousands of findings)
+   - Implement batching for database operations
+   - Consider using parallel processing for parsing large files
+
+The module should be designed as a reusable component that can be called from various parts of the application (API endpoints, background jobs, CLI tools).
+
+# Test Strategy:
+Testing should cover the following areas:
+
+1. **Unit Tests**:
+   - Create tests for the JSON parser using sample Nuclei output files
+   - Test the mapping logic with various input scenarios (different severities, missing fields, etc.)
+   - Verify correct extraction of URLs, IPs, and other key data points
+   - Test duplicate detection logic with various similar findings
+
+2. **Integration Tests**:
+   - Test the end-to-end flow from parsing to database insertion
+   - Verify correct relationships are created between vulnerabilities and hosts/services
+   - Test with actual Nuclei output files of varying sizes and complexity
+   - Verify duplicate handling works correctly across multiple runs
+
+3. **Performance Tests**:
+   - Measure parsing and insertion time for large result sets (1000+ findings)
+   - Verify memory usage remains within acceptable limits
+   - Test concurrent operations if applicable
+
+4. **Validation Tests**:
+   - Create a test environment with known hosts/services
+   - Run Nuclei against test targets and verify correct vulnerability creation
+   - Manually verify a sample of created vulnerabilities match expected format and content
+   - Test edge cases like malformed URLs, unusual severity ratings, or missing data
+
+5. **Regression Tests**:
+   - Create automated tests that can be run whenever the parser is modified
+   - Include a diverse set of Nuclei output samples in the test suite
