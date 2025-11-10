@@ -49,42 +49,92 @@ export const parseAndUpsertResults = async (
     }
 
     // Convert HttpX results to enrichment format
-    const enrichment_updates = http_results.map((result) => ({
-      // Service identification using natural identifiers
-      host:
-        result.host || result.input?.replace(/^https?:\/\//, "").split(":")[0],
-      port: result.port || (result.url?.includes("https://") ? 443 : 80),
-      ip_protocol: "TCP",
-      project_id: project_id,
+    const enrichment_updates = http_results.map((result) => {
+      // Extract host and port from httpx output
+      // httpx JSON output typically has: host, port, url fields
+      const host =
+        result.host || result.input?.replace(/^https?:\/\//, "").split(":")[0];
+      const port = result.port || (result.url?.includes("https://") ? 443 : 80);
 
-      // HttpX enrichment data
-      enrichment: {
-        plugin_name: "HttpX",
-        url: result.url,
-        status_code: result.status_code,
-        content_type: result.content_type,
-        content_length: result.content_length,
-        title: result.title,
-        server: result.server,
-        tech: result.tech,
-        method: result.method,
-        scheme: result.scheme,
-        path: result.path,
-      },
-    }));
+      HttpXLogger.log(
+        `Preparing enrichment for host=${host}, port=${port}, url=${result.url}`
+      );
 
-    // Add enrichments using CoreAPI function
-    const result = await PenPal.API.Services.AddEnrichments(enrichment_updates);
-    HttpXLogger.log(`Successfully added ${result.accepted.length} enrichments`);
+      return {
+        // Service identification using natural identifiers
+        host,
+        port,
+        ip_protocol: "TCP",
+        project_id: project_id,
 
-    if (result.rejected?.length > 0) {
+        // HttpX enrichment data
+        enrichment: {
+          plugin_name: "HttpX",
+          url: result.url,
+          status_code: result.status_code,
+          content_type: result.content_type,
+          content_length: result.content_length,
+          title: result.title,
+          server: result.server,
+          tech: result.tech,
+          method: result.method,
+          scheme: result.scheme,
+          path: result.path,
+        },
+      };
+    });
+
+    HttpXLogger.log(
+      `Prepared ${enrichment_updates.length} enrichment updates for project ${project_id}`
+    );
+
+    // Upsert enrichments using CoreAPI function (replaces existing HttpX enrichments)
+    // This ensures we don't create duplicates if HttpX runs multiple times
+    const upsertResults = [];
+    const upsertErrors = [];
+
+    for (const enrichment_update of enrichment_updates) {
+      try {
+        const { enrichment, ...service_selector } = enrichment_update;
+        const result = await PenPal.API.Services.UpsertEnrichment(
+          service_selector,
+          enrichment
+        );
+        upsertResults.push(result);
+        HttpXLogger.log(
+          `Upserted HttpX enrichment: service_id=${result.service_id}, operation=${result.operation}, url=${enrichment.url}`
+        );
+      } catch (error) {
+        upsertErrors.push({ enrichment_update, error: error.message });
+        HttpXLogger.warn(
+          `Failed to upsert enrichment for host=${enrichment_update.host}, port=${enrichment_update.port}: ${error.message}`
+        );
+      }
+    }
+
+    HttpXLogger.log(
+      `Successfully upserted ${upsertResults.length} enrichments, ${upsertErrors.length} failed`
+    );
+
+    // Log rejected enrichments
+    if (upsertErrors.length > 0) {
       HttpXLogger.warn(
         "Some enrichments were rejected:",
-        result.rejected.map(
-          (r) => `${r.selector.host}:${r.selector.port} - ${r.error}`
+        upsertErrors.map(
+          (r) =>
+            `host=${r.enrichment_update.host}, port=${r.enrichment_update.port} - ${r.error}`
         )
       );
     }
+
+    // Create a result object compatible with the existing code
+    const result = {
+      accepted: upsertResults.map((r) => ({
+        service_id: r.service_id,
+        enrichment: r.enrichment,
+      })),
+      rejected: upsertErrors,
+    };
 
     // Publish MQTT event for discovered HTTP services
     if (result.accepted?.length > 0) {
@@ -168,6 +218,15 @@ export const performHttpScan = async ({
     const epoch = PenPal.Utils.Epoch();
 
     for (const service of services) {
+      // Skip non-TCP services (HTTP/HTTPS only work over TCP)
+      const protocol = (service.ip_protocol || "").toLowerCase();
+      if (protocol !== "tcp") {
+        HttpXLogger.log(
+          `Skipping non-TCP service (${protocol}) on port ${service.port} for ${service.host_ip}`
+        );
+        continue;
+      }
+
       // Skip known non-HTTP ports (convert port to number for comparison)
       const portNum = parseInt(service.port, 10);
       if (non_http_ports.includes(portNum)) {

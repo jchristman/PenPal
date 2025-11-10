@@ -200,8 +200,40 @@ export const updateServices = async (services) => {
     logger.log(_accepted, matched_services);
   }
 
-  for (let { id, ...service } of _accepted) {
-    // TODO: Optimize with updateMany
+  // Create a map of existing services by ID for quick lookup
+  const existing_services_map = new Map(
+    matched_services.map((s) => [s.id, s])
+  );
+
+  for (let { id, enrichments, ...service } of _accepted) {
+    // Preserve existing enrichments if not explicitly provided
+    const existing_service = existing_services_map.get(id);
+    if (existing_service && !enrichments) {
+      // No enrichments in update - preserve existing ones
+      service.enrichments = existing_service.enrichments || [];
+    } else if (existing_service && enrichments) {
+      // Enrichments provided - merge them intelligently
+      const existing_enrichments = existing_service.enrichments || [];
+      const enrichment_map = new Map(
+        existing_enrichments.map((e) => [e.plugin_name, e])
+      );
+
+      // Merge new enrichments: update existing plugin enrichments, add new ones
+      for (const new_enrichment of enrichments) {
+        if (new_enrichment.plugin_name) {
+          enrichment_map.set(new_enrichment.plugin_name, new_enrichment);
+        }
+      }
+
+      // Convert back to array, preserving order (existing first, then new)
+      service.enrichments = Array.from(enrichment_map.values());
+    } else if (!existing_service && enrichments) {
+      // New service with enrichments - use as-is
+      service.enrichments = enrichments;
+    } else {
+      // New service without enrichments - empty array
+      service.enrichments = [];
+    }
 
     let res = await PenPal.DataStore.updateOne(
       "CoreAPI",

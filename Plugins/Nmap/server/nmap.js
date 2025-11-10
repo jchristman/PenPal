@@ -88,23 +88,30 @@ export const parseAndUpsertResults = async (project_id, xml_data) => {
 
     const allPorts = host.ports?.[0].port ?? [];
     logger.debug(`Host ${ip}: Found ${allPorts.length} individual ports`);
-    
+
     const services =
       host.ports?.[0].port
         ?.filter((port) => {
-          // Only include ports that are open or open|filtered
-          // If a port is listed individually (not in extraports), it's typically open
-          // If state attribute exists, filter by it; otherwise include it
-          const state = port.$.state;
+          // In Nmap XML, state is stored in a <state> child element, not as a port attribute
+          // Structure: <port><state state="open"/></port>
+          const stateElement = port.state?.[0];
+          const state = stateElement?.$?.state;
+
           if (!state) {
-            // No state attribute - port is listed individually, likely open
-            logger.debug(`Port ${port.$.portid}/${port.$.protocol} has no state attribute, including`);
+            // No state element found - this shouldn't happen in normal Nmap XML
+            // But if it does, port is listed individually so likely open
+            logger.debug(
+              `Port ${port.$.portid}/${port.$.protocol} has no state element, including`
+            );
             return true;
           }
+
           // Filter out closed and filtered ports
           const isOpen = state === "open" || state === "open|filtered";
           if (!isOpen) {
-            logger.debug(`Port ${port.$.portid}/${port.$.protocol} has state "${state}", filtering out`);
+            logger.debug(
+              `Port ${port.$.portid}/${port.$.protocol} has state "${state}", filtering out`
+            );
           }
           return isOpen;
         })
@@ -120,7 +127,9 @@ export const parseAndUpsertResults = async (project_id, xml_data) => {
           };
         }) ?? [];
 
-    logger.debug(`Host ${ip}: Filtered to ${services.length} open services (from ${allPorts.length} total ports)`);
+    logger.debug(
+      `Host ${ip}: Filtered to ${services.length} open services (from ${allPorts.length} total ports)`
+    );
 
     if (services.length > 0) {
       live_hosts[ip] = {
@@ -179,6 +188,8 @@ export const parseAndUpsertResults = async (project_id, xml_data) => {
       }) ?? [];
 
     if (services.length > 0) {
+      // CoreAPI's upsertServices will automatically preserve existing enrichments
+      // and merge Nmap enrichments intelligently
       services_result.push(await PenPal.API.Services.UpsertMany(services));
     }
   }
