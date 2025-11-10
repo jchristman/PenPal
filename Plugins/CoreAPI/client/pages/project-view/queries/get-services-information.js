@@ -53,6 +53,9 @@ export default gql`
           extra_info
         }
       }
+      vulnerabilitiesConnection {
+        totalCount
+      }
     }
   }
 `;

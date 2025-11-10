@@ -188,6 +188,7 @@ export const performHttpScan = async ({
   update_job = () => {},
   job_id = null,
 }) => {
+  let container_id = null; // Declare outside try block for error handling
   try {
     HttpXLogger.log(`Starting HTTP scan for ${services.length} services`);
 
@@ -388,7 +389,7 @@ export const performHttpScan = async ({
       network: "penpal_penpal",
     });
 
-    const container_id = docker_result.stdout.trim();
+    container_id = docker_result.stdout.trim();
     HttpXLogger.log(`Started httpx container: ${container_id}`);
 
     await update_job(20, "HTTP discovery scan in progress...");
@@ -446,6 +447,28 @@ export const performHttpScan = async ({
 
     await update_job(100, "HTTP discovery scan complete");
 
+    // Capture container logs before cleaning up
+    let container_logs = { stdout: "", stderr: "" };
+    try {
+      const logs = await PenPal.Docker.Logs(container_id);
+      container_logs.stdout = logs.combined || logs.stdout || "";
+      container_logs.stderr = logs.stderr || "";
+    } catch (logError) {
+      HttpXLogger.warn(`Failed to capture logs from container ${container_id}:`, logError.message);
+    }
+
+    // Attach logs to job if job_id is provided
+    if (job_id) {
+      try {
+        await PenPal.Jobs.Update(job_id, {
+          stdout: container_logs.stdout,
+          stderr: container_logs.stderr,
+        });
+      } catch (updateError) {
+        HttpXLogger.warn(`Failed to attach logs to job ${job_id}:`, updateError.message);
+      }
+    }
+
     // Clean up files
     try {
       if (fs.existsSync(targets_file)) fs.unlinkSync(targets_file);
@@ -462,6 +485,19 @@ export const performHttpScan = async ({
   } catch (error) {
     HttpXLogger.error("Error in HTTP scan:", error);
     await update_job(100, `HTTP scan failed: ${error.message}`, "failed");
+
+    // Try to capture logs even on error
+    if (container_id && job_id) {
+      try {
+        const logs = await PenPal.Docker.Logs(container_id);
+        await PenPal.Jobs.Update(job_id, {
+          stdout: logs.combined || logs.stdout || "",
+          stderr: logs.stderr || error.message || "",
+        });
+      } catch (logError) {
+        HttpXLogger.warn(`Failed to capture logs on error:`, logError.message);
+      }
+    }
 
     return {
       success: false,

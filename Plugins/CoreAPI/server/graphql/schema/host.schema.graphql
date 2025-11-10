@@ -20,6 +20,13 @@ type Host implements Annotatable & Auditable & Enrichable {
     last: Int
     before: String
   ): ServicesConnection
+  "Vulnerabilities associated with this host"
+  vulnerabilitiesConnection(
+    first: Int
+    after: String
+    last: Int
+    before: String
+  ): VulnerabilitiesConnection
   "Annotations about this host"
   annotations: Annotations
   "Enrichments for the host from Plugins"

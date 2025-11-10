@@ -410,10 +410,32 @@ export const performScan = async ({
 
   logger.info(`nmap finished: ${container_id}`);
 
+  // Capture container logs before removing container
+  let container_logs = { stdout: "", stderr: "" };
+  try {
+    const logs = await PenPal.Docker.Logs(container_id);
+    container_logs.stdout = logs.combined || logs.stdout || "";
+    container_logs.stderr = logs.stderr || "";
+  } catch (logError) {
+    logger.warn(`Failed to capture logs from container ${container_id}:`, logError.message);
+  }
+
   // Read the file at ${output}.xml
   const xml_file = `${output_file}.xml`;
   const xml_data = fs.readFileSync(xml_file, "utf8");
 
   await PenPal.Docker.RemoveContainer(container_id);
   await parseAndUpsertResults(project_id, xml_data);
+
+  // Attach logs to job if job_id is provided
+  if (job_id) {
+    try {
+      await PenPal.Jobs.Update(job_id, {
+        stdout: container_logs.stdout,
+        stderr: container_logs.stderr,
+      });
+    } catch (updateError) {
+      logger.warn(`Failed to attach logs to job ${job_id}:`, updateError.message);
+    }
+  }
 };

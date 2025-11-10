@@ -15,6 +15,11 @@ export default {
       const host = await PenPalCachingAPI.Hosts.Get(id);
       return { services: host.services, args };
     },
+
+    async vulnerabilitiesConnection({ id }, args, { PenPalCachingAPI }) {
+      const vulnerabilities = await PenPalCachingAPI.Vulnerabilities.GetManyByHostID(id);
+      return { vulnerabilities: vulnerabilities.map((v) => v.id), args };
+    },
   },
 
   HostsConnection: {

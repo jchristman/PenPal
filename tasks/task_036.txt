@@ -1,0 +1,52 @@
+# Task ID: 36
+# Title: Implement Nuclei Docker Container Setup
+# Status: pending
+# Dependencies: 35
+# Priority: high
+# Description: Create a Docker container setup for Nuclei vulnerability scanner with proper configuration for templates, results storage, and resource management.
+# Details:
+Create a Dockerfile in the docker-context directory that sets up Nuclei vulnerability scanner from ProjectDiscovery. The implementation should:
+
+1. Use the official Nuclei image from ProjectDiscovery as base OR build from source if customization is needed
+2. Configure volume mounts for:
+   - Nuclei templates directory (/nuclei-templates)
+   - Results output directory (/results)
+   - Configuration files (/config)
+3. Set appropriate environment variables for Nuclei configuration
+4. Implement network isolation to ensure the container only has necessary network access
+5. Configure resource limits for CPU and memory to prevent resource exhaustion
+6. Include documentation in the Dockerfile explaining the setup and usage
+7. Create a docker-compose.yml file that demonstrates how to run the container with proper volume mounts
+8. Ensure the container runs with minimal privileges (non-root user if possible)
+9. Add healthcheck to verify Nuclei is functioning correctly
+10. Include proper labels for container identification and metadata
+
+# Test Strategy:
+Testing should verify both the build process and functionality of the Nuclei container:
+
+1. Build test: Verify the Docker image builds successfully without errors
+   - Run `docker build -t nuclei-scanner:test -f docker-context/Dockerfile .`
+   - Confirm build completes with exit code 0
+
+2. Basic functionality test: Verify Nuclei runs correctly in the container
+   - Run `docker run --rm nuclei-scanner:test -version`
+   - Confirm Nuclei version is displayed
+
+3. Template mounting test: Verify template volumes work correctly
+   - Create a test directory with sample templates
+   - Mount this directory and run a simple scan against a test target
+   - Verify templates are properly accessed
+
+4. Results output test: Verify results are properly saved to mounted volumes
+   - Run a scan with output directed to the results volume
+   - Confirm results file exists and contains expected data
+
+5. Resource limits test: Verify container respects configured resource limits
+   - Run container with specific memory/CPU limits
+   - Monitor resource usage during a scan
+
+6. Network isolation test: Verify container networking is properly configured
+   - Run container with restricted network access
+   - Confirm it can only access intended targets
+
+Document all test results with screenshots or logs as evidence of successful implementation.

@@ -93,3 +93,18 @@ export {
   getEnrichmentCertificates,
   getEnrichmentLogs,
 } from "./enrichment-file-helpers.js";
+
+export {
+  getVulnerability,
+  getVulnerabilities,
+  getVulnerabilitiesByProjectID,
+  getVulnerabilitiesByHostID,
+  getVulnerabilitiesByServiceID,
+  insertVulnerability,
+  insertVulnerabilities,
+  updateVulnerability,
+  updateVulnerabilities,
+  upsertVulnerabilities,
+  removeVulnerability,
+  removeVulnerabilities,
+} from "./vulnerabilities.js";

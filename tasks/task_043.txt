@@ -1,0 +1,70 @@
+# Task ID: 43
+# Title: Implement Vulnerability Display in Host and Service Detail Views
+# Status: pending
+# Dependencies: 33, 34
+# Priority: medium
+# Description: Enhance the CoreAPI Host and Service detail views to display vulnerability information in an interactive, user-friendly format with filtering capabilities.
+# Details:
+This task involves updating the host-details and service-details components to display vulnerability information through the vulnerabilitiesConnection. Implementation requirements:
+
+1. UI Components:
+   - Create an expandable accordion or table component to display vulnerabilities
+   - Each vulnerability entry should include severity indicator, CVE ID as a badge, description text, and action buttons
+   - Implement color coding for severity levels (Critical: red, High: orange, Medium: yellow, Low: blue, Info: gray)
+   - Design the component to be responsive and match existing UI styling
+
+2. Data Integration:
+   - Connect to the existing vulnerabilitiesConnection in the API
+   - Implement proper data fetching and error handling
+   - Ensure pagination if the number of vulnerabilities is large
+
+3. Filtering Functionality:
+   - Add filter controls for severity levels (multi-select)
+   - Add filter controls for vulnerability status (e.g., open, fixed, false positive)
+   - Implement client-side filtering that updates the display in real-time
+
+4. User Interaction:
+   - Make vulnerability entries expandable to show full details
+   - Include action buttons for common operations (e.g., mark as fixed, export details)
+   - Ensure keyboard accessibility for all interactive elements
+
+5. Integration:
+   - Seamlessly integrate with existing host and service detail views
+   - Maintain consistent styling with the rest of the application
+   - Ensure the component doesn't negatively impact page load performance
+
+The implementation should follow the application's existing patterns for data fetching, state management, and UI components.
+
+# Test Strategy:
+Testing should cover the following aspects:
+
+1. Unit Tests:
+   - Test the vulnerability display component in isolation
+   - Verify correct rendering of all vulnerability information
+   - Test color coding logic for different severity levels
+   - Verify expand/collapse functionality works correctly
+   - Test filter controls to ensure they correctly filter the displayed vulnerabilities
+
+2. Integration Tests:
+   - Verify the vulnerability component integrates correctly with host-details and service-details views
+   - Test data fetching from the vulnerabilitiesConnection
+   - Verify pagination works correctly with large datasets
+   - Test that filtering applies correctly to the data source
+
+3. UI/UX Testing:
+   - Verify responsive design works on different screen sizes
+   - Test keyboard navigation and accessibility compliance
+   - Verify color contrast meets accessibility standards
+   - Test with screen readers to ensure accessibility
+
+4. Performance Testing:
+   - Measure and verify the impact on page load time
+   - Test with large datasets to ensure the UI remains responsive
+   - Verify memory usage remains within acceptable limits
+
+5. Manual Testing Scenarios:
+   - Verify all vulnerability information displays correctly
+   - Test filtering by multiple severity levels simultaneously
+   - Test filtering by different status values
+   - Verify action buttons trigger the correct operations
+   - Test expanding multiple vulnerability entries simultaneously

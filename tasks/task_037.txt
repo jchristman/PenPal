@@ -1,0 +1,49 @@
+# Task ID: 37
+# Title: Implement Nuclei Scanner Module with Docker Integration
+# Status: pending
+# Dependencies: 35, 36
+# Priority: high
+# Description: Create a nuclei.js module with a performNucleiScan function that executes vulnerability scans against provided targets using Nuclei in a Docker container.
+# Details:
+Develop a new module (nuclei.js) that implements vulnerability scanning functionality using the Nuclei tool. The module should:
+
+1. Export a `performNucleiScan` function that accepts an array of HTTP services or host objects as input
+2. Process the input to create appropriate target URLs or files for Nuclei to scan
+3. Execute Nuclei within a Docker container using the following configuration:
+   - Use JSON output format (-json flag)
+   - Implement template selection based on scan requirements
+   - Apply appropriate rate limiting to prevent overwhelming target systems
+   - Mount necessary volumes for input/output
+4. Track scan progress using the JobsTracker module
+5. Parse the JSON results from Nuclei into a structured format compatible with the application
+6. Implement comprehensive error handling for various failure scenarios (Docker issues, scan failures, parsing errors)
+7. Follow the established patterns from HttpX and Gowitness plugins for consistency
+8. Include proper logging throughout the process
+9. Ensure resource cleanup after scan completion
+
+The implementation should be modular, allowing for future extensions such as additional Nuclei parameters or template customization. Consider performance implications when scanning large numbers of targets.
+
+# Test Strategy:
+Testing should verify the Nuclei scanner module functions correctly in various scenarios:
+
+1. Unit tests:
+   - Test input validation with various types of targets (valid URLs, invalid formats, empty arrays)
+   - Test JSON parsing logic with sample Nuclei output files
+   - Test error handling with simulated failure conditions
+
+2. Integration tests:
+   - Verify Docker container execution with mock targets
+   - Confirm proper parameter passing to the Nuclei container
+   - Test JobsTracker integration for progress updates
+
+3. End-to-end tests:
+   - Run a complete scan against test targets with known vulnerabilities
+   - Verify results match expected findings
+   - Test performance with varying numbers of targets (small, medium, large batches)
+
+4. Edge cases:
+   - Test behavior when Docker is unavailable
+   - Test with malformed responses from Nuclei
+   - Verify timeout handling for long-running scans
+
+All tests should be automated and included in the CI pipeline. Manual verification should also be performed against a test environment to ensure the scanner identifies real vulnerabilities correctly.

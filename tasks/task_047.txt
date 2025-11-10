@@ -1,0 +1,43 @@
+# Task ID: 47
+# Title: Implement Nuclei Docker Container Setup
+# Status: pending
+# Dependencies: 35
+# Priority: high
+# Description: Create a Dockerfile for setting up Nuclei vulnerability scanner in a containerized environment with proper configuration for templates, results storage, and resource management.
+# Details:
+Create a `docker-context/Dockerfile` that properly installs and configures Nuclei from ProjectDiscovery. The implementation should:
+
+1. Choose between using the official Nuclei image (projectdiscovery/nuclei) or building from source based on performance and stability requirements
+2. Configure appropriate volume mounts for:
+   - Nuclei templates directory (/nuclei-templates)
+   - Results output directory (/results)
+   - Configuration files (/config)
+3. Set up proper network isolation to ensure the container can reach target systems while maintaining security
+4. Implement resource limits for CPU and memory to prevent container resource exhaustion
+5. Include necessary dependencies and tools that Nuclei requires
+6. Set appropriate environment variables for Nuclei configuration
+7. Create a default entrypoint that allows for easy command execution
+8. Add documentation in comments explaining the Dockerfile structure and usage
+9. Ensure the container runs with least privilege (non-root user if possible)
+
+The implementation should follow Docker best practices including multi-stage builds if building from source, minimal image size, and proper layer caching.
+
+# Test Strategy:
+Testing should verify both the build process and runtime functionality:
+
+1. Build verification:
+   - Run `docker build -t nuclei-scanner -f docker-context/Dockerfile .` and confirm it completes without errors
+   - Verify image size is reasonable (under 500MB if possible)
+   - Check that all required components are included using `docker inspect`
+
+2. Functionality testing:
+   - Run a basic scan against a test target: `docker run --rm -v $(pwd)/templates:/nuclei-templates -v $(pwd)/results:/results nuclei-scanner -u https://example.com -t /nuclei-templates/basic.yaml`
+   - Verify results are properly saved to the mounted volume
+   - Test with custom configuration: `docker run --rm -v $(pwd)/config:/config nuclei-scanner -u https://example.com -config /config/nuclei.yaml`
+   - Validate resource limits by monitoring container performance during a scan
+   - Test network isolation by attempting to access internal resources that should be restricted
+
+3. Security verification:
+   - Run a container security scanning tool (e.g., Trivy) against the built image
+   - Verify the container runs with appropriate permissions
+   - Check for any exposed sensitive information in the image layers

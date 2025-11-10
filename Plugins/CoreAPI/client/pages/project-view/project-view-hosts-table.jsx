@@ -11,6 +11,7 @@ import {
   ServerIcon,
   GlobeAltIcon,
   MagnifyingGlassIcon,
+  ShieldExclamationIcon,
 } from "@heroicons/react/24/outline";
 
 const { formatDate } = Utils;
@@ -207,6 +208,10 @@ const ProjectViewHostsTable = ({ hosts = [] }) => {
           aValue = a.servicesConnection?.totalCount || 0;
           bValue = b.servicesConnection?.totalCount || 0;
           break;
+        case "vulnerabilities":
+          aValue = a.vulnerabilitiesConnection?.totalCount || 0;
+          bValue = b.vulnerabilitiesConnection?.totalCount || 0;
+          break;
         case "mac_address":
           aValue = a.mac_address || "";
           bValue = b.mac_address || "";
@@ -214,6 +219,15 @@ const ProjectViewHostsTable = ({ hosts = [] }) => {
         default:
           aValue = "";
           bValue = "";
+      }
+
+      if (sort.key === "services" || sort.key === "vulnerabilities") {
+        // Numeric comparison for counts
+        if (sort.direction === "asc") {
+          return aValue - bValue;
+        } else {
+          return bValue - aValue;
+        }
       }
 
       if (sort.direction === "asc") {
@@ -313,6 +327,14 @@ const ProjectViewHostsTable = ({ hosts = [] }) => {
               >
                 Services
               </SortableHeader>
+              <SortableHeader
+                sortKey="vulnerabilities"
+                currentSort={sort}
+                onSort={setSort}
+                className="text-right"
+              >
+                Vulnerabilities
+              </SortableHeader>
             </TableRow>
           </TableHeader>
           <TableBody>
@@ -373,6 +395,20 @@ const ProjectViewHostsTable = ({ hosts = [] }) => {
                     <ServerIcon className="h-4 w-4 text-muted-foreground" />
                     <Badge variant="secondary">
                       {host.servicesConnection?.totalCount || 0}
+                    </Badge>
+                  </div>
+                </TableCell>
+                <TableCell className="text-right">
+                  <div className="flex items-center justify-end space-x-2">
+                    <ShieldExclamationIcon className="h-4 w-4 text-muted-foreground" />
+                    <Badge
+                      variant={
+                        (host.vulnerabilitiesConnection?.totalCount || 0) > 0
+                          ? "destructive"
+                          : "secondary"
+                      }
+                    >
+                      {host.vulnerabilitiesConnection?.totalCount || 0}
                     </Badge>
                   </div>
                 </TableCell>

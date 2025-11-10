@@ -97,6 +97,16 @@ const ProjectViewDataContainer = ({ project, disable_polling }) => {
         />
       ),
     },
+    {
+      value: "vulnerabilities",
+      label: "Vulnerabilities",
+      content: () => (
+        <Components.ProjectViewVulnerabilities
+          project={project}
+          disable_polling={disable_polling}
+        />
+      ),
+    },
   ];
 
   const contributedTabs = (PenPal.API.ProjectViewTabsRegistry || [])

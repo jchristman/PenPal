@@ -16,6 +16,11 @@ export default {
       "project",
       "name",
     ]),
+
+    async vulnerabilitiesConnection({ id }, args, { PenPalCachingAPI }) {
+      const vulnerabilities = await PenPalCachingAPI.Vulnerabilities.GetManyByServiceID(id);
+      return { vulnerabilities: vulnerabilities.map((v) => v.id), args };
+    },
   },
 
   ServicesConnection: {

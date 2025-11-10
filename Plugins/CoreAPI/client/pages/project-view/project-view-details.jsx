@@ -228,9 +228,16 @@ const ProjectViewDetails = ({ project, disable_polling }) => {
                       )}
                     </div>
                     <div className="flex-1" />
+                    <div className="flex items-center gap-2">
                     <Components.Badge variant="outline">
                       {h.servicesConnection?.totalCount ?? 0} services
                     </Components.Badge>
+                      {h.vulnerabilitiesConnection?.totalCount > 0 && (
+                        <Components.Badge variant="destructive">
+                          {h.vulnerabilitiesConnection?.totalCount} vulnerabilities
+                        </Components.Badge>
+                      )}
+                    </div>
                   </label>
                 ))}
               </div>

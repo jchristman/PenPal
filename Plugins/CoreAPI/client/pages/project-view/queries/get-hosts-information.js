@@ -14,6 +14,9 @@ export default gql`
       servicesConnection {
         totalCount
       }
+      vulnerabilitiesConnection {
+        totalCount
+      }
     }
   }
 `;

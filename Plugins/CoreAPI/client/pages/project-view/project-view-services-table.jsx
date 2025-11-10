@@ -11,6 +11,7 @@ import {
   GlobeAltIcon,
   ShieldCheckIcon,
   ComputerDesktopIcon,
+  ShieldExclamationIcon,
 } from "@heroicons/react/24/outline";
 
 const {
@@ -231,11 +232,15 @@ const ProjectViewServicesTable = ({ services = [] }) => {
           aVal = a.enrichments?.length || 0;
           bVal = b.enrichments?.length || 0;
           return aVal - bVal;
+        case "vulnerabilities":
+          aVal = a.vulnerabilitiesConnection?.totalCount || 0;
+          bVal = b.vulnerabilitiesConnection?.totalCount || 0;
+          return aVal - bVal;
         default:
           return 0;
       }
 
-      if (sort.key !== "port" && sort.key !== "enrichments") {
+      if (sort.key !== "port" && sort.key !== "enrichments" && sort.key !== "vulnerabilities") {
         const result = aVal.localeCompare(bVal);
         return sort.direction === "asc" ? result : -result;
       }
@@ -378,6 +383,14 @@ const ProjectViewServicesTable = ({ services = [] }) => {
               >
                 Enrichments
               </SortableHeader>
+              <SortableHeader
+                sortKey="vulnerabilities"
+                currentSort={sort}
+                onSort={setSort}
+                className="text-right"
+              >
+                Vulnerabilities
+              </SortableHeader>
             </TableRow>
           </TableHeader>
           <TableBody>
@@ -401,6 +414,20 @@ const ProjectViewServicesTable = ({ services = [] }) => {
                   <ServiceStatusBadge status={service.status} />
                 </TableCell>
                 <TableCell>{formatEnrichments(service.enrichments)}</TableCell>
+                <TableCell className="text-right">
+                  <div className="flex items-center justify-end space-x-2">
+                    <ShieldExclamationIcon className="h-4 w-4 text-muted-foreground" />
+                    <Badge
+                      variant={
+                        (service.vulnerabilitiesConnection?.totalCount || 0) > 0
+                          ? "destructive"
+                          : "secondary"
+                      }
+                    >
+                      {service.vulnerabilitiesConnection?.totalCount || 0}
+                    </Badge>
+                  </div>
+                </TableCell>
               </TableRow>
             ))}
           </TableBody>

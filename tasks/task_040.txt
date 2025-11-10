@@ -1,0 +1,62 @@
+# Task ID: 40
+# Title: Implement Nuclei Configuration System with GraphQL Schema
+# Status: pending
+# Dependencies: 35
+# Priority: medium
+# Description: Design and implement a configuration system for Nuclei with GraphQL schema support, including project-level and global configuration options with appropriate resolvers.
+# Details:
+Create a comprehensive configuration system for Nuclei that follows these requirements:
+
+1. Define a GraphQL schema for NucleiConfiguration with the following fields:
+   - enabled (Boolean): Toggle to enable/disable Nuclei scanning
+   - template_severities (Enum array): Options for critical, high, medium, low, info
+   - excluded_templates (String array): List of templates to exclude
+   - rate_limit (Integer): Request rate limiting
+   - timeout (Integer): Scan timeout in seconds
+   - retries (Integer): Number of retry attempts
+   - custom_template_paths (String array): Paths to custom templates
+   - tags_to_include (String array): Tags to include in scans
+   - tags_to_exclude (String array): Tags to exclude from scans
+
+2. Implement configuration resolvers:
+   - Getter resolvers to retrieve configuration values
+   - Setter resolvers to update configuration values
+   - Ensure proper validation of inputs
+
+3. Support two configuration levels:
+   - Project-level configuration (specific to individual projects)
+   - Global configuration (system-wide defaults)
+   - Follow the HttpX pattern for configuration inheritance and overrides
+
+4. Create a Nuclei Configuration datastore:
+   - Design an efficient storage mechanism
+   - Implement CRUD operations
+   - Ensure thread-safety for concurrent access
+   - Add proper error handling
+
+5. Implement configuration merging logic:
+   - Project settings should override global settings when present
+   - Provide fallback to global settings when project settings are absent
+
+# Test Strategy:
+1. Unit Tests:
+   - Test each resolver function individually
+   - Verify proper validation of all configuration fields
+   - Test configuration merging logic with various combinations of project/global settings
+   - Ensure proper error handling for invalid inputs
+
+2. Integration Tests:
+   - Test the GraphQL schema with sample queries and mutations
+   - Verify that project-level configurations correctly override global settings
+   - Test persistence by setting values, restarting the service, and confirming values are retained
+
+3. Edge Cases:
+   - Test with empty/null values for optional fields
+   - Test with extremely large arrays for excluded_templates and custom_template_paths
+   - Verify behavior when invalid enum values are provided
+   - Test concurrent read/write operations to ensure thread safety
+
+4. Manual Testing:
+   - Create a test project and verify configuration changes are applied correctly
+   - Confirm that global configuration changes affect projects without overrides
+   - Verify that the UI correctly displays and allows editing of all configuration options

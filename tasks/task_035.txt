@@ -1,0 +1,57 @@
+# Task ID: 35
+# Title: Implement CoreAPI Vulnerability API Layer with CRUD Operations and GraphQL Integration
+# Status: pending
+# Dependencies: 33
+# Priority: high
+# Description: Create a complete API layer for vulnerability management by implementing CRUD operations in CoreAPI and exposing functionality through GraphQL queries and mutations.
+# Details:
+1. Create server/api/vulnerabilities.js file implementing the following CoreAPI patterns:
+   - Get: Retrieve a single vulnerability by ID
+   - GetMany: Retrieve multiple vulnerabilities with optional filtering
+   - Insert: Create a single vulnerability record
+   - InsertMany: Create multiple vulnerability records
+   - Update: Update a single vulnerability by ID
+   - UpdateMany: Update multiple vulnerabilities matching criteria
+   - UpsertMany: Insert or update multiple vulnerabilities
+   - Remove: Delete a single vulnerability by ID
+   - RemoveMany: Delete multiple vulnerabilities matching criteria
+
+2. Add Vulnerability datastore configuration to CoreAPI settings:
+   - Define schema with appropriate fields (e.g., id, name, description, severity, CVSS score, affected systems, status, remediation steps)
+   - Configure indexes for efficient querying
+   - Set up appropriate access controls
+
+3. Register the PenPal.API.Vulnerabilities namespace in plugin.js to make the API accessible throughout the application
+
+4. Create GraphQL schema extensions:
+   - Define Vulnerability type with all relevant fields
+   - Implement queries (getVulnerability, getVulnerabilities)
+   - Implement mutations (createVulnerability, updateVulnerability, deleteVulnerability, etc.)
+   - Ensure proper error handling and validation
+
+5. Follow existing project patterns for consistency in naming, error handling, and documentation
+
+# Test Strategy:
+1. Unit Tests:
+   - Test each CRUD function in vulnerabilities.js with valid and invalid inputs
+   - Verify proper error handling for edge cases (non-existent IDs, malformed data)
+   - Mock database interactions to isolate API layer testing
+
+2. Integration Tests:
+   - Test the API through GraphQL queries and mutations
+   - Verify data persistence by creating records and retrieving them
+   - Test complex operations like UpsertMany with mixed new/existing records
+   - Validate that access controls work as expected
+
+3. Manual Testing:
+   - Use GraphQL playground to execute all queries and mutations
+   - Verify that returned data matches expected format
+   - Test performance with larger datasets
+   - Confirm proper error messages are returned for invalid operations
+
+4. Validation Criteria:
+   - All CRUD operations function correctly
+   - GraphQL schema properly exposes all functionality
+   - API follows established CoreAPI patterns
+   - Proper namespace registration in plugin.js
+   - Datastore configuration is correct and optimized
