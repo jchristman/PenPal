@@ -1,6 +1,6 @@
 # Task ID: 37
 # Title: Implement Nuclei Scanner Module with Docker Integration
-# Status: pending
+# Status: done
 # Dependencies: 35, 36
 # Priority: high
 # Description: Create a nuclei.js module with a performNucleiScan function that executes vulnerability scans against provided targets using Nuclei in a Docker container.

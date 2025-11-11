@@ -1,6 +1,6 @@
 # Task ID: 40
 # Title: Implement Nuclei Configuration System with GraphQL Schema
-# Status: pending
+# Status: done
 # Dependencies: 35
 # Priority: medium
 # Description: Design and implement a configuration system for Nuclei with GraphQL schema support, including project-level and global configuration options with appropriate resolvers.

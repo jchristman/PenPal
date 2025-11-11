@@ -1,6 +1,6 @@
 # Task ID: 47
 # Title: Implement Nuclei Docker Container Setup
-# Status: pending
+# Status: done
 # Dependencies: 35
 # Priority: high
 # Description: Create a Dockerfile for setting up Nuclei vulnerability scanner in a containerized environment with proper configuration for templates, results storage, and resource management.

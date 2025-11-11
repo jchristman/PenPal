@@ -1,6 +1,6 @@
 # Task ID: 11
 # Title: Develop Service Enumeration Features
-# Status: in-progress
+# Status: done
 # Dependencies: 7, 8, 10
 # Priority: medium
 # Description: Implement detailed service detection and cataloging.

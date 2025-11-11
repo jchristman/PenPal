@@ -1,6 +1,6 @@
 # Task ID: 39
 # Title: Implement Nuclei MQTT Event Subscription for HTTP Services
-# Status: pending
+# Status: done
 # Dependencies: 35, 37
 # Priority: high
 # Description: Create a plugin that subscribes to MQTT events for new HTTP services and queues them for Nuclei scanning, with appropriate batching and filtering mechanisms.

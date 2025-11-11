@@ -1,6 +1,6 @@
 # Task ID: 41
 # Title: Implement Nuclei Plugin GraphQL Schema and Resolvers
-# Status: pending
+# Status: done
 # Dependencies: 35, 37
 # Priority: medium
 # Description: Design and implement the GraphQL schema and resolvers for the Nuclei vulnerability scanner plugin, including types, queries, mutations, and subscriptions for scan management.

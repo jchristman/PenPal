@@ -1,6 +1,6 @@
 # Task ID: 43
 # Title: Implement Vulnerability Display in Host and Service Detail Views
-# Status: pending
+# Status: done
 # Dependencies: 33, 34
 # Priority: medium
 # Description: Enhance the CoreAPI Host and Service detail views to display vulnerability information in an interactive, user-friendly format with filtering capabilities.

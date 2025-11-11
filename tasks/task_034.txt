@@ -1,6 +1,6 @@
 # Task ID: 34
 # Title: Design and Implement Vulnerability Data Model with GraphQL Schema Integration
-# Status: pending
+# Status: done
 # Dependencies: None
 # Priority: high
 # Description: Create a comprehensive Vulnerability data model in CoreAPI that can be attached to Hosts and Services, with a complete GraphQL schema implementation following CoreAPI patterns.

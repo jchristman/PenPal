@@ -1,6 +1,6 @@
 # Task ID: 45
 # Title: Implement Nuclei Test Handlers for Tester Plugin
-# Status: pending
+# Status: done
 # Dependencies: 35, 37
 # Priority: low
 # Description: Develop and register test handlers for the Nuclei plugin that verify Docker image readiness, basic scan functionality, results parsing, and configuration loading.

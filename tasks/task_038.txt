@@ -1,6 +1,6 @@
 # Task ID: 38
 # Title: Implement Nuclei Results Parser and Vulnerability Creation System
-# Status: pending
+# Status: done
 # Dependencies: 33, 34, 37
 # Priority: high
 # Description: Develop a module that parses Nuclei scanner JSON output and creates vulnerability records in the CoreAPI database, mapping scanner findings to the appropriate data model and linking them to affected hosts and services.

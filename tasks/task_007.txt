@@ -1,6 +1,6 @@
 # Task ID: 7
 # Title: Implement Nmap Integration Plugin
-# Status: in-progress
+# Status: done
 # Dependencies: 5
 # Priority: high
 # Description: Develop the Nmap plugin for network discovery and port scanning with enhanced configurations.

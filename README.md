@@ -4,17 +4,17 @@ PenPal is an automation and reporting all-in-one tool that is meant to enable Cy
 
 ## Features
 
-- [ ] Core API for data standardization (Plugin)
+- [x] Core API for data standardization (Plugin)
   - [x] Customers (can have many projects)
   - [x] Projects
   - [x] Hosts
   - [x] Networks (have many hosts)
   - [x] Services (ports, etc)
-  - [ ] Vulnerabilities
+  - [x] Vulnerabilities
   - [ ] Credentials
-  - [ ] Files
+  - [x] Files
   - [ ] Notes
-  - [ ] Audit trails
+  - [x] Audit trails
 - [x] Centralized Job Management System
   - [x] Real-time job tracking and monitoring via WebSocket subscriptions
   - [x] Multi-stage job support with progress tracking
@@ -27,14 +27,18 @@ PenPal is an automation and reporting all-in-one tool that is meant to enable Cy
   - [x] Smart job creation with multi-stage progress tracking
   - [x] MQTT-triggered scan serialization for network stability
   - [x] Eliminates false negatives from concurrent scanning
-- [ ] User Interface
-  - [ ] Pluggable Dashboard
+- [x] User Interface
+  - [x] Pluggable Dashboard
   - [x] Projects Summary Page
   - [x] Jobs Monitoring Page with real-time WebSocket updates
   - [x] Live job counter in navigation bar
-  - [ ] Project Details Page
+  - [x] Project Details Page
+    - [x] Hosts table with vulnerability counts
+    - [x] Services table with enrichment and vulnerability counts
+    - [x] Vulnerabilities dashboard with severity distribution
+    - [x] Vulnerabilities table with filtering and status management
   - [ ] Notetaking
-  - [ ] .... other things and stuff
+  - [x] Test Range management interface
 - [x] DataStore abstraction layer
 - [ ] DataStore Adapters
   - [x] Mongo Adapter
@@ -69,6 +73,13 @@ PenPal features an **extensible service enrichment architecture** that allows pl
   - Technology stack detection (frameworks, servers, etc.)
   - Content length, response headers
   - Clickable URLs with security validation
+- **[Gobuster](https://github.com/OJ/gobuster)**: Directory and file enumeration
+  - Directory discovery with status codes
+  - File enumeration results
+  - Wordlist-based scanning with SecLists integration
+- **[Gowitness](https://github.com/sensepost/gowitness)**: Website screenshot capture
+  - Automated screenshot capture for HTTP services
+  - Visual documentation of discovered web applications
 
 ### Enrichment UI Features
 
@@ -147,18 +158,190 @@ await MQTT.Subscribe(
 
 This creates an intelligent **service discovery chain** where each plugin builds upon the discoveries of others, creating comprehensive service intelligence automatically.
 
+## Vulnerability Management System
+
+PenPal includes a **comprehensive vulnerability management system** that integrates with security scanning tools to track, manage, and report vulnerabilities across your infrastructure.
+
+### Key Features
+
+- **Unified Vulnerability Model**: Standardized data model for vulnerabilities across all plugins
+- **Severity Management**: CRITICAL, HIGH, MEDIUM, LOW, INFO severity levels
+- **Status Tracking**: NEW, CONFIRMED, FALSE_POSITIVE, MITIGATED status workflow
+- **CVE Integration**: Automatic CVE ID extraction and tracking
+- **CVSS Scoring**: Support for CVSS scores (0.0-10.0)
+- **Host/Service Relationships**: Link vulnerabilities to affected hosts and services
+- **Project Isolation**: Multi-project vulnerability tracking
+- **Audit Trail**: Complete change history with Annotatable and Auditable interfaces
+
+### Vulnerability Dashboard
+
+The project view includes a comprehensive vulnerability dashboard:
+
+- **Severity Distribution**: Visual breakdown of vulnerabilities by severity level
+- **Status Overview**: Current status of all vulnerabilities
+- **Statistics**: Total counts, recent discoveries, and trends
+- **Quick Filters**: Filter by severity, status, or discovery plugin
+
+### Vulnerability Table
+
+Advanced table view with:
+
+- **Sorting**: Sort by severity, status, discovery date, CVE IDs
+- **Filtering**: Filter by severity, status, affected hosts/services, discovery plugin
+- **Status Management**: Update vulnerability status (confirm, mark false positive, mitigate)
+- **Details View**: Expandable rows showing full vulnerability details
+- **References**: Links to vulnerability documentation and advisories
+
+### Vulnerability Discovery Plugins
+
+- **[Nuclei](https://github.com/projectdiscovery/nuclei)**: Automated vulnerability scanning
+  - Template-based vulnerability detection
+  - Automatic CVE extraction from templates
+  - Severity mapping to PenPal's vulnerability model
+  - MQTT-triggered scanning on HTTP service discovery
+  - Configurable severity filters and tag exclusions
+  - Project-level enable/disable configuration
+
+### Vulnerability API
+
+Plugins can create vulnerabilities using the CoreAPI:
+
+```javascript
+// Create vulnerability from scan results
+const vulnerability = {
+  title: "SQL Injection in Login Form",
+  description: "The login form is vulnerable to SQL injection attacks",
+  severity: "HIGH",
+  cveIds: ["CVE-2023-12345"],
+  cvssScore: 7.5,
+  affectedHostIds: [host_id],
+  affectedServiceIds: [service_id],
+  discoveredBy: "Nuclei",
+  project: project_id,
+  status: "NEW",
+  references: ["https://example.com/advisory"],
+};
+
+const result = await PenPal.API.Vulnerabilities.Insert(vulnerability);
+```
+
+### Integration with Hosts and Services
+
+Vulnerabilities are automatically linked to hosts and services:
+
+- **Host View**: Shows vulnerability count badges and filtering
+- **Service View**: Displays vulnerabilities affecting specific services
+- **Vulnerability Details**: Shows all affected hosts and services
+- **Cross-referencing**: Navigate between vulnerabilities and affected assets
+
+### GraphQL API
+
+Complete GraphQL API for vulnerability management:
+
+```graphql
+# Query vulnerabilities
+query GetVulnerabilities($projectId: ID!) {
+  getVulnerabilitiesByProjectID(project: $projectId) {
+    id
+    title
+    severity
+    status
+    cveIds
+    affectedHosts {
+      ip_address
+    }
+    affectedServices {
+      port
+    }
+  }
+}
+
+# Create vulnerability
+mutation CreateVulnerability($vulnerability: VulnerabilityInput!) {
+  createVulnerability(vulnerability: $vulnerability) {
+    id
+    title
+  }
+}
+
+# Update vulnerability status
+mutation UpdateVulnerability($vulnerability: VulnerabilityUpdateInput!) {
+  updateVulnerability(vulnerability: $vulnerability) {
+    id
+    status
+  }
+}
+```
+
+## Test Range Management
+
+PenPal includes a **Test Range plugin** for managing vulnerable containers and testing environments. This enables security professionals to deploy and manage vulnerable applications for testing and validation purposes.
+
+### Key Features
+
+- **Container Management**: Start, stop, restart, and remove containers
+- **Vulhub Integration**: Deploy pre-configured vulnerable applications from Vulhub
+- **Running Containers**: Real-time monitoring of active test containers
+- **Recent Containers**: History of recently used containers
+- **Available Containers**: Browse and deploy from available container catalog
+- **Container Information**: Detailed container metadata and status
+
+### Use Cases
+
+- **Vulnerability Validation**: Test vulnerability scanners against known vulnerable applications
+- **Training Environments**: Deploy vulnerable applications for security training
+- **Tool Testing**: Validate security tools against controlled test environments
+- **Proof of Concept**: Demonstrate vulnerabilities in isolated environments
+
+### Test Range UI
+
+Access the Test Range interface at **http://localhost:3000/testrange**:
+
+- **Running Tab**: View and manage currently running containers
+- **Recent Tab**: Browse recently used containers
+- **Available Tab**: Discover and deploy new vulnerable containers
+- **Real-time Updates**: 5-second polling for container status updates
+
+## Available Plugins
+
+### Core Plugins
+
+- **Base**: Foundation plugin providing core services and configuration UI
+- **CoreAPI**: Data standardization, vulnerability management, and API layer
+- **DataStore**: Database abstraction layer with adapter support
+- **DataStoreMongoAdapter**: MongoDB adapter for DataStore
+- **Docker**: Container orchestration and image management
+- **MQTT**: Inter-plugin messaging and event system
+- **JobsTracker**: Centralized job management with real-time monitoring
+- **ScanQueue**: Bandwidth management and sequential scan execution
+- **FileStore**: File storage abstraction layer
+- **FileStoreMinIOAdapter**: MinIO adapter for FileStore
+
+### Security Tool Plugins
+
+- **[Ping](Plugins/Ping/README.md)**: ICMP ping sweep for host discovery
+- **[Nmap](Plugins/Nmap/README.md)**: Network discovery and port scanning with service detection
+- **[Rustscan](https://github.com/RustScan/RustScan)**: Fast port scanning capabilities
+- **[HttpX](Plugins/HttpX/README.md)**: HTTP service discovery and enrichment
+- **[Nuclei](Plugins/Nuclei/)**: Automated vulnerability scanning with template support
+- **[Gobuster](Plugins/Gobuster/)**: Directory and file enumeration on HTTP services
+- **[Gowitness](Plugins/Gowitness/)**: Website screenshot capture and analysis
+
+### Utility Plugins
+
+- **[TestRange](Plugins/TestRange/)**: Vulnerable container management for testing environments
+- **[Tester](Plugins/Tester/README.md)**: Plugin testing and validation framework
+- **[E2ETesting](Plugins/E2ETesting/README.md)**: End-to-end testing infrastructure (foundation)
+
 ## Plugin Ideas
 
-- [ ] Really anything from the core
-- [ ] Ping sweep for IP range (host discovery -> add hosts via API)
-- [x] Nmap for service discovery for hosts or networks (host/service discovery -> add hosts/services via API)
-- [x] Rustscan for service discovery for hosts or networks (host/service discovery -> add hosts/services via API)
-- [x] [httpx](https://github.com/projectdiscovery/httpx) for HTTP service discovery and enrichment (service enrichment -> add HTTP metadata via API)
 - [ ] Burpsuite for vulnerability scanning
-- [ ] Dirb/dirbuster/insert URL discovery here
-- [ ] [Gowitness](https://hub.docker.com/r/leonjza/gowitness) for screenshots of websites
 - [ ] [Eyeballer](https://github.com/BishopFox/eyeballer) for searching screenshots for interesting things
 - [ ] [Changeme](https://github.com/ztgrace/changeme) for default password checking
+- [ ] Additional vulnerability scanners (Burp Suite, OWASP ZAP, etc.)
+- [ ] Credential management and storage
+- [ ] Report generation plugins
+- [ ] Integration with external vulnerability databases
 
 ## Dependencies
 
@@ -169,7 +352,10 @@ PenPal is purely dependent on `docker` and `docker-compose`. It will definitely 
 Currently there are a number of services and endpoints that are interesting/useful. The current way to run it is by executing `dev.sh` -- if you add more plugins to the Plugins folder they will automatically mount with the `docker-compose` scripts and mount into the container. Here's a list of interesting URLs:
 
 - **Web UI** - http://localhost:3000
+- **Projects** - http://localhost:3000/projects
 - **Jobs Monitor** - http://localhost:3000/jobs (with real-time WebSocket updates)
+- **Test Range** - http://localhost:3000/testrange
+- **Configuration** - http://localhost:3000/configuration
 - **GraphQL Studio** - http://localhost:3001/graphql
 - **GraphQL WebSocket** - ws://localhost:3001/graphql (subscriptions)
 
