@@ -38,25 +38,24 @@ PenPal.Utils.RunAfterImport(() => {
 export default {
   GowitnessPluginEnrichment: {
     async screenshot_url(obj) {
-      // If the enrichment already has a screenshot_url, return it
-      if (obj.screenshot_url) {
-        return obj.screenshot_url;
+      // Check both top-level and data field (for generic query support)
+      const screenshotUrl = obj.screenshot_url || obj.data?.screenshot_url;
+      if (screenshotUrl) {
+        return screenshotUrl;
       }
 
+      // Check both top-level and data field for bucket/key
+      const bucket = obj.screenshot_bucket || obj.data?.screenshot_bucket;
+      const key = obj.screenshot_key || obj.data?.screenshot_key;
+
       // If we have bucket and key, fetch the image data via FileStore API
-      if (obj.screenshot_bucket && obj.screenshot_key) {
+      if (bucket && key) {
         try {
           // Use the FileStore's downloadFile method to get base64 data URL
-          const fileBuffer = await PenPal.FileStore.DownloadFile(
-            obj.screenshot_bucket,
-            obj.screenshot_key
-          );
+          const fileBuffer = await PenPal.FileStore.DownloadFile(bucket, key);
 
           // Get file info for content type
-          const fileInfo = await PenPal.FileStore.GetFileInfo(
-            obj.screenshot_bucket,
-            obj.screenshot_key
-          );
+          const fileInfo = await PenPal.FileStore.GetFileInfo(bucket, key);
           const contentType = fileInfo?.contentType || "image/jpeg";
           const base64Data = fileBuffer.toString("base64");
 
@@ -70,51 +69,27 @@ export default {
       return null;
     },
     screenshot_bucket(obj) {
-      return obj.screenshot_bucket;
+      return obj.screenshot_bucket || obj.data?.screenshot_bucket;
     },
     screenshot_key(obj) {
-      return obj.screenshot_key;
+      return obj.screenshot_key || obj.data?.screenshot_key;
     },
     captured_at(obj) {
-      return obj.captured_at;
+      return obj.captured_at || obj.data?.captured_at;
     },
     url(obj) {
-      return obj.url;
+      return obj.url || obj.data?.url;
     },
     title(obj) {
-      return obj.title;
+      return obj.title || obj.data?.title;
     },
     status_code(obj) {
-      return obj.status_code;
+      return obj.status_code || obj.data?.status_code;
     },
-    async files(obj, args, context) {
-      // Delegate to CoreAPI's getEnrichmentFiles function
-      if (!PenPal.API || !PenPal.API.Services) {
-        logger.warn("PenPal.API.Services not available for file resolution");
-        return [];
-      }
-
-      try {
-        // Extract service selector from the enrichment context
-        const serviceSelector = context.serviceSelector || obj.serviceSelector;
-        if (!serviceSelector) {
-          logger.warn("No service selector available for file resolution");
-          return [];
-        }
-
-        const result = await PenPal.API.Services.GetEnrichmentFiles(
-          serviceSelector,
-          "Gowitness"
-        );
-        return result.files || [];
-      } catch (error) {
-        logger.error("Error fetching enrichment files:", error);
-        return [];
-      }
-    },
+    // Remove files resolver - handled by PluginEnrichment interface resolver
     data(obj) {
-      // Return all properties except plugin_name as the data object
-      const { plugin_name, ...data } = obj;
+      // Return all properties except plugin_name and files as the data object
+      const { plugin_name, files, ...data } = obj;
       return data;
     },
   },

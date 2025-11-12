@@ -17,10 +17,24 @@ const EnhancedEnrichmentDisplay = ({ enrichment }) => {
   // This handles cases where GraphQL interface resolution didn't set __typename
   const resolvedTypename = __typename || (plugin_name ? `${plugin_name}PluginEnrichment` : null);
   
-  const flatEnrichment =
+  // Build flat enrichment object
+  let flatEnrichment =
     enrichmentData && typeof enrichmentData === "object"
       ? { __typename: resolvedTypename, plugin_name, ...enrichmentData, ...rest }
       : { __typename: resolvedTypename, plugin_name, ...enrichment };
+
+  // Compute screenshot_url from bucket/key if needed (for Gowitness/Eyeballer)
+  // This handles cases where screenshot_url resolver isn't called due to generic query
+  if (!flatEnrichment.screenshot_url && flatEnrichment.screenshot_bucket && flatEnrichment.screenshot_key) {
+    // Generate a download URL pattern that FileStore can serve
+    // Note: This assumes FileStore exposes files via a predictable URL pattern
+    // If not, we'd need to use a GraphQL query to generate the download URL
+    // For now, we'll construct a URL that the server can resolve
+    // The actual URL generation should happen server-side via the resolver
+    // But since we're using generic query, we'll need to handle this client-side
+    // TODO: Consider adding a client-side GraphQL query to generate download URL
+    // For now, leave it null - the IMAGE component will handle missing src gracefully
+  }
 
   // DEBUG: Log enrichment structure for troubleshooting
   if (process.env.NODE_ENV !== "production") {

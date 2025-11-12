@@ -12,6 +12,8 @@ import {
   ShieldCheckIcon,
   ComputerDesktopIcon,
   ShieldExclamationIcon,
+  XMarkIcon,
+  FunnelIcon,
 } from "@heroicons/react/24/outline";
 
 const {
@@ -29,6 +31,11 @@ const {
   CardTitle,
   Badge,
   Input,
+  Checkbox,
+  Popover,
+  PopoverTrigger,
+  PopoverContent,
+  Label,
 } = Components;
 
 const TablePaginationActions = ({ count, page, rowsPerPage, onPageChange }) => {
@@ -159,6 +166,9 @@ const ProjectViewServicesTable = ({ services = [] }) => {
   const [sort, setSort] = useState({ key: "port", direction: "asc" });
   const [searchTerm, setSearchTerm] = useState("");
   const [debouncedSearchTerm, setDebouncedSearchTerm] = useState("");
+  const [selectedEnrichments, setSelectedEnrichments] = useState([]);
+  const [selectedService, setSelectedService] = useState(null);
+  const [showDetailPanel, setShowDetailPanel] = useState(false);
 
   // Debounce search term
   useEffect(() => {
@@ -174,20 +184,49 @@ const ProjectViewServicesTable = ({ services = [] }) => {
     setPage(0);
   }, [debouncedSearchTerm]);
 
-  // Filter services based on search term
-  const filteredServices = useMemo(() => {
-    if (!debouncedSearchTerm) return services;
+  // Get all unique enrichment types
+  const availableEnrichments = useMemo(() => {
+    const enrichmentSet = new Set();
+    services.forEach((service) => {
+      service.enrichments?.forEach((enrichment) => {
+        enrichmentSet.add(enrichment.plugin_name);
+      });
+    });
+    return Array.from(enrichmentSet).sort();
+  }, [services]);
 
-    const term = debouncedSearchTerm.toLowerCase();
-    return services.filter(
-      (service) =>
-        service.host?.ip_address?.toLowerCase().includes(term) ||
-        service.port?.toString().includes(term) ||
-        service.name?.toLowerCase().includes(term) ||
-        service.ip_protocol?.toLowerCase().includes(term) ||
-        service.status?.toLowerCase().includes(term)
-    );
-  }, [services, debouncedSearchTerm]);
+  // Filter services based on search term and enrichment filters
+  const filteredServices = useMemo(() => {
+    let filtered = services;
+
+    // Apply search filter
+    if (debouncedSearchTerm) {
+      const term = debouncedSearchTerm.toLowerCase();
+      filtered = filtered.filter(
+        (service) =>
+          service.host?.ip_address?.toLowerCase().includes(term) ||
+          service.port?.toString().includes(term) ||
+          service.name?.toLowerCase().includes(term) ||
+          service.ip_protocol?.toLowerCase().includes(term) ||
+          service.status?.toLowerCase().includes(term)
+      );
+    }
+
+    // Apply enrichment filter (AND operation - service must have ALL selected enrichments)
+    if (selectedEnrichments.length > 0) {
+      filtered = filtered.filter((service) => {
+        const serviceEnrichmentTypes = new Set(
+          service.enrichments?.map((e) => e.plugin_name) || []
+        );
+        // Service must have all selected enrichment types
+        return selectedEnrichments.every((enrichment) =>
+          serviceEnrichmentTypes.has(enrichment)
+        );
+      });
+    }
+
+    return filtered;
+  }, [services, debouncedSearchTerm, selectedEnrichments]);
 
   // Sort services
   const sortedServices = useMemo(() => {
@@ -305,38 +344,118 @@ const ProjectViewServicesTable = ({ services = [] }) => {
     );
   };
 
+  const handleRowClick = (service) => {
+    setSelectedService(service);
+    setShowDetailPanel(true);
+  };
+
+  const handleCloseDetailPanel = () => {
+    setShowDetailPanel(false);
+    setSelectedService(null);
+  };
+
+  const handleEnrichmentFilterChange = (enrichmentType, checked) => {
+    setSelectedEnrichments((prev) => {
+      if (checked) {
+        return [...prev, enrichmentType];
+      } else {
+        return prev.filter((e) => e !== enrichmentType);
+      }
+    });
+    setPage(0); // Reset to first page when filter changes
+  };
+
   return (
-    <Card>
-      <CardHeader>
-        <CardTitle>Services</CardTitle>
-        <CardDescription>
-          A list of all services discovered in this project.
-        </CardDescription>
-        <div className="flex justify-between items-center pt-4">
-          <Input
-            placeholder="Search services..."
-            value={searchTerm}
-            onChange={(e) => setSearchTerm(e.target.value)}
-            className="max-w-sm"
-          />
-          <div className="flex items-center space-x-2">
-            <Badge variant="outline">
-              Total:{" "}
-              <span className="font-bold ml-1">{stats.totalServices}</span>
-            </Badge>
-            <Badge variant="outline">
-              Open: <span className="font-bold ml-1">{stats.openServices}</span>
-            </Badge>
-            <Badge variant="outline">
-              Enriched:{" "}
-              <span className="font-bold ml-1">{stats.enrichedServices}</span>
-            </Badge>
-            <Badge variant="outline">
-              Hosts: <span className="font-bold ml-1">{stats.uniqueHosts}</span>
-            </Badge>
+    <div className="relative">
+      <Card>
+        <CardHeader>
+          <CardTitle>Services</CardTitle>
+          <CardDescription>
+            A list of all services discovered in this project.
+          </CardDescription>
+          <div className="flex justify-between items-center pt-4 gap-4">
+            <div className="flex items-center gap-2 flex-1">
+              <Input
+                placeholder="Search services..."
+                value={searchTerm}
+                onChange={(e) => setSearchTerm(e.target.value)}
+                className="max-w-sm"
+              />
+              {availableEnrichments.length > 0 && (
+                <Popover>
+                  <PopoverTrigger asChild>
+                    <Button
+                      variant="outline"
+                      className="flex items-center gap-2"
+                    >
+                      <FunnelIcon className="h-4 w-4" />
+                      Filter Enrichments
+                      {selectedEnrichments.length > 0 && (
+                        <Badge variant="secondary" className="ml-1">
+                          {selectedEnrichments.length}
+                        </Badge>
+                      )}
+                    </Button>
+                  </PopoverTrigger>
+                  <PopoverContent className="w-64 p-2">
+                    <div className="space-y-2">
+                      <Label className="text-sm font-semibold">
+                        Filter by Enrichment Type
+                      </Label>
+                      <div className="max-h-64 overflow-y-auto space-y-2">
+                        {availableEnrichments.map((enrichmentType) => (
+                          <label
+                            key={enrichmentType}
+                            className="flex items-center gap-2 p-2 rounded hover:bg-muted/50 cursor-pointer"
+                          >
+                            <Checkbox
+                              checked={selectedEnrichments.includes(
+                                enrichmentType
+                              )}
+                              onCheckedChange={(checked) =>
+                                handleEnrichmentFilterChange(
+                                  enrichmentType,
+                                  checked
+                                )
+                              }
+                            />
+                            <span className="text-sm">{enrichmentType}</span>
+                          </label>
+                        ))}
+                      </div>
+                      {selectedEnrichments.length > 0 && (
+                        <Button
+                          variant="ghost"
+                          size="sm"
+                          className="w-full mt-2"
+                          onClick={() => setSelectedEnrichments([])}
+                        >
+                          Clear Filters
+                        </Button>
+                      )}
+                    </div>
+                  </PopoverContent>
+                </Popover>
+              )}
+            </div>
+            <div className="flex items-center space-x-2">
+              <Badge variant="outline">
+                Total:{" "}
+                <span className="font-bold ml-1">{stats.totalServices}</span>
+              </Badge>
+              <Badge variant="outline">
+                Open: <span className="font-bold ml-1">{stats.openServices}</span>
+              </Badge>
+              <Badge variant="outline">
+                Enriched:{" "}
+                <span className="font-bold ml-1">{stats.enrichedServices}</span>
+              </Badge>
+              <Badge variant="outline">
+                Hosts: <span className="font-bold ml-1">{stats.uniqueHosts}</span>
+              </Badge>
+            </div>
           </div>
-        </div>
-      </CardHeader>
+        </CardHeader>
       <CardContent>
         <Table className="w-full">
           <TableHeader>
@@ -395,7 +514,11 @@ const ProjectViewServicesTable = ({ services = [] }) => {
           </TableHeader>
           <TableBody>
             {paginatedServices.map((service, index) => (
-              <TableRow key={service.id || index} className="hover:bg-muted/50">
+              <TableRow
+                key={service.id || index}
+                className="hover:bg-muted/50 cursor-pointer"
+                onClick={() => handleRowClick(service)}
+              >
                 <TableCell className="font-mono">
                   {service.host?.ip_address || "Unknown"}
                 </TableCell>
@@ -469,7 +592,126 @@ const ProjectViewServicesTable = ({ services = [] }) => {
           </div>
         </div>
       </CardContent>
-    </Card>
+      </Card>
+
+      {/* Slide-in Detail Panel */}
+      {showDetailPanel && selectedService && (
+        <ServiceDetailPanel
+          service={selectedService}
+          onClose={handleCloseDetailPanel}
+        />
+      )}
+    </div>
+  );
+};
+
+// Service Detail Panel Component
+const ServiceDetailPanel = ({ service, onClose }) => {
+  const [isVisible, setIsVisible] = useState(false);
+
+  useEffect(() => {
+    // Trigger animation after mount
+    setTimeout(() => setIsVisible(true), 10);
+  }, []);
+
+  return (
+    <div className="fixed inset-0 z-50 flex">
+      {/* Backdrop */}
+      <div
+        className="flex-1 bg-black/50 transition-opacity duration-200"
+        style={{ opacity: isVisible ? 0.5 : 0 }}
+        onClick={onClose}
+      />
+      
+      {/* Slide-in Panel */}
+      <div 
+        className="w-full max-w-2xl bg-white shadow-xl overflow-y-auto transition-transform duration-300 ease-out"
+        style={{
+          transform: isVisible ? "translateX(0)" : "translateX(100%)",
+        }}
+      >
+        <div className="sticky top-0 bg-white border-b p-4 flex items-center justify-between z-10">
+          <div>
+            <h2 className="text-2xl font-semibold">
+              {service.host?.ip_address}:{service.port}
+            </h2>
+            <p className="text-sm text-muted-foreground mt-1">
+              {service.name} ({service.ip_protocol})
+            </p>
+          </div>
+          <Button variant="ghost" size="icon" onClick={onClose}>
+            <XMarkIcon className="h-5 w-5" />
+          </Button>
+        </div>
+
+        <div className="p-6 space-y-6">
+          {/* Service Info */}
+          <Card>
+            <CardHeader>
+              <CardTitle>Service Information</CardTitle>
+            </CardHeader>
+            <CardContent className="space-y-2">
+              <div className="grid grid-cols-2 gap-4">
+                <div>
+                  <Label className="text-muted-foreground">Status</Label>
+                  <div className="mt-1">
+                    <ServiceStatusBadge status={service.status} />
+                  </div>
+                </div>
+                <div>
+                  <Label className="text-muted-foreground">Protocol</Label>
+                  <div className="mt-1">
+                    <ProtocolBadge protocol={service.ip_protocol} />
+                  </div>
+                </div>
+                <div>
+                  <Label className="text-muted-foreground">Host</Label>
+                  <div className="mt-1 font-mono">{service.host?.ip_address}</div>
+                </div>
+                <div>
+                  <Label className="text-muted-foreground">Port</Label>
+                  <div className="mt-1 font-mono">{service.port}</div>
+                </div>
+              </div>
+            </CardContent>
+          </Card>
+
+          {/* Enrichments */}
+          <Card>
+            <CardHeader>
+              <CardTitle>
+                Enrichments ({service.enrichments?.length || 0})
+              </CardTitle>
+            </CardHeader>
+            <CardContent>
+              {service.enrichments && service.enrichments.length > 0 ? (
+                <div className="space-y-4">
+                  {service.enrichments.map((enrichment, index) => (
+                    <div key={index} className="border rounded-lg p-4">
+                      <div className="flex items-center mb-3">
+                        <Badge variant="default" className="mr-2">
+                          {enrichment.plugin_name}
+                        </Badge>
+                        <span className="text-sm text-muted-foreground">
+                          Enrichment {index + 1}
+                        </span>
+                      </div>
+                      <Components.EnhancedEnrichmentDisplay
+                        enrichment={enrichment}
+                      />
+                    </div>
+                  ))}
+                </div>
+              ) : (
+                <div className="text-center text-muted-foreground py-8">
+                  No enrichments available for this service.
+                </div>
+              )}
+            </CardContent>
+          </Card>
+        </div>
+      </div>
+    </div>
   );
 };
 

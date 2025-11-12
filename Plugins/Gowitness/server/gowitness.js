@@ -148,6 +148,39 @@ export const parseAndUploadScreenshots = async (
         );
       }
 
+      // Publish MQTT events for successfully uploaded screenshots
+      if (result.accepted?.length > 0) {
+        const screenshots = result.accepted.map((accepted_result) => {
+          const enrichment = accepted_result.enrichment;
+          
+          return {
+            service_id: accepted_result.service_id, // Use the service_id from AddEnrichments result
+            screenshot_bucket: enrichment.screenshot_bucket,
+            screenshot_key: enrichment.screenshot_key,
+            url: enrichment.url,
+            title: enrichment.title,
+            status_code: enrichment.status_code,
+          };
+        });
+
+        // Publish to MQTT topic for Eyeballer and other plugins
+        if (PenPal.API && PenPal.API.MQTT && PenPal.API.MQTT.Publish) {
+          const topic = PenPal.API.MQTT.Topics?.New?.Screenshots || "penpal/gowitness/new/screenshots";
+          GowitnessLogger.log(
+            `Publishing ${screenshots.length} screenshots to MQTT topic: ${topic}`
+          );
+          
+          // Publish each screenshot individually or as a batch
+          // Publishing as batch for efficiency
+          await PenPal.API.MQTT.Publish(topic, {
+            project: project_id,
+            screenshots: screenshots,
+          });
+        } else {
+          GowitnessLogger.warn("MQTT API not available, skipping screenshot event publication");
+        }
+      }
+
       return result.accepted;
     }
 

@@ -1,0 +1,86 @@
+# Eyeballer Plugin Enrichment Type
+type EyeballerPluginEnrichment implements PluginEnrichment
+  @uiGroup(name: "classification", label: "Classification Results", priority: 0)
+  @uiGroup(name: "details", label: "Details", priority: 10)
+  @enrichmentDisplay(layout: "card", title: "Eyeballer Classification") {
+  plugin_name: String!
+  data: JSON
+  files: [EnrichmentFileAttachment]
+  old_looking: Boolean
+    @uiComponent(
+      type: BADGE
+      config: {
+        group: "classification"
+        priority: 0
+        label: "Old-Looking Site"
+        color: "warning"
+      }
+    )
+  login_page: Boolean
+    @uiComponent(
+      type: BADGE
+      config: {
+        group: "classification"
+        priority: 1
+        label: "Login Page"
+        color: "info"
+      }
+    )
+  webapp: Boolean
+    @uiComponent(
+      type: BADGE
+      config: {
+        group: "classification"
+        priority: 2
+        label: "Webapp"
+        color: "success"
+      }
+    )
+  custom_404: Boolean
+    @uiComponent(
+      type: BADGE
+      config: {
+        group: "classification"
+        priority: 3
+        label: "Custom 404"
+        color: "default"
+      }
+    )
+  parked_domain: Boolean
+    @uiComponent(
+      type: BADGE
+      config: {
+        group: "classification"
+        priority: 4
+        label: "Parked Domain"
+        color: "default"
+      }
+    )
+  confidence_scores: JSON
+  confidence_scores_table: JSON
+    @uiComponent(
+      type: TABLE
+      config: { 
+        group: "details", 
+        priority: 0, 
+        label: "Confidence Scores",
+        columns: ["Category", "Confidence"]
+      }
+    )
+  classified_at: String
+    @uiComponent(
+      type: TIMESTAMP
+      config: { group: "details", priority: 1, format: "relative" }
+    )
+  screenshot_bucket: String
+    @uiComponent(
+      type: TEXT
+      config: { group: "details", priority: 2, label: "Screenshot Bucket" }
+    )
+  screenshot_key: String
+    @uiComponent(
+      type: TEXT
+      config: { group: "details", priority: 3, label: "Screenshot Key" }
+    )
+}
+

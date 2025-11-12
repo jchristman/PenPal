@@ -37,9 +37,16 @@ export default {
     },
 
     data(obj) {
-      // Return all properties except plugin_name as the data object
-      const { plugin_name, ...data } = obj;
+      // Return all properties except plugin_name and files as the data object
+      // (files is handled by its own resolver)
+      const { plugin_name, files, ...data } = obj;
       return data;
+    },
+
+    files(obj) {
+      // Files are stored directly in the enrichment object
+      // Return them directly - no need for dynamic resolution
+      return obj.files || [];
     },
   },
 };

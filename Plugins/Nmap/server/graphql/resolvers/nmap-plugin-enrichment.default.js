@@ -38,49 +38,25 @@ PenPal.Utils.RunAfterImport(async () => {
 export default {
   NmapPluginEnrichment: {
     service(obj) {
-      return obj.service;
+      return obj.service || obj.data?.service;
     },
     fingerprint(obj) {
-      return obj.fingerprint;
+      return obj.fingerprint || obj.data?.fingerprint;
     },
     product(obj) {
-      return obj.product;
+      return obj.product || obj.data?.product;
     },
     version(obj) {
-      return obj.version;
+      return obj.version || obj.data?.version;
     },
     extra_info(obj) {
-      return obj.extra_info;
+      return obj.extra_info || obj.data?.extra_info;
     },
-    async files(obj, args, context) {
-      // Delegate to CoreAPI's getEnrichmentFiles function
-      if (!PenPal.API || !PenPal.API.Services) {
-        NmapLogger.warn(
-          "PenPal.API.Services not available for file resolution"
-        );
-        return [];
-      }
-
-      try {
-        // Extract service selector from the enrichment context
-        // The service selector should be available in the parent resolver context
-        const serviceSelector = context.serviceSelector || obj.serviceSelector;
-        if (!serviceSelector) {
-          NmapLogger.warn(
-            "No service selector available for file resolution"
-          );
-          return [];
-        }
-
-        const result = await PenPal.API.Services.GetEnrichmentFiles(
-          serviceSelector,
-          "Nmap"
-        );
-        return result.files || [];
-      } catch (error) {
-        NmapLogger.error("Error fetching enrichment files:", error);
-        return [];
-      }
+    // Remove files resolver - handled by PluginEnrichment interface resolver
+    data(obj) {
+      // Return all properties except plugin_name and files as the data object
+      const { plugin_name, files, ...data } = obj;
+      return data;
     },
   },
 };

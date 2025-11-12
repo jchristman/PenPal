@@ -36,64 +36,40 @@ PenPal.Utils.RunAfterImport(() => {
 export default {
   HttpXPluginEnrichment: {
     url(obj) {
-      return obj.url;
+      return obj.url || obj.data?.url;
     },
     status_code(obj) {
-      return obj.status_code;
+      return obj.status_code || obj.data?.status_code;
     },
     content_type(obj) {
-      return obj.content_type;
+      return obj.content_type || obj.data?.content_type;
     },
     content_length(obj) {
-      return obj.content_length;
+      return obj.content_length || obj.data?.content_length;
     },
     title(obj) {
-      return obj.title;
+      return obj.title || obj.data?.title;
     },
     server(obj) {
-      return obj.server;
+      return obj.server || obj.data?.server;
     },
     tech(obj) {
-      return obj.tech;
+      return obj.tech || obj.data?.tech;
     },
     method(obj) {
-      return obj.method;
+      return obj.method || obj.data?.method;
     },
     scheme(obj) {
-      return obj.scheme;
+      return obj.scheme || obj.data?.scheme;
     },
     path(obj) {
-      return obj.path;
+      return obj.path || obj.data?.path;
     },
-    async files(obj, args, context) {
-      // Delegate to CoreAPI's getEnrichmentFiles function
-      if (!PenPal.API || !PenPal.API.Services) {
-        logger.warn(
-          "PenPal.API.Services not available for file resolution"
-        );
-        return [];
-      }
-
-      try {
-        // Extract service selector from the enrichment context
-        // The service selector should be available in the parent resolver context
-        const serviceSelector = context.serviceSelector || obj.serviceSelector;
-        if (!serviceSelector) {
-          logger.warn(
-            "No service selector available for file resolution"
-          );
-          return [];
-        }
-
-        const result = await PenPal.API.Services.GetEnrichmentFiles(
-          serviceSelector,
-          "HttpX"
-        );
-        return result.files || [];
-      } catch (error) {
-        logger.error("Error fetching enrichment files:", error);
-        return [];
-      }
+    // Remove files resolver - handled by PluginEnrichment interface resolver
+    data(obj) {
+      // Return all properties except plugin_name and files as the data object
+      const { plugin_name, files, ...data } = obj;
+      return data;
     },
   },
 };
