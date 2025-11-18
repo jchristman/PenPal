@@ -49,6 +49,11 @@ const DefaultEnrichmentCard = ({ service, enrichment }) => {
             </CardTitle>
             <CardDescription className="text-xs">
               {service.name}
+              {service.host?.hostnames && service.host.hostnames.length > 0 && (
+                <div className="text-xs text-muted-foreground mt-1">
+                  Domains: {service.host.hostnames.join(", ")}
+                </div>
+              )}
             </CardDescription>
           </div>
           <Badge variant="outline" className="text-xs">
@@ -288,7 +293,14 @@ const ProjectViewServicesEnrichments = ({ services }) => {
                 {enrichmentsOfType.map((item, index) => (
                   <TableRow key={`${item.service.id}-${index}`}>
                     <TableCell className="font-mono">
-                      {item.service.host?.ip_address || "Unknown"}
+                      <div className="space-y-1">
+                        <div>{item.service.host?.ip_address || "Unknown"}</div>
+                        {item.service.host?.hostnames && item.service.host.hostnames.length > 0 && (
+                          <div className="text-xs text-muted-foreground">
+                            Domains: {item.service.host.hostnames.join(", ")}
+                          </div>
+                        )}
+                      </div>
                     </TableCell>
                     <TableCell className="font-mono">
                       {item.service.port || "—"}

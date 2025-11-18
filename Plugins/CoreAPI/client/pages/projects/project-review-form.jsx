@@ -29,6 +29,7 @@ const ProjectReviewForm = ({
   projectEndDate,
   projectIPs,
   projectNetworks,
+  projectDomains,
   projectProfile,
   handleClose = () => null,
 }) => {
@@ -114,6 +115,7 @@ const ProjectReviewForm = ({
               : projectEndDate.toISOString().split("T")[0],
           project_ips: projectIPs,
           project_networks: projectNetworks,
+          project_domains: projectDomains || [],
           profile: projectProfile || null,
         },
       });
@@ -175,6 +177,12 @@ const ProjectReviewForm = ({
                   title="# Networks"
                   data={projectNetworks.length}
                 />
+                {projectDomains && projectDomains.length > 0 && (
+                  <ReviewTableRow
+                    title="# Domains"
+                    data={projectDomains.length}
+                  />
+                )}
                 <ReviewTableRow
                   title="Profile"
                   data={profileDisplayName}

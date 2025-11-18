@@ -54,7 +54,7 @@ const ProjectViewDataContainer = ({ project, disable_polling }) => {
   const coreTabs = [
     {
       value: "details",
-      label: "Project Details",
+      label: "Scope",
       content: () => (
         <Components.ProjectViewDetails
           project={project}

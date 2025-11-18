@@ -1,4 +1,4 @@
-import React, { useState } from "react";
+import React, { useState, useEffect } from "react";
 import { Components, registerComponent, Hooks } from "@penpal/core";
 
 import { useQuery } from "@apollo/client";
@@ -16,16 +16,21 @@ const ProjectViewServices = ({ project, disable_polling }) => {
     },
   });
 
+  useEffect(() => {
+    if (error) {
+      toast({
+        title: "Error",
+        description: error.message,
+        variant: "destructive",
+      });
+    }
+  }, [error, toast]);
+
   if (loading) {
     return null;
   }
 
   if (error) {
-    toast({
-      title: "Error",
-      description: error.message,
-      variant: "destructive",
-    });
     return null;
   }
 

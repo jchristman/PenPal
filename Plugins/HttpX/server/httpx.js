@@ -48,29 +48,67 @@ export const parseAndUpsertResults = async (
       return;
     }
 
+    // Build a map of hostnames (IP + domains) to services for matching
+    const hostnameToServiceMap = new Map();
+    for (const service of services_data) {
+      // Map IP address to service
+      if (service.host_ip) {
+        hostnameToServiceMap.set(service.host_ip.toLowerCase(), service);
+      }
+      // Map domain names to service
+      const hostnames = service.host_hostnames || [];
+      for (const hostname of hostnames) {
+        // Skip null/undefined/empty hostnames
+        if (hostname && typeof hostname === 'string' && hostname.trim()) {
+          hostnameToServiceMap.set(hostname.toLowerCase(), service);
+        }
+      }
+    }
+
     // Convert HttpX results to enrichment format
     const enrichment_updates = http_results.map((result) => {
-      // Extract host and port from httpx output
+      // Extract hostname from httpx output (could be IP or domain)
       // httpx JSON output typically has: host, port, url fields
-      const host =
+      const result_hostname =
         result.host || result.input?.replace(/^https?:\/\//, "").split(":")[0];
       const port = result.port || (result.url?.includes("https://") ? 443 : 80);
 
+      // Skip if hostname is null/undefined/empty
+      if (!result_hostname || typeof result_hostname !== 'string' || !result_hostname.trim()) {
+        HttpXLogger.warn(
+          `Skipping result with invalid hostname: ${JSON.stringify(result)}`
+        );
+        return null;
+      }
+
+      // Find the matching service by hostname (IP or domain)
+      const matching_service = hostnameToServiceMap.get(result_hostname.toLowerCase());
+      
+      if (!matching_service) {
+        HttpXLogger.warn(
+          `No matching service found for hostname=${result_hostname}, port=${port}, url=${result.url}`
+        );
+        return null;
+      }
+
+      // Use the service's IP address for enrichment matching (required by CoreAPI)
+      const host_ip = matching_service.host_ip;
+
       HttpXLogger.log(
-        `Preparing enrichment for host=${host}, port=${port}, url=${result.url}`
+        `Preparing enrichment for hostname=${result_hostname}, ip=${host_ip}, port=${port}, url=${result.url}`
       );
 
       return {
-        // Service identification using natural identifiers
-        host,
+        // Service identification using natural identifiers (always use IP for matching)
+        host: host_ip, // Use IP address for service matching, not domain name
         port,
         ip_protocol: "TCP",
         project_id: project_id,
 
-        // HttpX enrichment data
+        // HttpX enrichment data (preserve original URL which may use domain name)
         enrichment: {
           plugin_name: "HttpX",
-          url: result.url,
+          url: result.url, // Preserve original URL (may contain domain name)
           status_code: result.status_code,
           content_type: result.content_type,
           content_length: result.content_length,
@@ -82,7 +120,7 @@ export const parseAndUpsertResults = async (
           path: result.path,
         },
       };
-    });
+    }).filter((update) => update !== null); // Remove null entries
 
     HttpXLogger.log(
       `Prepared ${enrichment_updates.length} enrichment updates for project ${project_id}`
@@ -154,6 +192,7 @@ export const parseAndUpsertResults = async (
             service_id: accepted_result.service_id,
             host: service?.host,
             host_ip: service?.host_ip,
+            host_hostnames: service?.host_hostnames || [],
             port: service?.port,
             ip_protocol: service?.ip_protocol,
             project_id: project_id,
@@ -215,8 +254,36 @@ export const performHttpScan = async ({
     ];
 
     // Create target URLs for httpx - try both HTTP and HTTPS for each service
+    // Scan both IP address and domain names (for virtual host magic)
     const targets = [];
     const epoch = PenPal.Utils.Epoch();
+
+    // Helper function to add URLs for a given hostname/IP and port
+    const addTargetsForHost = (hostname, port, portNum) => {
+      // Standard HTTP ports - try HTTP
+      if (
+        portNum === 80 ||
+        portNum === 8080 ||
+        portNum === 8000 ||
+        portNum === 3000
+      ) {
+        targets.push(`http://${hostname}:${port}`);
+      }
+      // Standard HTTPS ports - try HTTPS
+      else if (
+        portNum === 443 ||
+        portNum === 8443 ||
+        portNum === 8001 ||
+        portNum === 3001
+      ) {
+        targets.push(`https://${hostname}:${port}`);
+      }
+      // For all other ports, try both HTTP and HTTPS (common for custom web services)
+      else {
+        targets.push(`http://${hostname}:${port}`);
+        targets.push(`https://${hostname}:${port}`);
+      }
+    };
 
     for (const service of services) {
       // Skip non-TCP services (HTTP/HTTPS only work over TCP)
@@ -234,28 +301,21 @@ export const performHttpScan = async ({
         continue;
       }
 
-      // Standard HTTP ports - try HTTP
-      if (
-        portNum === 80 ||
-        portNum === 8080 ||
-        portNum === 8000 ||
-        portNum === 3000
-      ) {
-        targets.push(`http://${service.host_ip}:${service.port}`);
-      }
-      // Standard HTTPS ports - try HTTPS
-      else if (
-        portNum === 443 ||
-        portNum === 8443 ||
-        portNum === 8001 ||
-        portNum === 3001
-      ) {
-        targets.push(`https://${service.host_ip}:${service.port}`);
-      }
-      // For all other ports, try both HTTP and HTTPS (common for custom web services)
-      else {
-        targets.push(`http://${service.host_ip}:${service.port}`);
-        targets.push(`https://${service.host_ip}:${service.port}`);
+      // Always scan the IP address
+      addTargetsForHost(service.host_ip, service.port, portNum);
+
+      // Also scan domain names if available (for virtual host scanning)
+      const hostnames = service.host_hostnames || [];
+      if (hostnames.length > 0) {
+        HttpXLogger.log(
+          `Adding ${hostnames.length} domain name(s) for virtual host scanning: ${hostnames.join(", ")}`
+        );
+        for (const hostname of hostnames) {
+          // Only add if hostname is different from IP (avoid duplicates)
+          if (hostname !== service.host_ip) {
+            addTargetsForHost(hostname, service.port, portNum);
+          }
+        }
       }
     }
 
@@ -334,6 +394,7 @@ export const performHttpScan = async ({
       "-content-length",
       "-status-code",
       "-threads 50",
+      "-vhost", // Enable virtual host probing
     ].join(" ");
 
     HttpXLogger.log(`Running httpx command: ${httpx_command}`);

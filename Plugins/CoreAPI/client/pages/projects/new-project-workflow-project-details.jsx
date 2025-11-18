@@ -20,6 +20,8 @@ const ProjectDetails = ({
   setProjectIPs,
   projectNetworks,
   setProjectNetworks,
+  projectDomains,
+  setProjectDomains,
   projectProfile,
   setProjectProfile,
 }) => {
@@ -63,6 +65,8 @@ const ProjectDetails = ({
             setProjectIPs={setProjectIPs}
             projectNetworks={projectNetworks}
             setProjectNetworks={setProjectNetworks}
+            projectDomains={projectDomains}
+            setProjectDomains={setProjectDomains}
           />
         </div>
       </div>

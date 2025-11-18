@@ -153,10 +153,14 @@ export const parseAndUpsertResults = async (project_id, xml_data) => {
   // 1. Upsert Hosts
   let { inserted, updated, rejected } = await PenPal.API.Hosts.UpsertMany(
     project_id,
-    Object.keys(live_hosts).map((ip) => ({
-      ip_address: ip,
-      hostnames: [live_hosts[ip].hostname],
-    }))
+    Object.keys(live_hosts).map((ip) => {
+      const hostname = live_hosts[ip].hostname;
+      return {
+        ip_address: ip,
+        // Only set hostnames if we actually found a hostname (not null)
+        ...(hostname ? { hostnames: [hostname] } : {}),
+      };
+    })
   );
 
   const penpal_live_hosts = inserted.accepted.concat(updated.accepted);

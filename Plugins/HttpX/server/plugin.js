@@ -185,15 +185,17 @@ const start_http_service_scan_batch = async (batchedArgs) => {
       };
 
       try {
-        // Enrich services with host IP information
+        // Enrich services with host IP and hostnames information
         const hosts_map = {};
         for (const service of network_services) {
           if (service.host && !hosts_map[service.host]) {
             const host_data = await PenPal.API.Hosts.Get(service.host);
             hosts_map[service.host] = host_data;
             service.host_ip = host_data?.ip_address;
+            service.host_hostnames = host_data?.hostnames || [];
           } else if (hosts_map[service.host]) {
             service.host_ip = hosts_map[service.host].ip_address;
+            service.host_hostnames = hosts_map[service.host].hostnames || [];
           }
         }
 

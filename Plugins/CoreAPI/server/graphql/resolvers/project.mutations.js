@@ -1,7 +1,12 @@
+import dns from "dns";
+import { promisify } from "util";
+
+const dnsLookup = promisify(dns.lookup);
+
 export default {
   async createProject(
     root,
-    { project: { scope: { hosts = [], networks = [] } = {}, ...project } },
+    { project: { scope: { hosts = [], networks = [], domains = [] } = {}, ...project } },
     { PenPalCachingAPI }
   ) {
     const insertResult = await PenPalCachingAPI.Projects.Insert(project);
@@ -35,11 +40,59 @@ export default {
         );
       }
 
-      if (hosts.length > 0) {
-        // Now insert the hosts and networks with the appropriate project ID
-        const { accepted: new_hosts } = await PenPalCachingAPI.Hosts.InsertMany(
-          hosts.map((host_ip) => ({ project: project.id, ip_address: host_ip }))
+      // Resolve domains to IPs and create hostname mappings
+      const domainToIPMap = new Map(); // domain -> ip
+      const ipToDomainsMap = new Map(); // ip -> [domains]
+
+      if (domains.length > 0) {
+        // Resolve all domains to IPs
+        const domainResolutions = await Promise.allSettled(
+          domains.map(async (domain) => {
+            try {
+              const { address } = await dnsLookup(domain, { family: 4 });
+              return { domain, ip: address };
+            } catch (error) {
+              // DNS resolution failed - log but continue
+              console.warn(`Failed to resolve domain ${domain}:`, error.message);
+              return { domain, ip: null, error: error.message };
+            }
+          })
         );
+
+        // Build maps of IP to domains
+        for (const result of domainResolutions) {
+          if (result.status === "fulfilled" && result.value.ip) {
+            const { domain, ip } = result.value;
+            domainToIPMap.set(domain, ip);
+            
+            if (!ipToDomainsMap.has(ip)) {
+              ipToDomainsMap.set(ip, []);
+            }
+            ipToDomainsMap.get(ip).push(domain);
+          }
+        }
+      }
+
+      // Combine direct IPs and resolved domain IPs
+      // Use a Set to deduplicate IPs
+      const allIPs = new Set(hosts);
+      for (const ip of domainToIPMap.values()) {
+        allIPs.add(ip);
+      }
+
+      if (allIPs.size > 0) {
+        // Create hosts with hostnames from domains
+        // If an IP was provided directly AND resolved from a domain, merge the hostnames
+        const hostInputs = Array.from(allIPs).map((host_ip) => {
+          const hostnames = ipToDomainsMap.get(host_ip) || [];
+          return {
+            project: project.id,
+            ip_address: host_ip,
+            hostnames: hostnames.length > 0 ? hostnames : undefined,
+          };
+        });
+
+        const { accepted: new_hosts } = await PenPalCachingAPI.Hosts.InsertMany(hostInputs);
 
         // NOTE: This will maybe cause a memory error if new_hosts has a length > 100,000 ish. Is this actually a problem?
         project.scope.hosts.push(...new_hosts.map((host) => host.id));
