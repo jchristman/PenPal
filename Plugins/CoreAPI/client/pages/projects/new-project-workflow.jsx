@@ -33,6 +33,7 @@ const NewProjectWorkflow = ({ open, handleClose: handleCloseProp }) => {
   const [projectDescription, setProjectDescription] = useState("");
   const [projectIPs, setProjectIPs] = useState([]);
   const [projectNetworks, setProjectNetworks] = useState([]);
+  const [projectDomains, setProjectDomains] = useState([]);
   const [projectProfile, setProjectProfile] = useState("");
   const [projectStartDate, setProjectStartDate] = useState(null);
   const [projectEndDate, setProjectEndDate] = useState(null);
@@ -69,6 +70,7 @@ const NewProjectWorkflow = ({ open, handleClose: handleCloseProp }) => {
     setProjectDescription("");
     setProjectIPs([]);
     setProjectNetworks([]);
+    setProjectDomains([]);
     setProjectStartDate(null);
     setProjectEndDate(null);
 
@@ -144,6 +146,8 @@ const NewProjectWorkflow = ({ open, handleClose: handleCloseProp }) => {
             setProjectIPs={setProjectIPs}
             projectNetworks={projectNetworks}
             setProjectNetworks={setProjectNetworks}
+            projectDomains={projectDomains}
+            setProjectDomains={setProjectDomains}
             projectProfile={projectProfile}
             setProjectProfile={setProjectProfile}
             handleClose={handleClose}

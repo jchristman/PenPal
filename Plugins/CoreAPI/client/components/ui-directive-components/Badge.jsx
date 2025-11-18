@@ -45,6 +45,9 @@ const Badge = ({
     );
   }
 
+  // For boolean badges, show the label instead of "true"
+  const displayValue = typeof value === "boolean" ? label : value;
+
   return (
     <_Badge
       label={label}
@@ -53,7 +56,7 @@ const Badge = ({
       variant={variant}
       icon={icon}
     >
-      {value}
+      {displayValue}
     </_Badge>
   );
 };

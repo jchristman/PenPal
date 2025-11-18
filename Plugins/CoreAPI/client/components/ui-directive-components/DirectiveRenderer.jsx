@@ -3,6 +3,8 @@ import { useQuery } from "@apollo/client";
 import { Components, registerComponent } from "@penpal/core";
 import GET_UI_DIRECTIVES from "./queries/get-ui-directives";
 import { ChevronDownIcon } from "@heroicons/react/24/solid";
+// Import ScreenshotImage to ensure it's loaded and registered
+import "./ScreenshotImage.jsx";
 
 const { Spinner, Collapsible, CollapsibleTrigger, CollapsibleContent } =
   Components;
@@ -21,6 +23,15 @@ const DefaultFieldRenderer = ({ fieldName, fieldData }) => (
 const renderField = (fieldName, fieldData, fieldConfig) => {
   // Skip null/undefined fields
   if (fieldData == null) return null;
+
+  // For boolean badges, only render when value is true
+  if (
+    fieldConfig?.uiComponent?.type === "BADGE" &&
+    typeof fieldData === "boolean" &&
+    !fieldData
+  ) {
+    return null;
+  }
 
   // Define the mapping here so it always uses the latest Components
   const componentMap = {
@@ -75,6 +86,14 @@ const renderField = (fieldName, fieldData, fieldConfig) => {
         fieldData={fieldData}
       />
     );
+  }
+
+  // Special handling for IMAGE fields that need screenshot_url computed
+  // Check if this is screenshot_url field that's missing but we have bucket/key
+  if (type === "IMAGE" && !fieldData && fieldName === "screenshot_url") {
+    // Check if we have bucket/key in the enrichment data (passed via closure)
+    // We need access to the full data object, so we'll handle this in DirectiveRenderer
+    // For now, return null and let DirectiveRenderer handle it
   }
 
   const props = {
@@ -158,8 +177,24 @@ const DirectiveRenderer = ({ enrichment }) => {
   }
 
   // When rendering fields, skip the 'data' field
-  const fieldsByGroup = Object.keys(data)
-    .filter((fieldName) => fieldName !== "data")
+  // Also skip 'confidence_scores' if 'confidence_scores_table' exists (table version preferred)
+  // Include fields from UI config even if not in data (for computed fields like screenshot_url)
+  const allFields = new Set([
+    ...Object.keys(data),
+    ...Object.keys(uiConfig.fields || {}),
+  ]);
+  
+  const fieldsByGroup = Array.from(allFields)
+    .filter((fieldName) => {
+      if (fieldName === "data") return false;
+      // Skip confidence_scores if confidence_scores_table exists in UI config (computed field)
+      // This handles the case where confidence_scores_table is a resolver field
+      if (fieldName === "confidence_scores" && uiConfig.fields["confidence_scores_table"]?.uiComponent) {
+        return false;
+      }
+      // Only include fields that have UI directives configured
+      return uiConfig.fields[fieldName]?.uiComponent;
+    })
     .reduce((acc, fieldName) => {
       const groupName =
         uiConfig.fields[fieldName]?.uiComponent?.config?.group || "default";
@@ -191,6 +226,17 @@ const DirectiveRenderer = ({ enrichment }) => {
 
         const groupConfig = uiGroups?.find((g) => g.name === groupName);
 
+        // Check if this group has only boolean badges and all are false
+        const booleanBadgeFields = groupFields.filter(
+          (fieldName) =>
+            uiConfig.fields[fieldName]?.uiComponent?.type === "BADGE" &&
+            typeof data[fieldName] === "boolean"
+        );
+
+        const allBooleanBadgesFalse =
+          booleanBadgeFields.length > 0 &&
+          booleanBadgeFields.every((fieldName) => !data[fieldName]);
+
         // Always render groups expanded, never as Collapsible
         return (
           <div key={groupName} className="mb-2">
@@ -199,13 +245,86 @@ const DirectiveRenderer = ({ enrichment }) => {
                 {groupConfig.label || groupName}
               </p>
             )}
-            {groupFields.map((fieldName) =>
-              renderField(
-                fieldName,
-                data[fieldName],
-                uiConfig.fields[fieldName]
-              )
+            {allBooleanBadgesFalse && booleanBadgeFields.length > 0 && (
+              <p className="text-sm text-muted-foreground italic mb-2">
+                No classification matches found
+              </p>
             )}
+            {groupFields.map((fieldName) => {
+              let fieldData = data[fieldName];
+              const fieldConfig = uiConfig.fields[fieldName];
+              
+              // Special handling for confidence_scores_table - compute client-side if missing
+              // This is a computed resolver field that transforms confidence_scores into table format
+              if (fieldName === "confidence_scores_table" && (!fieldData || fieldData === null || fieldData === undefined)) {
+                const confidenceScores = data.confidence_scores;
+                if (confidenceScores && typeof confidenceScores === "object") {
+                  // Map field names to display labels (matching server-side resolver)
+                  const fieldLabels = {
+                    custom_404: "Custom 404",
+                    login_page: "Login Page",
+                    webapp: "Webapp",
+                    old_looking: "Old-Looking Site",
+                    parked_domain: "Parked Domain",
+                  };
+                  
+                  // Transform object to array of table rows (matching server-side resolver)
+                  fieldData = Object.entries(confidenceScores)
+                    .map(([key, value]) => {
+                      const numValue = typeof value === "number" ? value : parseFloat(value) || 0;
+                      return {
+                        Category: fieldLabels[key] || key.replace(/_/g, " ").replace(/\b\w/g, (l) => l.toUpperCase()),
+                        Confidence: `${(numValue * 100).toFixed(2)}%`,
+                        Value: numValue, // Keep raw value for sorting
+                      };
+                    })
+                    .sort((a, b) => b.Value - a.Value); // Sort by confidence descending
+                }
+              }
+              
+              // Special handling for screenshot_url IMAGE field
+              // If screenshot_url is missing but we have bucket/key, use ScreenshotImage component
+              if (
+                fieldName === "screenshot_url" &&
+                (!fieldData || fieldData === null || fieldData === undefined) &&
+                fieldConfig?.uiComponent?.type === "IMAGE" &&
+                data.screenshot_bucket &&
+                data.screenshot_key
+              ) {
+                // Try to get ScreenshotImage component - it should be auto-loaded
+                const ScreenshotImage = Components.ScreenshotImage;
+                if (ScreenshotImage) {
+                  const label = fieldConfig.uiComponent.config?.label || fieldName.replace(/_/g, " ");
+                  return (
+                    <div key={fieldName} className="mb-1">
+                      {!fieldConfig.uiComponent.config?.hideLabel && (
+                        <p className="text-xs capitalize text-muted-foreground">{label}</p>
+                      )}
+                      <ScreenshotImage
+                        bucket={data.screenshot_bucket}
+                        fileKey={data.screenshot_key}
+                        {...fieldConfig.uiComponent.config}
+                      />
+                    </div>
+                  );
+                } else {
+                  // Fallback: log warning and render a placeholder
+                  console.warn("[DirectiveRenderer] ScreenshotImage component not found. Bucket:", data.screenshot_bucket, "Key:", data.screenshot_key);
+                  return (
+                    <div key={fieldName} className="mb-1">
+                      <p className="text-xs capitalize text-muted-foreground">
+                        {fieldConfig.uiComponent.config?.label || fieldName.replace(/_/g, " ")}
+                      </p>
+                      <p className="text-sm text-muted-foreground">
+                        Screenshot available (bucket: {data.screenshot_bucket}, key: {data.screenshot_key})
+                      </p>
+                    </div>
+                  );
+                }
+              }
+              
+              return renderField(fieldName, fieldData, fieldConfig);
+            })}
           </div>
         );
       })}

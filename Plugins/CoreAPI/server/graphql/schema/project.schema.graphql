@@ -86,6 +86,7 @@ input ProjectInputDates {
 input ProjectInputScope {
   hosts: [IPAddress]
   networks: [IPSubnet]
+  domains: [String]
 }
 
 "Users associated with this project"

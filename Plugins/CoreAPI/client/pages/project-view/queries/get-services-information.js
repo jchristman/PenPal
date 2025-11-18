@@ -24,33 +24,17 @@ export default gql`
         __typename
         plugin_name
         data
-        ... on HttpXPluginEnrichment {
-          url
-          status_code
-          content_type
-          content_length
-          title
-          server
-          tech
-          method
-          scheme
-          path
-        }
-        ... on GowitnessPluginEnrichment {
-          url
-          status_code
-          title
-          screenshot_url
-          screenshot_bucket
-          screenshot_key
-          captured_at
-        }
-        ... on NmapPluginEnrichment {
-          service
-          product
-          version
-          fingerprint
-          extra_info
+        files {
+          id
+          filename
+          stored_filename
+          bucket_name
+          file_type
+          category
+          size
+          mime_type
+          uploaded_at
+          metadata
         }
       }
       vulnerabilitiesConnection {

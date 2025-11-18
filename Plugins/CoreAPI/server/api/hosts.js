@@ -114,7 +114,21 @@ export const insertHosts = async (hosts) => {
       required_field(host, "project", "insertion");
       required_field(host, "ip_address", "insertion");
 
-      const _host = { ...host, ...default_host };
+      // Merge defaults, but preserve hostnames if provided
+      // If hostnames is provided (even as empty array), use it; otherwise use default empty array
+      const _host = { 
+        ...default_host, 
+        ...host,
+        // Ensure hostnames is always an array - preserve provided array or convert to array
+        hostnames: host.hostnames !== undefined 
+          ? (Array.isArray(host.hostnames) ? host.hostnames : [host.hostnames])
+          : default_host.hostnames
+      };
+      
+      // Debug log to verify hostnames are being set
+      if (_host.hostnames && _host.hostnames.length > 0) {
+        logger.log(`Inserting host ${_host.ip_address} with hostnames:`, _host.hostnames);
+      }
       _accepted.push(_host);
     } catch (e) {
       rejected.push({ host, error: e });
@@ -135,29 +149,16 @@ export const insertHosts = async (hosts) => {
       {}
     );
 
-    // Map each host to a network
+    // Map each host to a network if it falls within an existing network's subnet
+    // Hosts without a matching network are allowed (e.g., external hosts for pentests)
     for (let host of _accepted) {
       for (let network_id in project_networks) {
         if (project_networks[network_id].contains(host.ip_address)) {
           host.network = network_id;
+          break; // Host can only belong to one network
         }
       }
-    }
-
-    // Reject any hosts that were discovered that were not in any existing scoped networks
-    // TODO: probably need to alert on this somehow
-    _rejected = _.remove(
-      _accepted,
-      (host) => host.network === null || host.network === undefined
-    );
-
-    // Add the rejected hosts to the rejected array
-    for (let host of _rejected) {
-      rejected.push({
-        host,
-        error:
-          "Host did not have a matching network. PenPal cannot automatically determine a subnet without further information",
-      });
+      // If host doesn't match any network, host.network remains undefined/null, which is valid
     }
 
     if (_accepted.length > 0) {
@@ -175,9 +176,11 @@ export const insertHosts = async (hosts) => {
       }));
 
       // Update the networks with the new hosts
-      const network_new_hosts = _.groupBy(new_hosts, "network");
+      // Only group hosts that have a network assigned
+      const hostsWithNetworks = new_hosts.filter((host) => host.network);
+      const network_new_hosts = _.groupBy(hostsWithNetworks, "network");
       for (let network_id in network_new_hosts) {
-        if (network_id !== undefined) {
+        if (network_id && network_id !== "undefined" && network_id !== "null") {
           await addHostsToNetwork(
             network_id,
             network_new_hosts[network_id].map(({ id }) => id)

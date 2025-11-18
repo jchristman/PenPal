@@ -131,6 +131,9 @@ const GowitnessPlugin = {
   async loadPlugin() {
     const MQTT = await PenPal.MQTT.NewClient();
 
+    // Define Gowitness-specific MQTT topics
+    PenPal.API.MQTT.Topics.New.Screenshots = "penpal/gowitness/new/screenshots";
+
     // Subscribe to HTTP services discovered by HttpX plugin
     await MQTT.Subscribe(
       PenPal.API.MQTT.Topics.New.HTTPServices,

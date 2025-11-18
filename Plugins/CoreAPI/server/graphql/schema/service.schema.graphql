@@ -2,7 +2,7 @@
 interface Service implements Annotatable & Auditable & Enrichable {
   id: ID!
   "The host to which the service belongs"
-  host: Host!
+  host: Host
   "The network to which the service belongs (if the host belongs to it)"
   network: Network
   "The project to which the service belongs"
@@ -50,7 +50,7 @@ type ServicesConnection {
 type NetworkService implements Service & Annotatable & Auditable & Enrichable {
   id: ID!
   "The host to which the service belongs"
-  host: Host!
+  host: Host
   "The network to which the service belongs (if the host belongs to it)"
   network: Network
   "The project to which the service belongs"
