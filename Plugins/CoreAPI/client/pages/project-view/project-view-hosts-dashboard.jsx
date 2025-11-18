@@ -53,7 +53,7 @@ const CustomTooltip = ({ active, payload }) => {
 const ProjectViewHostsDashboard = ({ hosts = [] }) => {
   const stats = useMemo(() => {
     const totalHosts = hosts.length;
-    const hostsWithNames = hosts.filter((h) => h.hostnames?.length > 0).length;
+    const hostsWithNames = hosts.filter((h) => h.domains?.length > 0).length;
     const totalServices = hosts.reduce(
       (sum, host) => sum + (host.servicesConnection?.totalCount || 0),
       0

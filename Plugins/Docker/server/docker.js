@@ -670,7 +670,7 @@ export const Run = async ({
     daemonize ? "-d" : "",
     network != "" ? `--network ${network}` : "",
     volume ? `-v ${volume.name}:${volume.path}` : "",
-    "-it",
+    daemonize ? "" : "-it", // Only add -it for non-daemonized containers
   ];
 
   if (name) {

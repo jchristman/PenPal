@@ -34,6 +34,18 @@ PenPal.API.registerProjectViewTab = (tabDescriptor) => {
   PenPal.API.ProjectViewTabsRegistry.push({ value, label, render, order });
 };
 
+// Initialize registry for scope sections within the scope tab
+if (!PenPal.API.ProjectScopeSectionsRegistry) {
+  PenPal.API.ProjectScopeSectionsRegistry = [];
+}
+
+// Register function allows plugins to add sections to the project scope tab
+PenPal.API.registerProjectScopeSection = (sectionDescriptor) => {
+  const { component, order = 100 } = sectionDescriptor || {};
+  if (!component) return;
+  PenPal.API.ProjectScopeSectionsRegistry.push({ component, order });
+};
+
 const ProjectViewDataContainer = ({ project, disable_polling }) => {
   const [searchParams, setSearchParams] = useSearchParams();
 

@@ -1,0 +1,42 @@
+"A domain represents a DNS domain name that may or may not resolve to IP addresses"
+type Domain implements Annotatable & Auditable {
+  id: ID!
+  "The project this domain belongs to"
+  project: Project!
+  "The domain name (e.g., 'example.com')"
+  name: String!
+  "IP addresses this domain resolves to (empty if no resolution)"
+  resolved_ips: [IPAddress]
+  "Annotations about this domain"
+  annotations: Annotations
+  "Audits for the domain"
+  changes: [Audit]
+}
+
+"An implementation of the Edge spec for a Domain"
+type DomainEdge {
+  node: Domain!
+  cursor: String!
+}
+
+"An implementation of the Connection spec for Domains"
+type DomainsConnection {
+  edges: [DomainEdge]!
+  domains: [Domain]!
+  pageInfo: PageInfo!
+  totalCount: Int!
+}
+
+"Input type for creating a domain"
+input DomainInput {
+  project: ID!
+  name: String!
+  resolved_ips: [IPAddress]
+}
+
+"Input type for updating a domain"
+input DomainUpdateInput {
+  id: ID!
+  name: String
+  resolved_ips: [IPAddress]
+}

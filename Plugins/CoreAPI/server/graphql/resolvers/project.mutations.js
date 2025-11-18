@@ -40,10 +40,8 @@ export default {
         );
       }
 
-      // Resolve domains to IPs and create hostname mappings
-      const domainToIPMap = new Map(); // domain -> ip
-      const ipToDomainsMap = new Map(); // ip -> [domains]
-
+      // Create domain entities for all domains (both resolvable and non-resolvable)
+      let domainIds = [];
       if (domains.length > 0) {
         // Resolve all domains to IPs
         const domainResolutions = await Promise.allSettled(
@@ -52,14 +50,27 @@ export default {
               const { address } = await dnsLookup(domain, { family: 4 });
               return { domain, ip: address };
             } catch (error) {
-              // DNS resolution failed - log but continue
+              // DNS resolution failed - that's OK, domains can be non-resolvable
               console.warn(`Failed to resolve domain ${domain}:`, error.message);
               return { domain, ip: null, error: error.message };
             }
           })
         );
 
-        // Build maps of IP to domains
+        // Create domain entities for all domains
+        const domainInputs = domainResolutions.map((result) => ({
+          project: project.id,
+          name: result.status === "fulfilled" ? result.value.domain : result.reason.domain,
+          resolved_ips: result.status === "fulfilled" && result.value.ip ? [result.value.ip] : [],
+        }));
+
+        const { accepted: new_domains } = await PenPalCachingAPI.Domains.InsertMany(domainInputs);
+        domainIds = new_domains.map((domain) => domain.id);
+
+        // Build maps for host creation from resolved domains
+        const domainToIPMap = new Map(); // domain -> ip
+        const ipToDomainsMap = new Map(); // ip -> [domain_ids]
+
         for (const result of domainResolutions) {
           if (result.status === "fulfilled" && result.value.ip) {
             const { domain, ip } = result.value;
@@ -68,7 +79,10 @@ export default {
             if (!ipToDomainsMap.has(ip)) {
               ipToDomainsMap.set(ip, []);
             }
-            ipToDomainsMap.get(ip).push(domain);
+            // Find the domain ID for this domain
+            const domainEntity = new_domains.find(d => d.name === domain);
+            if (domainEntity) {
+              ipToDomainsMap.get(ip).push(domainEntity.id);
           }
         }
       }
@@ -81,14 +95,14 @@ export default {
       }
 
       if (allIPs.size > 0) {
-        // Create hosts with hostnames from domains
-        // If an IP was provided directly AND resolved from a domain, merge the hostnames
+          // Create hosts with domain_ids from resolved domains
+          // If an IP was provided directly AND resolved from a domain, merge the domain_ids
         const hostInputs = Array.from(allIPs).map((host_ip) => {
-          const hostnames = ipToDomainsMap.get(host_ip) || [];
+            const domainIdsForHost = ipToDomainsMap.get(host_ip) || [];
           return {
             project: project.id,
             ip_address: host_ip,
-            hostnames: hostnames.length > 0 ? hostnames : undefined,
+              domain_ids: domainIdsForHost.length > 0 ? domainIdsForHost : undefined,
           };
         });
 
@@ -96,12 +110,14 @@ export default {
 
         // NOTE: This will maybe cause a memory error if new_hosts has a length > 100,000 ish. Is this actually a problem?
         project.scope.hosts.push(...new_hosts.map((host) => host.id));
+        }
       }
 
       await PenPalCachingAPI.Projects.Update({
         id: project.id,
         "scope.hosts": project.scope.hosts,
         "scope.networks": project.scope.networks,
+        "scope.domains": domainIds,
       });
 
       return project;

@@ -20,7 +20,7 @@ const ProjectViewHostsGraph = ({ hosts = [] }) => {
     const nodes = hosts.map((host) => ({
       id: host.id,
       ip_address: host.ip_address,
-      hostnames: host.hostnames || [],
+      domains: host.domains || [],
       os: host.os,
       mac_address: host.mac_address,
       serviceCount: host.servicesConnection?.totalCount || 0,
@@ -319,15 +319,15 @@ const ProjectViewHostsGraph = ({ hosts = [] }) => {
                 </Button>
               </CardHeader>
               <CardContent className="space-y-3">
-                {/* Hostnames */}
-                {selectedHost.hostnames.length > 0 && (
+                {/* Domains */}
+                {selectedHost.domains.length > 0 && (
                   <div>
-                    <div className="text-sm font-medium mb-1">Hostnames</div>
+                    <div className="text-sm font-medium mb-1">Domains</div>
                     <div className="space-y-1">
-                      {selectedHost.hostnames.map((hostname, idx) => (
+                      {selectedHost.domains.map((domain, idx) => (
                         <div key={idx} className="flex items-center space-x-2">
                           <GlobeAltIcon className="h-3 w-3 text-muted-foreground" />
-                          <span className="text-sm">{hostname}</span>
+                          <span className="text-sm">{domain.name}</span>
                         </div>
                       ))}
                     </div>

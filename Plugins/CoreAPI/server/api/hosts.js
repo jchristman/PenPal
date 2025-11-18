@@ -94,7 +94,7 @@ export const getHostsByNetworks = async (network_ids, options) => {
 // -----------------------------------------------------------
 
 const default_host = {
-  hostnames: [],
+  domain_ids: [],
   services: [],
 };
 
@@ -114,20 +114,20 @@ export const insertHosts = async (hosts) => {
       required_field(host, "project", "insertion");
       required_field(host, "ip_address", "insertion");
 
-      // Merge defaults, but preserve hostnames if provided
-      // If hostnames is provided (even as empty array), use it; otherwise use default empty array
+      // Merge defaults, but preserve domain_ids if provided
+      // If domain_ids is provided (even as empty array), use it; otherwise use default empty array
       const _host = { 
         ...default_host, 
         ...host,
-        // Ensure hostnames is always an array - preserve provided array or convert to array
-        hostnames: host.hostnames !== undefined 
-          ? (Array.isArray(host.hostnames) ? host.hostnames : [host.hostnames])
-          : default_host.hostnames
+        // Ensure domain_ids is always an array - preserve provided array or convert to array
+        domain_ids: host.domain_ids !== undefined
+          ? (Array.isArray(host.domain_ids) ? host.domain_ids : [host.domain_ids])
+          : default_host.domain_ids
       };
       
-      // Debug log to verify hostnames are being set
-      if (_host.hostnames && _host.hostnames.length > 0) {
-        logger.log(`Inserting host ${_host.ip_address} with hostnames:`, _host.hostnames);
+      // Debug log to verify domain_ids are being set
+      if (_host.domain_ids && _host.domain_ids.length > 0) {
+        logger.log(`Inserting host ${_host.ip_address} with domain_ids:`, _host.domain_ids);
       }
       _accepted.push(_host);
     } catch (e) {

@@ -89,6 +89,12 @@ input ProjectInputScope {
   domains: [String]
 }
 
+input ProjectScopeInput {
+  ip_addresses: [IPAddress!]!
+  subnets: [IPSubnet!]!
+  domains: [ID!]!
+}
+
 "Users associated with this project"
 type ProjectUsers {
   "The user that created the project"
@@ -115,6 +121,13 @@ type ProjectScope {
     last: Int
     before: String
   ): HostsConnection
+  "Domains that are in scope for this project (may or may not resolve to hosts)"
+  domainsConnection(
+    first: Int
+    after: String
+    last: Int
+    before: String
+  ): DomainsConnection
 }
 
 "Input for project scope"

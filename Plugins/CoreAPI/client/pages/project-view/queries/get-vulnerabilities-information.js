@@ -17,7 +17,11 @@ export default gql`
       affectedHosts {
         id
         ip_address
-        hostnames
+        domain_ids
+        domains {
+          id
+          name
+        }
       }
       affectedServices {
         id

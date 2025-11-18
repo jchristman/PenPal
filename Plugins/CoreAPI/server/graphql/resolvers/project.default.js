@@ -22,6 +22,11 @@ export default {
     // We pass thru the args here to the connection default resolvers so they can actually do the appropriate fetching
     async networksConnection({ networks }, args, { PenPalCachingAPI }) {
       return { networks, args };
+    },
+
+    // We pass thru the args here to the connection default resolvers so they can actually do the appropriate fetching
+    async domainsConnection({ domains }, args, { PenPalCachingAPI }) {
+      return { domains, args };
     }
   },
 

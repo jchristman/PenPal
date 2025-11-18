@@ -9,8 +9,10 @@ type Host implements Annotatable & Auditable & Enrichable {
   ip_address: IPAddress!
   "MAC Address (e.g. 00:11:22:33:44:55)"
   mac_address: String
-  "Hostnames associated with this host (e.g ['localhost', 'ns1'])"
-  hostnames: [String]
+  "Domain IDs associated with this host"
+  domain_ids: [ID]
+  "Domains associated with this host (resolved from domain_ids)"
+  domains: [Domain]
   "The identified operating system for this host (e.g. Windows 10)"
   os: HostOS
   "Services associated with this host"
@@ -66,7 +68,7 @@ input HostInput {
   network: ID
   ip_address: IPAddress!
   mac_address: String
-  hostnames: [String!]
+  domain_ids: [ID!]
 }
 
 "Input type for updating a host"
@@ -76,5 +78,5 @@ input HostUpdateInput {
   network: ID
   ip_address: IPAddress
   mac_address: String
-  hostnames: [String!]
+  domain_ids: [ID!]
 }

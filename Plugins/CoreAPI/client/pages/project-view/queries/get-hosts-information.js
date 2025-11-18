@@ -4,7 +4,11 @@ export default gql`
   query GetHostsInformation($id: ID!) {
     getHostsByProjectID(id: $id) {
       id
-      hostnames
+      domain_ids
+      domains {
+        id
+        name
+      }
       ip_address
       mac_address
       os {

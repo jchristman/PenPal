@@ -8,7 +8,11 @@ export default gql`
       host {
         id
         ip_address
-        hostnames
+        domain_ids
+        domains {
+          id
+          name
+        }
       }
       network {
         id

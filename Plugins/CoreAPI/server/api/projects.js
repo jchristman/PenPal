@@ -64,7 +64,7 @@ export const getProjectsPaginationInfo = async (project_ids = [], options) => {
 
 const default_project = {
   dates: {},
-  scope: { hosts: [], networks: [] },
+  scope: { hosts: [], networks: [], domains: [] },
 };
 
 export const insertProject = async (project) => {

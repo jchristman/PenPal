@@ -8,8 +8,15 @@ export default {
       "network",
       "ip_address",
       "mac_address",
-      "hostnames",
+      "domain_ids",
     ]),
+
+    async domains({ domain_ids }, args, { PenPalCachingAPI }) {
+      if (!domain_ids || domain_ids.length === 0) {
+        return [];
+      }
+      return await PenPalCachingAPI.Domains.GetMany(domain_ids);
+    },
 
     async servicesConnection({ id }, args, { PenPalCachingAPI }) {
       const host = await PenPalCachingAPI.Hosts.Get(id);

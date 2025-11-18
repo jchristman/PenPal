@@ -46,6 +46,9 @@ const settings = {
       name: "Networks",
     },
     {
+      name: "Domains",
+    },
+    {
       name: "Services",
     },
     {
@@ -112,6 +115,22 @@ const CoreAPIPlugin = {
       RemoveMany: API.removeNetworks,
       Update: API.updateNetwork,
       UpdateMany: API.updateNetworks,
+    };
+
+    PenPal.API.Domains = {
+      Get: API.getDomain,
+      GetMany: API.getDomains,
+      GetPaginationInfo: API.getDomainsPaginationInfo,
+      GetManyByProjectID: API.getDomainsByProject,
+      Insert: API.insertDomain,
+      InsertMany: API.insertDomains,
+      Remove: API.removeDomain,
+      RemoveMany: API.removeDomains,
+      Update: API.updateDomain,
+      UpdateMany: API.updateDomains,
+      // Domain-specific functions
+      ResolveDomain: API.resolveDomain,
+      ResolveDomains: API.resolveDomains,
     };
 
     PenPal.API.Services = {

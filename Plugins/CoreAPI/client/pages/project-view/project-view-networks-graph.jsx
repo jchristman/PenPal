@@ -112,10 +112,10 @@ const ProjectViewNetworksGraph = ({ networks = [] }) => {
         if (d.type === "network") {
           return d.data.subnet || "Unknown Network";
         } else {
-          // For hosts, prefer hostname over IP, and truncate if too long
+          // For hosts, prefer domain name over IP, and truncate if too long
           const label =
-            d.data.hostnames && d.data.hostnames.length > 0
-              ? d.data.hostnames[0]
+            d.data.domains && d.data.domains.length > 0
+              ? d.data.domains[0].name
               : d.data.ip_address || "Unknown Host";
           // Truncate long labels - ensure label is a string
           const labelStr = String(label || "");
@@ -342,11 +342,11 @@ const ProjectViewNetworksGraph = ({ networks = [] }) => {
                         {selectedNode.data.ip_address}
                       </div>
                     </div>
-                    {selectedNode.data.hostnames?.length > 0 && (
+                    {selectedNode.data.domains?.length > 0 && (
                       <div>
-                        <div className="text-sm font-medium">Hostnames</div>
+                        <div className="text-sm font-medium">Domains</div>
                         <div className="text-sm text-muted-foreground">
-                          {selectedNode.data.hostnames.join(", ")}
+                          {selectedNode.data.domains.map(d => d.name).join(", ")}
                         </div>
                       </div>
                     )}
