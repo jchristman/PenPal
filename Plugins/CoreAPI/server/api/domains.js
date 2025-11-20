@@ -82,12 +82,88 @@ export const insertDomains = async (domains) => {
       accepted
     );
 
-    const new_domains = _.zipWith(new_domain_ids, accepted, ({ id }, _domain) => ({
-      id,
-      ..._domain,
-    }));
+    const new_domains = _.zipWith(
+      new_domain_ids,
+      accepted,
+      ({ id }, _domain) => ({
+        id,
+        ..._domain,
+      })
+    );
 
-    return { accepted: new_domains, rejected };
+    // Automatically resolve all created domains and create/update hosts
+    const resolved_domains = [];
+    for (const domain of new_domains) {
+      try {
+        const resolutionResult = await resolveDomain(domain.name);
+        if (
+          resolutionResult &&
+          resolutionResult.resolved &&
+          resolutionResult.addresses &&
+          resolutionResult.addresses.length > 0
+        ) {
+          // Update the domain with resolved IPs
+          await PenPal.DataStore.updateOne(
+            "CoreAPI",
+            "Domains",
+            { id: domain.id },
+            { resolved_ips: resolutionResult.addresses }
+          );
+
+          // Create or update hosts for the resolved IPs
+          for (const ip of resolutionResult.addresses) {
+            // Check if host already exists
+            const existingHosts = await PenPal.DataStore.fetch(
+              "CoreAPI",
+              "Hosts",
+              {
+                project: domain.project,
+                ip_address: ip,
+              }
+            );
+
+            if (existingHosts.length > 0) {
+              // Update existing host by adding domain_id to domain_ids array
+              const existingHost = existingHosts[0];
+              await PenPal.DataStore.updateOne(
+                "CoreAPI",
+                "Hosts",
+                { id: existingHost.id },
+                { $addToSet: { domain_ids: domain.id } }
+              );
+            } else {
+              // Create new host using the API (which handles classification automatically)
+              const newHostData = {
+                project: domain.project,
+                ip_address: ip,
+                domain_ids: [domain.id],
+              };
+
+              await PenPal.API.Hosts.Insert(newHostData);
+            }
+          }
+
+          // Get the updated domain
+          const updatedDomain = await PenPal.DataStore.fetchOne(
+            "CoreAPI",
+            "Domains",
+            { id: domain.id }
+          );
+          resolved_domains.push(updatedDomain);
+        } else {
+          resolved_domains.push(domain);
+        }
+      } catch (error) {
+        // DNS resolution failed - that's OK, domains can be non-resolvable
+        logger.warn(
+          `Failed to resolve domain ${domain.name} after creation:`,
+          error.message
+        );
+        resolved_domains.push(domain);
+      }
+    }
+
+    return { accepted: resolved_domains, rejected };
   }
 
   return { accepted, rejected };
@@ -120,12 +196,7 @@ export const updateDomains = async (domains) => {
     }
 
     for (let { id, ...domain } of accepted) {
-      await PenPal.DataStore.updateOne(
-        "CoreAPI",
-        "Domains",
-        { id },
-        domain
-      );
+      await PenPal.DataStore.updateOne("CoreAPI", "Domains", { id }, domain);
     }
 
     // Return updated domains
@@ -191,4 +262,3 @@ export const removeDomains = async (domain_ids) => {
 
   return res;
 };
-

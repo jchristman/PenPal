@@ -116,18 +116,24 @@ export const insertHosts = async (hosts) => {
 
       // Merge defaults, but preserve domain_ids if provided
       // If domain_ids is provided (even as empty array), use it; otherwise use default empty array
-      const _host = { 
-        ...default_host, 
+      const _host = {
+        ...default_host,
         ...host,
         // Ensure domain_ids is always an array - preserve provided array or convert to array
-        domain_ids: host.domain_ids !== undefined
-          ? (Array.isArray(host.domain_ids) ? host.domain_ids : [host.domain_ids])
-          : default_host.domain_ids
+        domain_ids:
+          host.domain_ids !== undefined
+            ? Array.isArray(host.domain_ids)
+              ? host.domain_ids
+              : [host.domain_ids]
+            : default_host.domain_ids,
       };
-      
+
       // Debug log to verify domain_ids are being set
       if (_host.domain_ids && _host.domain_ids.length > 0) {
-        logger.log(`Inserting host ${_host.ip_address} with domain_ids:`, _host.domain_ids);
+        logger.log(
+          `Inserting host ${_host.ip_address} with domain_ids:`,
+          _host.domain_ids
+        );
       }
       _accepted.push(_host);
     } catch (e) {
@@ -174,6 +180,39 @@ export const insertHosts = async (hosts) => {
         id,
         ..._host,
       }));
+
+      // Automatically classify IP addresses for new hosts
+      if (new_hosts.length > 0) {
+        try {
+          logger.log(`Classifying ${new_hosts.length} new hosts`);
+          const ips = new_hosts.map((host) => host.ip_address);
+          const classifications = await PenPal.API.Classification.ClassifyIPs(
+            ips
+          );
+
+          // Update hosts with classification data
+          const hosts_to_update = [];
+          for (const host of new_hosts) {
+            const classification = classifications[host.ip_address];
+            if (classification) {
+              hosts_to_update.push({
+                id: host.id,
+                classification: classification,
+              });
+            }
+          }
+
+          if (hosts_to_update.length > 0) {
+            await updateHosts(hosts_to_update);
+            logger.log(
+              `Updated ${hosts_to_update.length} hosts with classification data`
+            );
+          }
+        } catch (error) {
+          logger.error("Failed to classify hosts:", error.message);
+          // Continue with host insertion even if classification fails
+        }
+      }
 
       // Update the networks with the new hosts
       // Only group hosts that have a network assigned
@@ -248,7 +287,7 @@ export const updateHosts = async (hosts) => {
       "CoreAPI",
       "Hosts",
       { id },
-      { $set: host }
+      host
     );
 
     accepted.push({ id, ...host });

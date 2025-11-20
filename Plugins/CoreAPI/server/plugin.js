@@ -357,6 +357,17 @@ const CoreAPIPlugin = {
       GetEnrichmentFileBucket: getEnrichmentFileBucket,
     };
 
+    // Classification API for IP geolocation and cloud provider identification
+    const { classifyIP, classifyIPs, initializeClassification } = await import("./api/classification.js");
+    PenPal.API.Classification = {
+      ClassifyIP: classifyIP,
+      ClassifyIPs: classifyIPs,
+      Initialize: initializeClassification,
+    };
+
+    // Initialize the classification system
+    await initializeClassification();
+
     PenPal.Test.CoreAPI = { ...mocks };
 
     // Register test handlers with the Tester plugin (if available)

@@ -41,7 +41,7 @@ export const runCrtshScan = async (domain) => {
           const cleanDomain = rawDomain.trim().toLowerCase();
           if (cleanDomain && cleanDomain.includes(domain.toLowerCase())) {
             logger.log(`CRT.sh adding domain: ${cleanDomain}`);
-            domains.add(cleanDomain);
+          domains.add(cleanDomain);
           }
         }
       }

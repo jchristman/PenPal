@@ -20,18 +20,6 @@ import gql from "graphql-tag";
 // Import domain queries
 import GET_DOMAINS_BY_PROJECT from "./queries/get-domains-by-project.js";
 
-// AutoRecon GraphQL queries and mutations (defined inline to avoid cross-plugin import issues)
-const StartAutoReconScan = gql`
-  mutation StartAutoReconScan($projectId: ID!) {
-    startAutoReconScan(projectId: $projectId) {
-      id
-      project_id
-      created_at
-      updated_at
-    }
-  }
-`;
-
 const GetStagedAssets = gql`
   query GetStagedAssets($projectId: ID!) {
     getStagedAssets(projectId: $projectId) {
@@ -40,6 +28,7 @@ const GetStagedAssets = gql`
       value
       tool
       confidence
+      classification
       metadata
       created_at
     }
@@ -128,6 +117,29 @@ const REMOVE_HOSTS = gql`
 const ProjectViewDetails = ({ project, disable_polling }) => {
   const { toast } = useToast();
 
+  // State for search filters
+  const [networksSearch, setNetworksSearch] = useState("");
+  const [hostsSearch, setHostsSearch] = useState("");
+  const [domainsSearch, setDomainsSearch] = useState("");
+
+  // State for sorting
+  const [networksSort, setNetworksSort] = useState({
+    key: "subnet",
+    direction: "asc",
+  });
+  const [hostsSort, setHostsSort] = useState({
+    key: "ip_address",
+    direction: "asc",
+  });
+  const [domainsSort, setDomainsSort] = useState({
+    key: "name",
+    direction: "asc",
+  });
+
+  // State for host details drawer
+  const [selectedHost, setSelectedHost] = useState(null);
+  const [hostDetailsDrawerOpen, setHostDetailsDrawerOpen] = useState(false);
+
   const { data: networksData, refetch: refetchNetworks } = useQuery(
     GetNetworksInformation,
     {
@@ -172,40 +184,9 @@ const ProjectViewDetails = ({ project, disable_polling }) => {
   const [removeDomains] = useMutation(REMOVE_DOMAINS);
   const [removeHosts] = useMutation(REMOVE_HOSTS);
 
-  // AutoRecon state and queries
+  // Staged assets state
   const [stagedAssetsDrawerOpen, setStagedAssetsDrawerOpen] = useState(false);
   const [selectedAssetIds, setSelectedAssetIds] = useState([]);
-  const [scanInProgress, setScanInProgress] = useState(false);
-
-  // Query for AutoRecon jobs
-  const { data: jobsData, refetch: refetchJobs } = useQuery(
-    gql`
-      query GetAutoReconJobs {
-        getAllJobs(filterMode: "all") {
-          jobs {
-            id
-            name
-            plugin
-            progress
-            statusText
-            status
-            stages {
-              name
-              progress
-              statusText
-              status
-            }
-            created_at
-            updated_at
-            project_id
-          }
-        }
-      }
-    `,
-    {
-      pollInterval: 2000,
-    }
-  );
 
   // Query for staged assets
   const { data: assetsData, refetch: refetchAssets } = useQuery(
@@ -216,8 +197,6 @@ const ProjectViewDetails = ({ project, disable_polling }) => {
     }
   );
 
-  // AutoRecon mutations
-  const [startScanMutation] = useMutation(StartAutoReconScan);
   const [acceptAssetsMutation] = useMutation(AcceptStagedAssets);
   const [rejectAssetsMutation] = useMutation(RejectStagedAssets);
 
@@ -226,15 +205,208 @@ const ProjectViewDetails = ({ project, disable_polling }) => {
   const hosts = hostsData?.getHostsByProjectID || [];
   const domains = domainsData?.getDomainsByProject?.domains || [];
 
-  // AutoRecon data
-  const allJobs = jobsData?.getAllJobs?.jobs || [];
-  const autoreconJobs = allJobs.filter(
-    (job) => job.plugin === "AutoRecon" && job.project_id === project.id
-  );
+  // Staged assets data
   const stagedAssets = assetsData?.getStagedAssets || [];
-  const activeAutoReconJob = autoreconJobs.find(
-    (job) => job.status === "running" || job.status === "pending"
-  );
+
+  // Filter and sort networks
+  const filteredAndSortedNetworks = useMemo(() => {
+    let filtered = networks;
+
+    // Apply search filter
+    if (networksSearch.trim()) {
+      const searchTerm = networksSearch.toLowerCase();
+      filtered = filtered.filter(
+        (network) =>
+          network.subnet.toLowerCase().includes(searchTerm) ||
+          (network.domain && network.domain.toLowerCase().includes(searchTerm))
+      );
+    }
+
+    // Apply sorting
+    if (networksSort.key) {
+      filtered = [...filtered].sort((a, b) => {
+        let aVal, bVal;
+
+        switch (networksSort.key) {
+          case "subnet":
+            aVal = a.subnet || "";
+            bVal = b.subnet || "";
+            break;
+          case "domain":
+            aVal = a.domain || "";
+            bVal = b.domain || "";
+            break;
+          case "hosts":
+            aVal = a.hostsConnection?.totalCount || 0;
+            bVal = b.hostsConnection?.totalCount || 0;
+            return networksSort.direction === "asc" ? aVal - bVal : bVal - aVal;
+          default:
+            return 0;
+        }
+
+        if (networksSort.key !== "hosts") {
+          const result = aVal.localeCompare(bVal);
+          return networksSort.direction === "asc" ? result : -result;
+        }
+
+        return networksSort.direction === "asc" ? aVal - bVal : bVal - aVal;
+      });
+    }
+
+    return filtered;
+  }, [networks, networksSearch, networksSort]);
+
+  // Filter and sort hosts
+  const filteredAndSortedHosts = useMemo(() => {
+    let filtered = hosts.filter((host) => host && host.id);
+
+    // Apply search filter
+    if (hostsSearch.trim()) {
+      const searchTerm = hostsSearch.toLowerCase();
+      filtered = filtered.filter(
+        (host) =>
+          host.ip_address.toLowerCase().includes(searchTerm) ||
+          host.domains?.some((domain) =>
+            domain?.name?.toLowerCase().includes(searchTerm)
+          ) ||
+          host.classification?.country?.toLowerCase().includes(searchTerm) ||
+          host.classification?.city?.toLowerCase().includes(searchTerm) ||
+          host.classification?.org?.toLowerCase().includes(searchTerm)
+      );
+    }
+
+    // Apply sorting
+    if (hostsSort.key) {
+      filtered = [...filtered].sort((a, b) => {
+        let aVal, bVal;
+
+        switch (hostsSort.key) {
+          case "ip_address":
+            aVal = a.ip_address || "";
+            bVal = b.ip_address || "";
+            break;
+          case "domains":
+            aVal = a.domains?.filter((d) => d?.name)?.length || 0;
+            bVal = b.domains?.filter((d) => d?.name)?.length || 0;
+            return hostsSort.direction === "asc" ? aVal - bVal : bVal - aVal;
+          case "location":
+            aVal = a.classification?.country || "";
+            bVal = b.classification?.country || "";
+            break;
+          case "classification":
+            aVal = a.classification?.org || "";
+            bVal = b.classification?.org || "";
+            break;
+          default:
+            return 0;
+        }
+
+        if (["domains"].includes(hostsSort.key)) {
+          return hostsSort.direction === "asc" ? aVal - bVal : bVal - aVal;
+        }
+
+        const result = aVal.localeCompare(bVal);
+        return hostsSort.direction === "asc" ? result : -result;
+      });
+    }
+
+    return filtered;
+  }, [hosts, hostsSearch, hostsSort]);
+
+  // Filter and sort domains
+  const filteredAndSortedDomains = useMemo(() => {
+    let filtered = domains.filter(
+      (domain) => domain && domain.id && domain.name
+    );
+
+    // Apply search filter
+    if (domainsSearch.trim()) {
+      const searchTerm = domainsSearch.toLowerCase();
+      filtered = filtered.filter(
+        (domain) =>
+          domain.name.toLowerCase().includes(searchTerm) ||
+          domain.resolved_ips?.some((ip) =>
+            ip.toLowerCase().includes(searchTerm)
+          )
+      );
+    }
+
+    // Apply sorting
+    if (domainsSort.key) {
+      filtered = [...filtered].sort((a, b) => {
+        let aVal, bVal;
+
+        switch (domainsSort.key) {
+          case "name":
+            aVal = a.name || "";
+            bVal = b.name || "";
+            break;
+          case "resolved_ips":
+            aVal = a.resolved_ips?.length || 0;
+            bVal = b.resolved_ips?.length || 0;
+            return domainsSort.direction === "asc" ? aVal - bVal : bVal - aVal;
+          case "status":
+            aVal =
+              a.resolved_ips && a.resolved_ips.length > 0
+                ? "Resolved"
+                : "Unresolved";
+            bVal =
+              b.resolved_ips && b.resolved_ips.length > 0
+                ? "Resolved"
+                : "Unresolved";
+            break;
+          default:
+            return 0;
+        }
+
+        if (domainsSort.key === "resolved_ips") {
+          return domainsSort.direction === "asc" ? aVal - bVal : bVal - aVal;
+        }
+
+        const result = aVal.localeCompare(bVal);
+        return domainsSort.direction === "asc" ? result : -result;
+      });
+    }
+
+    return filtered;
+  }, [domains, domainsSearch, domainsSort]);
+
+  // Handle host row click
+  const handleHostClick = (host) => {
+    setSelectedHost(host);
+    setHostDetailsDrawerOpen(true);
+  };
+
+  // Handle sort functions
+  const handleNetworksSort = (key) => {
+    setNetworksSort((currentSort) => ({
+      key,
+      direction:
+        currentSort.key === key && currentSort.direction === "asc"
+          ? "desc"
+          : "asc",
+    }));
+  };
+
+  const handleHostsSort = (key) => {
+    setHostsSort((currentSort) => ({
+      key,
+      direction:
+        currentSort.key === key && currentSort.direction === "asc"
+          ? "desc"
+          : "asc",
+    }));
+  };
+
+  const handleDomainsSort = (key) => {
+    setDomainsSort((currentSort) => ({
+      key,
+      direction:
+        currentSort.key === key && currentSort.direction === "asc"
+          ? "desc"
+          : "asc",
+    }));
+  };
 
   const [bulkInput, setBulkInput] = useState("");
   const [selectedNetworkIds, setSelectedNetworkIds] = useState([]);
@@ -361,32 +533,6 @@ const ProjectViewDetails = ({ project, disable_polling }) => {
     }
   };
 
-  // AutoRecon handlers
-  const handleStartAutoRecon = async () => {
-    try {
-      setScanInProgress(true);
-      const result = await startScanMutation({
-        variables: { projectId: project.id },
-      });
-
-      if (result.data?.startAutoReconScan) {
-        toast({
-          title: "AutoRecon Started",
-          description: "Asset discovery scan has been initiated.",
-        });
-        refetchJobs();
-      }
-    } catch (error) {
-      toast({
-        title: "Error",
-        description: `Failed to start AutoRecon scan: ${error.message}`,
-        variant: "destructive",
-      });
-    } finally {
-      setScanInProgress(false);
-    }
-  };
-
   const handleAcceptAssets = async () => {
     if (selectedAssetIds.length === 0) {
       toast({
@@ -463,7 +609,7 @@ const ProjectViewDetails = ({ project, disable_polling }) => {
   };
 
   return (
-    <div className="p-6 space-y-6">
+    <div className="p-6 space-y-6 max-h-[calc(100vh-8rem)] overflow-y-auto">
       {/* Main Scope Section */}
       <Components.Card>
         <Components.CardHeader className="flex flex-row items-center justify-between">
@@ -476,20 +622,22 @@ const ProjectViewDetails = ({ project, disable_polling }) => {
           <div className="flex items-center gap-3">
             {/* Buttons Section */}
             <div className="flex items-center gap-2">
-              {/* Start AutoRecon Button */}
-              <Components.Button
-                variant="outline"
-                onClick={handleStartAutoRecon}
-                disabled={scanInProgress || !!activeAutoReconJob}
-                className="flex items-center gap-2"
-              >
-                <SearchIcon className="h-4 w-4" />
-                {scanInProgress
-                  ? "Starting..."
-                  : activeAutoReconJob
-                  ? "Scan In Progress"
-                  : "Start AutoRecon"}
-              </Components.Button>
+              {/* Plugin-registered Project Scope Buttons */}
+              {PenPal.ProjectScopeButtons.map((buttonConfig, index) => {
+                const ButtonComponent = Components[buttonConfig.component];
+                if (!ButtonComponent) {
+                  console.warn(
+                    `Project scope button component "${buttonConfig.component}" not found`
+                  );
+                  return null;
+                }
+                return (
+                  <ButtonComponent
+                    key={`${buttonConfig.name}-${index}`}
+                    project={project}
+                  />
+                );
+              })}
 
               {/* View Staged Assets Button */}
               <Components.Button
@@ -519,7 +667,15 @@ const ProjectViewDetails = ({ project, disable_polling }) => {
           {/* Networks Table */}
           <div>
             <div className="flex items-center justify-between mb-4">
-              <h3 className="text-lg font-semibold">Networks</h3>
+              <div className="flex items-center gap-4">
+                <h3 className="text-lg font-semibold">Networks</h3>
+                <Components.Input
+                  placeholder="Filter networks..."
+                  value={networksSearch}
+                  onChange={(e) => setNetworksSearch(e.target.value)}
+                  className="w-64"
+                />
+              </div>
               {selectedNetworkIds.length > 0 && (
                 <Components.Button
                   variant="destructive"
@@ -530,36 +686,65 @@ const ProjectViewDetails = ({ project, disable_polling }) => {
                 </Components.Button>
               )}
             </div>
-            {networks.length > 0 ? (
+            {filteredAndSortedNetworks.length > 0 ? (
               <Table className="w-full">
                 <TableHeader>
                   <TableRow>
                     <TableHead className="w-12">
                       <Components.Checkbox
                         checked={
-                          networks.length > 0 &&
-                          selectedNetworkIds.length === networks.length
+                          filteredAndSortedNetworks.length > 0 &&
+                          selectedNetworkIds.length ===
+                            filteredAndSortedNetworks.length &&
+                          filteredAndSortedNetworks.every((n) =>
+                            selectedNetworkIds.includes(n.id)
+                          )
                         }
                         indeterminate={
                           selectedNetworkIds.length > 0 &&
-                          selectedNetworkIds.length < networks.length
+                          selectedNetworkIds.length <
+                            filteredAndSortedNetworks.length &&
+                          filteredAndSortedNetworks.some((n) =>
+                            selectedNetworkIds.includes(n.id)
+                          )
                         }
                         onCheckedChange={(checked) => {
                           if (checked) {
-                            setSelectedNetworkIds(networks.map((n) => n.id));
+                            setSelectedNetworkIds(
+                              filteredAndSortedNetworks.map((n) => n.id)
+                            );
                           } else {
                             setSelectedNetworkIds([]);
                           }
                         }}
                       />
                     </TableHead>
-                    <TableHead>Network</TableHead>
-                    <TableHead>Domain</TableHead>
-                    <TableHead className="text-right">Hosts</TableHead>
+                    <SortableTableHead
+                      sortKey="subnet"
+                      currentSort={networksSort}
+                      onSort={handleNetworksSort}
+                    >
+                      Network
+                    </SortableTableHead>
+                    <SortableTableHead
+                      sortKey="domain"
+                      currentSort={networksSort}
+                      onSort={handleNetworksSort}
+                    >
+                      Domain
+                    </SortableTableHead>
+                    <SortableTableHead
+                      sortKey="hosts"
+                      currentSort={networksSort}
+                      onSort={handleNetworksSort}
+                      className="text-right"
+                    >
+                      Hosts
+                    </SortableTableHead>
                   </TableRow>
                 </TableHeader>
                 <TableBody>
-                  {networks.map((network) => (
+                  {filteredAndSortedNetworks.map((network) => (
                     <TableRow key={network.id}>
                       <TableCell>
                         <Components.Checkbox
@@ -605,7 +790,15 @@ const ProjectViewDetails = ({ project, disable_polling }) => {
           {/* Hosts Table */}
           <div>
             <div className="flex items-center justify-between mb-4">
-              <h3 className="text-lg font-semibold">Hosts</h3>
+              <div className="flex items-center gap-4">
+                <h3 className="text-lg font-semibold">Hosts</h3>
+                <Components.Input
+                  placeholder="Filter hosts..."
+                  value={hostsSearch}
+                  onChange={(e) => setHostsSearch(e.target.value)}
+                  className="w-64"
+                />
+              </div>
               {selectedHostIds.length > 0 && (
                 <Components.Button
                   variant="destructive"
@@ -616,42 +809,77 @@ const ProjectViewDetails = ({ project, disable_polling }) => {
                 </Components.Button>
               )}
             </div>
-            {hosts.length > 0 ? (
+            {filteredAndSortedHosts.length > 0 ? (
               <Table className="w-full">
                 <TableHeader>
                   <TableRow>
                     <TableHead className="w-12">
                       <Components.Checkbox
                         checked={
-                          hosts.length > 0 &&
-                          selectedHostIds.length === hosts.length
+                          filteredAndSortedHosts.length > 0 &&
+                          selectedHostIds.length ===
+                            filteredAndSortedHosts.length &&
+                          filteredAndSortedHosts.every((h) =>
+                            selectedHostIds.includes(h.id)
+                          )
                         }
                         indeterminate={
                           selectedHostIds.length > 0 &&
-                          selectedHostIds.length < hosts.length
+                          selectedHostIds.length <
+                            filteredAndSortedHosts.length &&
+                          filteredAndSortedHosts.some((h) =>
+                            selectedHostIds.includes(h.id)
+                          )
                         }
                         onCheckedChange={(checked) => {
                           if (checked) {
-                            setSelectedHostIds(hosts.map((h) => h.id));
+                            setSelectedHostIds(
+                              filteredAndSortedHosts.map((h) => h.id)
+                            );
                           } else {
                             setSelectedHostIds([]);
                           }
                         }}
                       />
                     </TableHead>
-                    <TableHead>IP Address</TableHead>
-                    <TableHead>Domains</TableHead>
-                    <TableHead>OS</TableHead>
-                    <TableHead className="text-right">Services</TableHead>
-                    <TableHead className="text-right">
-                      Vulnerabilities
-                    </TableHead>
+                    <SortableTableHead
+                      sortKey="ip_address"
+                      currentSort={hostsSort}
+                      onSort={handleHostsSort}
+                    >
+                      IP Address
+                    </SortableTableHead>
+                    <SortableTableHead
+                      sortKey="domains"
+                      currentSort={hostsSort}
+                      onSort={handleHostsSort}
+                    >
+                      Domains
+                    </SortableTableHead>
+                    <SortableTableHead
+                      sortKey="location"
+                      currentSort={hostsSort}
+                      onSort={handleHostsSort}
+                    >
+                      Location
+                    </SortableTableHead>
+                    <SortableTableHead
+                      sortKey="classification"
+                      currentSort={hostsSort}
+                      onSort={handleHostsSort}
+                    >
+                      Classification
+                    </SortableTableHead>
                   </TableRow>
                 </TableHeader>
                 <TableBody>
-                  {hosts.map((host) => (
-                    <TableRow key={host.id}>
-                      <TableCell>
+                  {filteredAndSortedHosts.map((host) => (
+                    <TableRow
+                      key={host.id}
+                      className="cursor-pointer hover:bg-muted/50"
+                      onClick={() => handleHostClick(host)}
+                    >
+                      <TableCell onClick={(e) => e.stopPropagation()}>
                         <Components.Checkbox
                           checked={selectedHostIds.includes(host.id)}
                           onCheckedChange={(checked) => {
@@ -671,21 +899,34 @@ const ProjectViewDetails = ({ project, disable_polling }) => {
                       <TableCell>
                         {host.domains && host.domains.length > 0 ? (
                           <div className="flex flex-wrap gap-1">
-                            {host.domains.slice(0, 2).map((domain, idx) => (
-                              <Components.Badge
-                                key={idx}
-                                variant="secondary"
-                                className="text-xs"
-                              >
-                                {domain.name}
-                              </Components.Badge>
-                            ))}
-                            {host.domains.length > 2 && (
+                            {host.domains
+                              .slice(0, 2)
+                              .filter((domain) => domain && domain.name)
+                              .map((domain, idx) => (
+                                <Components.Badge
+                                  key={idx}
+                                  variant="secondary"
+                                  className="text-xs"
+                                >
+                                  {domain.name}
+                                </Components.Badge>
+                              ))}
+                            {host.domains.filter(
+                              (domain) => domain && domain.name
+                            ).length > 2 && (
                               <Components.Badge
                                 variant="outline"
-                                className="text-xs"
+                                className="text-xs cursor-pointer hover:bg-muted"
+                                onClick={(e) => {
+                                  e.stopPropagation();
+                                  handleHostClick(host);
+                                }}
                               >
-                                +{host.domains.length - 2} more
+                                +
+                                {host.domains.filter(
+                                  (domain) => domain && domain.name
+                                ).length - 2}{" "}
+                                more
                               </Components.Badge>
                             )}
                           </div>
@@ -694,23 +935,48 @@ const ProjectViewDetails = ({ project, disable_polling }) => {
                         )}
                       </TableCell>
                       <TableCell>
-                        {host.os?.name || (
-                          <span className="text-muted-foreground">Unknown</span>
-                        )}
-                      </TableCell>
-                      <TableCell className="text-right">
-                        <Components.Badge variant="outline">
-                          {host.servicesConnection?.totalCount ?? 0}
-                        </Components.Badge>
-                      </TableCell>
-                      <TableCell className="text-right">
-                        {host.vulnerabilitiesConnection?.totalCount > 0 ? (
-                          <Components.Badge variant="destructive">
-                            {host.vulnerabilitiesConnection.totalCount}
-                          </Components.Badge>
+                        {host.classification?.country ? (
+                          <div className="text-xs">
+                            <div className="font-medium">
+                              {host.classification.city &&
+                              host.classification.region
+                                ? `${host.classification.city}, ${host.classification.region}`
+                                : host.classification.city ||
+                                  host.classification.region}
+                            </div>
+                            <div className="text-muted-foreground">
+                              {host.classification.country}
+                            </div>
+                          </div>
                         ) : (
-                          <span className="text-muted-foreground">—</span>
+                          <span className="text-muted-foreground text-sm">
+                            Unknown
+                          </span>
                         )}
+                      </TableCell>
+                      <TableCell>
+                        <div className="space-y-1">
+                          {host.classification?.org && (
+                            <Badge variant="outline" className="text-xs">
+                              {host.classification.org}
+                              {host.classification.asn &&
+                                ` (ASN ${host.classification.asn})`}
+                            </Badge>
+                          )}
+                          {host.classification?.cloud_provider?.provider && (
+                            <Badge variant="secondary" className="text-xs">
+                              {host.classification.cloud_provider.provider}
+                              {host.classification.cloud_provider.service &&
+                                ` (${host.classification.cloud_provider.service})`}
+                            </Badge>
+                          )}
+                          {!host.classification?.org &&
+                            !host.classification?.cloud_provider?.provider && (
+                              <span className="text-muted-foreground text-sm">
+                                Unknown
+                              </span>
+                            )}
+                        </div>
                       </TableCell>
                     </TableRow>
                   ))}
@@ -726,7 +992,15 @@ const ProjectViewDetails = ({ project, disable_polling }) => {
           {/* Domains Table */}
           <div>
             <div className="flex items-center justify-between mb-4">
-              <h3 className="text-lg font-semibold">Domains</h3>
+              <div className="flex items-center gap-4">
+                <h3 className="text-lg font-semibold">Domains</h3>
+                <Components.Input
+                  placeholder="Filter domains..."
+                  value={domainsSearch}
+                  onChange={(e) => setDomainsSearch(e.target.value)}
+                  className="w-64"
+                />
+              </div>
               {selectedDomainIds.length > 0 && (
                 <Components.Button
                   variant="destructive"
@@ -737,36 +1011,65 @@ const ProjectViewDetails = ({ project, disable_polling }) => {
                 </Components.Button>
               )}
             </div>
-            {domains.length > 0 ? (
+            {filteredAndSortedDomains.length > 0 ? (
               <Table className="w-full">
                 <TableHeader>
                   <TableRow>
                     <TableHead className="w-12">
                       <Components.Checkbox
                         checked={
-                          domains.length > 0 &&
-                          selectedDomainIds.length === domains.length
+                          filteredAndSortedDomains.length > 0 &&
+                          selectedDomainIds.length ===
+                            filteredAndSortedDomains.length &&
+                          filteredAndSortedDomains.every((d) =>
+                            selectedDomainIds.includes(d.id)
+                          )
                         }
                         indeterminate={
                           selectedDomainIds.length > 0 &&
-                          selectedDomainIds.length < domains.length
+                          selectedDomainIds.length <
+                            filteredAndSortedDomains.length &&
+                          filteredAndSortedDomains.some((d) =>
+                            selectedDomainIds.includes(d.id)
+                          )
                         }
                         onCheckedChange={(checked) => {
                           if (checked) {
-                            setSelectedDomainIds(domains.map((d) => d.id));
+                            setSelectedDomainIds(
+                              filteredAndSortedDomains.map((d) => d.id)
+                            );
                           } else {
                             setSelectedDomainIds([]);
                           }
                         }}
                       />
                     </TableHead>
-                    <TableHead>Domain Name</TableHead>
-                    <TableHead>Resolved IPs</TableHead>
-                    <TableHead className="text-right">Status</TableHead>
+                    <SortableTableHead
+                      sortKey="name"
+                      currentSort={domainsSort}
+                      onSort={handleDomainsSort}
+                    >
+                      Domain Name
+                    </SortableTableHead>
+                    <SortableTableHead
+                      sortKey="resolved_ips"
+                      currentSort={domainsSort}
+                      onSort={handleDomainsSort}
+                    >
+                      Resolved IPs
+                    </SortableTableHead>
+                    <SortableTableHead
+                      sortKey="status"
+                      currentSort={domainsSort}
+                      onSort={handleDomainsSort}
+                      className="text-right"
+                    >
+                      Status
+                    </SortableTableHead>
                   </TableRow>
                 </TableHeader>
                 <TableBody>
-                  {domains.map((domain) => (
+                  {filteredAndSortedDomains.map((domain) => (
                     <TableRow key={domain.id}>
                       <TableCell>
                         <Components.Checkbox
@@ -899,6 +1202,16 @@ const ProjectViewDetails = ({ project, disable_polling }) => {
           onClose={() => setStagedAssetsDrawerOpen(false)}
         />
       )}
+
+      {/* Host Details Drawer */}
+      <HostDetailsDrawer
+        host={selectedHost}
+        isOpen={hostDetailsDrawerOpen}
+        onClose={() => {
+          setHostDetailsDrawerOpen(false);
+          setSelectedHost(null);
+        }}
+      />
     </div>
   );
 };
@@ -940,6 +1253,147 @@ const SortableTableHead = ({
         </div>
       </div>
     </Components.TableHead>
+  );
+};
+
+// Host Details Drawer Component
+const HostDetailsDrawer = ({ host, isOpen, onClose }) => {
+  const [isVisible, setIsVisible] = useState(false);
+
+  useEffect(() => {
+    if (isOpen) {
+      setTimeout(() => setIsVisible(true), 10);
+    } else {
+      setIsVisible(false);
+    }
+  }, [isOpen]);
+
+  if (!host) return null;
+
+  const allDomains = host.domains?.filter((d) => d && d.name) || [];
+
+  return (
+    <div className={`fixed inset-0 z-50 flex ${isOpen ? "block" : "hidden"}`}>
+      {/* Backdrop */}
+      <div
+        className="flex-1 bg-black/50 transition-opacity duration-200"
+        style={{ opacity: isVisible ? 0.5 : 0 }}
+        onClick={onClose}
+      />
+
+      {/* Slide-in Panel */}
+      <div
+        className="w-full max-w-2xl bg-white shadow-xl overflow-y-auto transition-transform duration-300 ease-out"
+        style={{
+          transform: isVisible ? "translateX(0)" : "translateX(100%)",
+        }}
+      >
+        <div className="sticky top-0 bg-white border-b p-4 flex items-center justify-between z-10">
+          <div>
+            <h2 className="text-2xl font-semibold">
+              Host Details: {host.ip_address}
+            </h2>
+            <p className="text-sm text-muted-foreground mt-1">
+              All domains that resolve to this IP address
+            </p>
+          </div>
+          <Components.Button variant="ghost" size="icon" onClick={onClose}>
+            <XMarkIcon className="h-5 w-5" />
+          </Components.Button>
+        </div>
+
+        <div className="p-6 space-y-4">
+          {/* Host Information */}
+          <div className="grid grid-cols-2 gap-4 mb-6">
+            <div>
+              <label className="text-sm font-medium text-gray-700">
+                IP Address
+              </label>
+              <p className="font-mono text-sm">{host.ip_address}</p>
+            </div>
+            <div>
+              <label className="text-sm font-medium text-gray-700">
+                Total Domains
+              </label>
+              <p className="text-sm">{allDomains.length}</p>
+            </div>
+          </div>
+
+          {/* Location Information */}
+          {host.classification?.country && (
+            <div className="mb-6">
+              <label className="text-sm font-medium text-gray-700">
+                Location
+              </label>
+              <p className="text-sm">
+                {host.classification.city && host.classification.region
+                  ? `${host.classification.city}, ${host.classification.region}`
+                  : host.classification.city || host.classification.region}
+                {host.classification.country && (
+                  <span>, {host.classification.country}</span>
+                )}
+              </p>
+            </div>
+          )}
+
+          {/* Classification Information */}
+          {(host.classification?.org ||
+            host.classification?.cloud_provider) && (
+            <div className="mb-6">
+              <label className="text-sm font-medium text-gray-700">
+                Organization
+              </label>
+              <div className="space-y-1">
+                {host.classification?.org && (
+                  <Badge variant="outline" className="text-xs">
+                    {host.classification.org}
+                    {host.classification.asn &&
+                      ` (ASN ${host.classification.asn})`}
+                  </Badge>
+                )}
+                {host.classification?.cloud_provider?.provider && (
+                  <Badge variant="secondary" className="text-xs">
+                    {host.classification.cloud_provider.provider}
+                    {host.classification.cloud_provider.service &&
+                      ` (${host.classification.cloud_provider.service})`}
+                  </Badge>
+                )}
+              </div>
+            </div>
+          )}
+
+          {/* Domains List */}
+          <div>
+            <h3 className="text-lg font-semibold mb-4">
+              Domains ({allDomains.length})
+            </h3>
+
+            {allDomains.length > 0 ? (
+              <div className="space-y-2 max-h-96 overflow-y-auto">
+                {allDomains.map((domain, index) => (
+                  <div
+                    key={index}
+                    className="flex items-center justify-between p-3 border rounded-lg hover:bg-muted/50"
+                  >
+                    <div className="flex items-center gap-3">
+                      <span className="text-lg">🌐</span>
+                      <span className="font-mono text-sm">{domain.name}</span>
+                    </div>
+                    <Components.Badge variant="secondary" className="text-xs">
+                      Domain
+                    </Components.Badge>
+                  </div>
+                ))}
+              </div>
+            ) : (
+              <div className="text-center py-8 text-muted-foreground border rounded-md">
+                <p>No domains associated with this host.</p>
+              </div>
+            )}
+          </div>
+        </div>
+      </div>
+    </div>
   );
 };
 
@@ -1068,7 +1522,7 @@ const StagedAssetsPanel = ({
 
       {/* Slide-in Panel */}
       <div
-        className="w-full max-w-4xl bg-white shadow-xl overflow-y-auto transition-transform duration-300 ease-out"
+        className="w-full max-w-6xl bg-white shadow-xl overflow-y-auto transition-transform duration-300 ease-out"
         style={{
           transform: isVisible ? "translateX(0)" : "translateX(100%)",
         }}
@@ -1208,6 +1662,8 @@ const StagedAssetsPanel = ({
                   >
                     Type
                   </SortableTableHead>
+                  <Components.TableHead>Location</Components.TableHead>
+                  <Components.TableHead>Classification</Components.TableHead>
                 </Components.TableRow>
               </Components.TableHeader>
               <Components.TableBody>
@@ -1269,6 +1725,50 @@ const StagedAssetsPanel = ({
                       >
                         {asset.type}
                       </Badge>
+                    </Components.TableCell>
+                    <Components.TableCell className="text-sm text-gray-600">
+                      {asset.classification?.country ? (
+                        <div className="text-xs">
+                          <div className="font-medium">
+                            {asset.classification.city &&
+                            asset.classification.region
+                              ? `${asset.classification.city}, ${asset.classification.region}`
+                              : asset.classification.city ||
+                                asset.classification.region}
+                          </div>
+                          <div className="text-muted-foreground">
+                            {asset.classification.country}
+                          </div>
+                        </div>
+                      ) : (
+                        <span className="text-muted-foreground text-sm">
+                          Unknown
+                        </span>
+                      )}
+                    </Components.TableCell>
+                    <Components.TableCell>
+                      <div className="space-y-1">
+                        {asset.classification?.org && (
+                          <Badge variant="outline" className="text-xs">
+                            {asset.classification.org}
+                            {asset.classification.asn &&
+                              ` (ASN ${asset.classification.asn})`}
+                          </Badge>
+                        )}
+                        {asset.classification?.cloud_provider?.provider && (
+                          <Badge variant="secondary" className="text-xs">
+                            {asset.classification.cloud_provider.provider}
+                            {asset.classification.cloud_provider.service &&
+                              ` (${asset.classification.cloud_provider.service})`}
+                          </Badge>
+                        )}
+                        {!asset.classification?.org &&
+                          !asset.classification?.cloud_provider?.provider && (
+                            <span className="text-muted-foreground text-sm">
+                              Unknown
+                            </span>
+                          )}
+                      </div>
                     </Components.TableCell>
                   </Components.TableRow>
                 ))}

@@ -24,6 +24,7 @@ type StagedAsset {
   value: String! # The actual asset value (domain name, IP, etc.)
   tool: String! # Which tool discovered this asset
   confidence: Int! # Confidence score 0-100
+  classification: JSON # Geolocation and ASN classification data
   metadata: JSON
   created_at: String!
 }

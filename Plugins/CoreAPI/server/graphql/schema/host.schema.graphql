@@ -9,6 +9,8 @@ type Host implements Annotatable & Auditable & Enrichable {
   ip_address: IPAddress!
   "MAC Address (e.g. 00:11:22:33:44:55)"
   mac_address: String
+  "Classification information for the IP address (geolocation, ASN, cloud provider)"
+  classification: JSON
   "Domain IDs associated with this host"
   domain_ids: [ID]
   "Domains associated with this host (resolved from domain_ids)"

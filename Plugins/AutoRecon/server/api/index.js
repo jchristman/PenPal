@@ -1,6 +1,14 @@
 import PenPal from "#penpal/core";
 import { v4 as uuid } from "uuid";
-import { AutoReconLogger as logger } from "../plugin.js";
+import dns from "dns";
+import { promisify } from "util";
+import https from "https";
+// Use console logging instead of the plugin logger to avoid require issues
+const logger = {
+  log: (...args) => console.log("[AutoRecon]", ...args),
+  warn: (...args) => console.warn("[AutoRecon]", ...args),
+  error: (...args) => console.error("[AutoRecon]", ...args),
+};
 import {
   AutoReconStatus,
   AutoReconStages,
@@ -57,7 +65,9 @@ const DeferJobCreateOrUpdate = async (jobsFunction, ...args) => {
       updated_at: new Date().toISOString(),
       stages: jobArgs.stages || [], // Include the stages!
     };
-    logger.log(`Returning temporary job with ${tempJob.stages.length} stages: ${tempJob.id}`);
+    logger.log(
+      `Returning temporary job with ${tempJob.stages.length} stages: ${tempJob.id}`
+    );
     resolve(tempJob);
 
     // Queue the actual job creation for when DataStore is ready
@@ -125,6 +135,7 @@ export const createStagedAssets = async (projectId, assets) => {
       value: asset.value,
       tool: asset.tool,
       confidence: asset.confidence || 50,
+      classification: asset.classification || {},
       metadata: asset.metadata || {},
       created_at: new Date().toISOString(),
     }));
@@ -394,11 +405,22 @@ export const acceptStagedAssets = async (projectId, assetIds) => {
     for (const asset of assets) {
       try {
         if (asset.type === "domain") {
-          // Create domain directly - it will auto-resolve and create hosts
-          await PenPal.API.Domains.Insert({
-            project: projectId,
-            name: asset.value,
-          });
+          // Create domain - DNS resolution and host creation now happen automatically in Domains.Insert()
+          const { accepted: domainAccepted, rejected: domainRejected } =
+            await PenPal.API.Domains.Insert({
+              project: projectId,
+              name: asset.value,
+              //classification: asset.classification || {},
+            });
+
+          if (domainAccepted.length > 0) {
+            const createdDomain = domainAccepted[0];
+            logger.log(
+              `Successfully added domain ${createdDomain.name} to project scope with automatic DNS resolution and host creation`
+            );
+          } else if (domainRejected.length > 0) {
+            throw new Error(domainRejected[0].error.message);
+          }
         } else if (asset.type === "host") {
           // Create host directly
           await PenPal.API.Hosts.Insert({
@@ -523,30 +545,49 @@ const getDomainsFromProjectScope = async (projectId) => {
 };
 
 // Helper function to update tool stage progress
-const updateToolStageProgress = async (jobId, toolName, stageIndex, domain, result, toolCompletionCounts, toolDomainCounts, totalDomains) => {
+const updateToolStageProgress = async (
+  jobId,
+  toolName,
+  stageIndex,
+  domain,
+  result,
+  toolCompletionCounts,
+  toolDomainCounts,
+  totalDomains
+) => {
   const { domains: foundDomains } = result || {};
 
   toolCompletionCounts[toolName] = (toolCompletionCounts[toolName] || 0) + 1;
-  toolDomainCounts[toolName] = (toolDomainCounts[toolName] || 0) + (foundDomains?.length || 0);
+  toolDomainCounts[toolName] =
+    (toolDomainCounts[toolName] || 0) + (foundDomains?.length || 0);
 
   const completedCount = toolCompletionCounts[toolName];
   const progress = Math.round((completedCount / totalDomains) * 100);
 
-  logger.log(`Updating ${toolName} stage ${stageIndex}: completed ${completedCount}/${totalDomains} domains, progress ${progress}%`);
+  logger.log(
+    `Updating ${toolName} stage ${stageIndex}: completed ${completedCount}/${totalDomains} domains, progress ${progress}%`
+  );
 
   try {
     await PenPal.Jobs.UpdateStage(jobId, stageIndex, {
       progress: Math.min(progress, 100),
       statusText: `Found ${foundDomains?.length || 0} subdomains for ${domain}`,
     });
-    logger.log(`Successfully updated ${toolName} stage ${stageIndex} to ${progress}%`);
+    logger.log(
+      `Successfully updated ${toolName} stage ${stageIndex} to ${progress}%`
+    );
   } catch (stageError) {
-    logger.error(`Failed to update ${toolName} stage ${stageIndex}:`, stageError.message);
+    logger.error(
+      `Failed to update ${toolName} stage ${stageIndex}:`,
+      stageError.message
+    );
   }
 
   // Mark stage as complete when all domains are done for this tool
   if (completedCount >= totalDomains) {
-    logger.log(`Marking ${toolName} stage ${stageIndex} as completed with ${toolDomainCounts[toolName]} total subdomains`);
+    logger.log(
+      `Marking ${toolName} stage ${stageIndex} as completed with ${toolDomainCounts[toolName]} total subdomains`
+    );
 
     try {
       await PenPal.Jobs.UpdateStage(jobId, stageIndex, {
@@ -556,7 +597,10 @@ const updateToolStageProgress = async (jobId, toolName, stageIndex, domain, resu
       });
       logger.log(`Successfully marked ${toolName} stage ${stageIndex} as done`);
     } catch (completeError) {
-      logger.error(`Failed to mark ${toolName} stage ${stageIndex} as done:`, completeError.message);
+      logger.error(
+        `Failed to mark ${toolName} stage ${stageIndex} as done:`,
+        completeError.message
+      );
     }
   }
 };
@@ -582,11 +626,11 @@ const runReconnaissancePipeline = async (jobId, domains, config) => {
   // Create a map of tool names to stage indices based on the order we created them
   // The stages are created in this order: tools (in the order below), then results
   const enabledTools = [];
-  if (config.tools.findomain) enabledTools.push('findomain');
-  if (config.tools.subfinder) enabledTools.push('subfinder');
-  if (config.tools.amass) enabledTools.push('amass');
-  if (config.tools.crtsh) enabledTools.push('crtsh');
-  if (config.tools.assetfinder) enabledTools.push('assetfinder');
+  if (config.tools.findomain) enabledTools.push("findomain");
+  if (config.tools.subfinder) enabledTools.push("subfinder");
+  if (config.tools.amass) enabledTools.push("amass");
+  if (config.tools.crtsh) enabledTools.push("crtsh");
+  if (config.tools.assetfinder) enabledTools.push("assetfinder");
 
   const toolStageMap = {};
   enabledTools.forEach((toolName, index) => {
@@ -595,7 +639,9 @@ const runReconnaissancePipeline = async (jobId, domains, config) => {
   const resultsStageIndex = enabledTools.length; // Results stage is after all tools
 
   logger.log(`Processing ${domains.length} domains: ${domains.join(", ")}`);
-  logger.log(`Job has ${job.stages.length} stages, expecting ${enabledTools.length + 1}`);
+  logger.log(
+    `Job has ${job.stages.length} stages, expecting ${enabledTools.length + 1}`
+  );
   logger.log(`Enabled tools:`, enabledTools);
   logger.log(`Tool stage mapping:`, toolStageMap);
   logger.log(`Results stage index: ${resultsStageIndex}`);
@@ -614,17 +660,29 @@ const runReconnaissancePipeline = async (jobId, domains, config) => {
         });
         logger.log(`Successfully set findomain stage to running`);
       } catch (error) {
-        logger.error(`Failed to set findomain stage to running:`, error.message);
+        logger.error(
+          `Failed to set findomain stage to running:`,
+          error.message
+        );
       }
 
       toolPromises.push(
         runFindomainScan(domain, jobId).then(async (result) => {
           // Update stage immediately when this tool completes for this domain
-          await updateToolStageProgress(jobId, 'findomain', toolStageMap.findomain, domain, result, toolCompletionCounts, toolDomainCounts, domains.length);
-          return {
-            tool: 'findomain',
+          await updateToolStageProgress(
+            jobId,
+            "findomain",
+            toolStageMap.findomain,
             domain,
-            result
+            result,
+            toolCompletionCounts,
+            toolDomainCounts,
+            domains.length
+          );
+          return {
+            tool: "findomain",
+            domain,
+            result,
           };
         })
       );
@@ -638,17 +696,29 @@ const runReconnaissancePipeline = async (jobId, domains, config) => {
         });
         logger.log(`Successfully set subfinder stage to running`);
       } catch (error) {
-        logger.error(`Failed to set subfinder stage to running:`, error.message);
+        logger.error(
+          `Failed to set subfinder stage to running:`,
+          error.message
+        );
       }
 
       toolPromises.push(
         runSubfinderScan(domain, jobId).then(async (result) => {
           // Update stage immediately when this tool completes for this domain
-          await updateToolStageProgress(jobId, 'subfinder', toolStageMap.subfinder, domain, result, toolCompletionCounts, toolDomainCounts, domains.length);
-          return {
-            tool: 'subfinder',
+          await updateToolStageProgress(
+            jobId,
+            "subfinder",
+            toolStageMap.subfinder,
             domain,
-            result
+            result,
+            toolCompletionCounts,
+            toolDomainCounts,
+            domains.length
+          );
+          return {
+            tool: "subfinder",
+            domain,
+            result,
           };
         })
       );
@@ -668,11 +738,20 @@ const runReconnaissancePipeline = async (jobId, domains, config) => {
       toolPromises.push(
         runAmassScan(domain, jobId).then(async (result) => {
           // Update stage immediately when this tool completes for this domain
-          await updateToolStageProgress(jobId, 'amass', toolStageMap.amass, domain, result, toolCompletionCounts, toolDomainCounts, domains.length);
-          return {
-            tool: 'amass',
+          await updateToolStageProgress(
+            jobId,
+            "amass",
+            toolStageMap.amass,
             domain,
-            result
+            result,
+            toolCompletionCounts,
+            toolDomainCounts,
+            domains.length
+          );
+          return {
+            tool: "amass",
+            domain,
+            result,
           };
         })
       );
@@ -693,23 +772,47 @@ const runReconnaissancePipeline = async (jobId, domains, config) => {
         (async () => {
           try {
             const crtshDomains = await runCrtshScan(domain);
-            const result = { domains: crtshDomains, containerLogs: { stdout: "", stderr: "" } };
+            const result = {
+              domains: crtshDomains,
+              containerLogs: { stdout: "", stderr: "" },
+            };
             // Update stage immediately when this tool completes for this domain
-            await updateToolStageProgress(jobId, 'crtsh', toolStageMap.crtsh, domain, result, toolCompletionCounts, toolDomainCounts, domains.length);
-            return {
-              tool: 'crtsh',
+            await updateToolStageProgress(
+              jobId,
+              "crtsh",
+              toolStageMap.crtsh,
               domain,
-              result
+              result,
+              toolCompletionCounts,
+              toolDomainCounts,
+              domains.length
+            );
+            return {
+              tool: "crtsh",
+              domain,
+              result,
             };
           } catch (error) {
             logger.error(`crt.sh scan failed for ${domain}:`, error);
-            const result = { domains: [], containerLogs: { stdout: "", stderr: error.message } };
+            const result = {
+              domains: [],
+              containerLogs: { stdout: "", stderr: error.message },
+            };
             // Update stage even on failure
-            await updateToolStageProgress(jobId, 'crtsh', toolStageMap.crtsh, domain, result, toolCompletionCounts, toolDomainCounts, domains.length);
-            return {
-              tool: 'crtsh',
+            await updateToolStageProgress(
+              jobId,
+              "crtsh",
+              toolStageMap.crtsh,
               domain,
-              result
+              result,
+              toolCompletionCounts,
+              toolDomainCounts,
+              domains.length
+            );
+            return {
+              tool: "crtsh",
+              domain,
+              result,
             };
           }
         })()
@@ -724,17 +827,29 @@ const runReconnaissancePipeline = async (jobId, domains, config) => {
         });
         logger.log(`Successfully set assetfinder stage to running`);
       } catch (error) {
-        logger.error(`Failed to set assetfinder stage to running:`, error.message);
+        logger.error(
+          `Failed to set assetfinder stage to running:`,
+          error.message
+        );
       }
 
       toolPromises.push(
         runAssetfinderScan(domain, jobId).then(async (result) => {
           // Update stage immediately when this tool completes for this domain
-          await updateToolStageProgress(jobId, 'assetfinder', toolStageMap.assetfinder, domain, result, toolCompletionCounts, toolDomainCounts, domains.length);
-          return {
-            tool: 'assetfinder',
+          await updateToolStageProgress(
+            jobId,
+            "assetfinder",
+            toolStageMap.assetfinder,
             domain,
-            result
+            result,
+            toolCompletionCounts,
+            toolDomainCounts,
+            domains.length
+          );
+          return {
+            tool: "assetfinder",
+            domain,
+            result,
           };
         })
       );
@@ -779,7 +894,10 @@ const runReconnaissancePipeline = async (jobId, domains, config) => {
           allContainerLogs += `\n=== ${toolName} Error Logs ===\n${containerLogs.stderr}\n`;
           logCount++;
         }
-        if ((!containerLogs.stdout || !containerLogs.stdout.trim()) && (!containerLogs.stderr || !containerLogs.stderr.trim())) {
+        if (
+          (!containerLogs.stdout || !containerLogs.stdout.trim()) &&
+          (!containerLogs.stderr || !containerLogs.stderr.trim())
+        ) {
           allContainerLogs += `\n=== ${toolName} (${domain}) ===\n(No output captured)\n`;
           logCount++;
         }
@@ -824,8 +942,19 @@ const runReconnaissancePipeline = async (jobId, domains, config) => {
     statusText: "Processing results",
   });
 
-  // Stage discovered subdomains
-  await stageDiscoveredAssets(jobId, Array.from(allDiscoveredDomains), domainToolMap, enabledTools.length);
+  // DNS Resolution and Classification Stage
+  await PenPal.Jobs.UpdateStage(jobId, resultsStageIndex, {
+    status: "running",
+    statusText: "Resolving domains and classifying IPs",
+  });
+
+  // Process discovered domains: DNS resolution and classification
+  await processAndClassifyDomains(
+    jobId,
+    Array.from(allDiscoveredDomains),
+    domainToolMap,
+    enabledTools.length
+  );
 
   // Update final progress
   await PenPal.Jobs.Update(jobId, {
@@ -835,11 +964,16 @@ const runReconnaissancePipeline = async (jobId, domains, config) => {
   await PenPal.Jobs.UpdateStage(jobId, resultsStageIndex, {
     status: "done",
     progress: 100,
-    statusText: "Subdomains discovered and staged",
+    statusText: "Domains resolved and classified",
   });
 };
 
-const stageDiscoveredAssets = async (jobId, domains, domainToolMap, totalToolsEnabled) => {
+const stageDiscoveredAssets = async (
+  jobId,
+  domains,
+  domainToolMap,
+  totalToolsEnabled
+) => {
   const job = await PenPal.Jobs.Get(jobId);
   const projectId = job?.project_id;
   if (!projectId) {
@@ -854,14 +988,22 @@ const stageDiscoveredAssets = async (jobId, domains, domainToolMap, totalToolsEn
     const projectDomains = await PenPal.DataStore.fetch("CoreAPI", "Domains", {
       project: projectId,
     });
-    logger.log(`Raw domain fetch result: ${projectDomains.length} domains found`);
+    logger.log(
+      `Raw domain fetch result: ${projectDomains.length} domains found`
+    );
     if (projectDomains.length > 0) {
       logger.log(`First domain sample:`, projectDomains[0]);
     }
-    existingDomains = new Set(projectDomains.map(d => d.name.toLowerCase()));
-    logger.log(`Found ${existingDomains.size} existing domains in project ${projectId}:`, Array.from(existingDomains));
+    existingDomains = new Set(projectDomains.map((d) => d.name.toLowerCase()));
+    logger.log(
+      `Found ${existingDomains.size} existing domains in project ${projectId}:`,
+      Array.from(existingDomains)
+    );
   } catch (error) {
-    logger.error(`Could not fetch existing domains for project ${projectId}:`, error);
+    logger.error(
+      `Could not fetch existing domains for project ${projectId}:`,
+      error
+    );
     // Continue without filtering if we can't get existing domains
   }
 
@@ -882,7 +1024,7 @@ const stageDiscoveredAssets = async (jobId, domains, domainToolMap, totalToolsEn
     const toolCount = toolsThatFoundDomain.size;
     const confidence = Math.round((toolCount / totalToolsEnabled) * 100);
 
-    logger.log(`Staging new domain ${domain} (found by ${toolCount}/${totalToolsEnabled} tools, confidence: ${confidence}%)`);
+    // logger.log(`Staging new domain ${domain} (found by ${toolCount}/${totalToolsEnabled} tools, confidence: ${confidence}%)`);
     assets.push({
       type: "domain",
       value: domain,
@@ -892,7 +1034,7 @@ const stageDiscoveredAssets = async (jobId, domains, domainToolMap, totalToolsEn
         jobId,
         toolsFoundBy: Array.from(toolsThatFoundDomain),
         toolCount: toolCount,
-        totalToolsEnabled: totalToolsEnabled
+        totalToolsEnabled: totalToolsEnabled,
       },
     });
   }
@@ -900,11 +1042,381 @@ const stageDiscoveredAssets = async (jobId, domains, domainToolMap, totalToolsEn
   if (assets.length > 0) {
     await createStagedAssets(projectId, assets);
     logger.log(
-      `Staged ${assets.length} new subdomain assets for project ${projectId} (${domains.length - assets.length} domains already in scope)`
+      `Staged ${assets.length} new subdomain assets for project ${projectId} (${
+        domains.length - assets.length
+      } domains already in scope)`
     );
   } else {
     logger.log(
       `No new subdomain assets to stage for project ${projectId} - all ${domains.length} domains already in scope`
+    );
+  }
+};
+
+// DNS resolution and IP classification for discovered domains
+const processAndClassifyDomains = async (
+  jobId,
+  domains,
+  domainToolMap,
+  totalToolsEnabled
+) => {
+  logger.log("Starting DNS resolution process");
+  const job = await PenPal.Jobs.Get(jobId);
+  const projectId = job?.project_id;
+  if (!projectId) {
+    logger.error(`Could not get project ID for job ${jobId}`);
+    return;
+  }
+
+  logger.log(
+    `Processing ${domains.length} domains for DNS resolution and classification`
+  );
+
+  // Get existing hosts in the project to check for IP matches
+  let existingHosts = [];
+  try {
+    const hosts = await PenPal.API.Hosts.GetManyByProjectID(projectId);
+    existingHosts = hosts || [];
+    logger.log(
+      `Found ${existingHosts.length} existing hosts in project ${projectId}`
+    );
+  } catch (error) {
+    logger.error(
+      `Could not fetch existing hosts for project ${projectId}:`,
+      error
+    );
+  }
+
+  // Create IP to host mapping for quick lookup
+  const ipToHostMap = new Map();
+  existingHosts.forEach((host) => {
+    if (host.ip_address) {
+      ipToHostMap.set(host.ip_address, host);
+      logger.log(`Mapped host ${host.id} with IP ${host.ip_address}`);
+    } else {
+      logger.log(`Host ${host.id} has no IP address:`, host);
+    }
+  });
+  logger.log(
+    `IP to host mapping created with ${ipToHostMap.size} entries:`,
+    Array.from(ipToHostMap.keys())
+  );
+
+  // Get existing domains to avoid duplicates
+  let existingDomains = new Set();
+  try {
+    const projectDomains = await PenPal.DataStore.fetch("CoreAPI", "Domains", {
+      project: projectId,
+    });
+    existingDomains = new Set(projectDomains.map((d) => d.name.toLowerCase()));
+    logger.log(
+      `Found ${existingDomains.size} existing domains in project ${projectId}`
+    );
+  } catch (error) {
+    logger.error(
+      `Could not fetch existing domains for project ${projectId}:`,
+      error
+    );
+  }
+
+  // Use CoreAPI classification instead of local implementation
+
+  const stagedAssets = [];
+  const autoAddedDomains = [];
+
+  // Process domains in batches to avoid overwhelming DNS servers
+  const batchSize = 10;
+  for (let i = 0; i < domains.length; i += batchSize) {
+    const batch = domains.slice(i, i + batchSize);
+    logger.log(
+      `Processing DNS batch ${Math.floor(i / batchSize) + 1}/${Math.ceil(
+        domains.length / batchSize
+      )} (${batch.length} domains)`
+    );
+
+    // DNS resolution for this batch
+    const dnsPromises = batch.map(async (domain) => {
+      try {
+        // Skip if domain already exists
+        if (existingDomains.has(domain.toLowerCase())) {
+          logger.log(
+            `Skipping domain ${domain} - already exists in project scope`
+          );
+          return { domain, skip: true };
+        }
+
+        // Try DNS resolution using Node.js DNS as primary method
+        try {
+          // Use native Node.js DNS resolution as primary method
+          const lookup = promisify(dns.lookup);
+          const result = await lookup(domain, { family: 4 });
+          logger.log(
+            `Node.js DNS lookup successful for ${domain}: ${result.address}`
+          );
+          logger.log(
+            `IP type: ${typeof result.address}, value: "${result.address}"`
+          );
+          return {
+            domain,
+            ip: result.address,
+            resolved: true,
+          };
+        } catch (dnsError) {
+          logger.log(
+            `Node.js DNS failed for ${domain}, trying HTTP DNS API: ${dnsError.message}`
+          );
+          // Fallback to HTTP DNS API if Node.js DNS fails
+          const url = `https://dns.google/resolve?name=${encodeURIComponent(
+            domain
+          )}&type=A`;
+
+          const result = await new Promise((resolve, reject) => {
+            https
+              .get(
+                url,
+                {
+                  headers: { Accept: "application/json" },
+                  timeout: 5000,
+                },
+                (res) => {
+                  let data = "";
+                  res.on("data", (chunk) => (data += chunk));
+                  res.on("end", () => {
+                    try {
+                      const json = JSON.parse(data);
+                      if (json.Answer && json.Answer.length > 0) {
+                        const ip = json.Answer[0].data;
+                        logger.log(
+                          `HTTP DNS API lookup successful for ${domain}: ${ip}`
+                        );
+                        resolve({ address: ip });
+                      } else {
+                        throw new Error("No DNS answer received");
+                      }
+                    } catch (e) {
+                      reject(new Error(`DNS API parse error: ${e.message}`));
+                    }
+                  });
+                }
+              )
+              .on("error", reject)
+              .on("timeout", () => reject(new Error("DNS timeout")));
+          });
+
+          return {
+            domain,
+            ip: result.address,
+            resolved: true,
+          };
+        }
+      } catch (error) {
+        logger.log(`DNS resolution failed for ${domain}:`, error.message);
+        return {
+          domain,
+          resolved: false,
+          error: error.message,
+        };
+      }
+    });
+
+    const dnsResults = await Promise.allSettled(dnsPromises);
+
+    // Process DNS results
+    const resolvedIPs = [];
+    const domainResults = [];
+
+    dnsResults.forEach((promiseResult) => {
+      if (promiseResult.status === "fulfilled") {
+        const result = promiseResult.value;
+        if (result.skip) return;
+
+        domainResults.push(result);
+        if (result.resolved && result.ip) {
+          resolvedIPs.push(result.ip);
+        }
+      }
+    });
+
+    // IP classification for resolved IPs using CoreAPI
+    let ipClassifications = {};
+    if (resolvedIPs.length > 0) {
+      try {
+        logger.log(
+          `Classifying ${resolvedIPs.length} IPs (geolocation, ASN, cloud provider)`
+        );
+        ipClassifications = await PenPal.API.Classification.ClassifyIPs(
+          resolvedIPs
+        );
+      } catch (error) {
+        logger.error("IP classification failed:", error);
+      }
+    }
+
+    // Process each domain result
+    for (const result of domainResults) {
+      const { domain, ip, resolved, error } = result;
+
+      // Calculate confidence based on tools that found this domain
+      const toolsThatFoundDomain = domainToolMap.get(domain) || new Set();
+      const toolCount = toolsThatFoundDomain.size;
+      const confidence = Math.round((toolCount / totalToolsEnabled) * 100);
+
+      if (!resolved) {
+        // DNS resolution failed - stage with error info
+        logger.log(
+          `Staging unresolved domain ${domain} (confidence: ${confidence}%)`
+        );
+        stagedAssets.push({
+          type: "domain",
+          value: domain,
+          tool: "autorecon",
+          confidence: confidence,
+          classification: {
+            dns_resolved: false,
+            dns_error: error,
+            tools_found_by: Array.from(toolsThatFoundDomain),
+            tool_count: toolCount,
+            total_tools_enabled: totalToolsEnabled,
+          },
+          metadata: {
+            jobId,
+            toolsFoundBy: Array.from(toolsThatFoundDomain),
+            toolCount: toolCount,
+            totalToolsEnabled: totalToolsEnabled,
+          },
+        });
+        continue;
+      }
+
+      // Check if IP is already in project scope
+      const existingHost = ipToHostMap.get(ip);
+      logger.log(
+        `Checking if IP "${ip}" (type: ${typeof ip}) exists in scope. Found host:`,
+        existingHost ? existingHost.id : "null"
+      );
+      logger.log(
+        `Available IPs in scope: [${Array.from(ipToHostMap.keys())
+          .map((ip) => `"${ip}"`)
+          .join(", ")}]`
+      );
+      if (existingHost) {
+        // IP exists - automatically add domain to scope and link to host
+        logger.log(
+          `Auto-adding domain ${domain} to scope (IP ${ip} already exists, linking to host ${existingHost.id})`
+        );
+
+        try {
+          // Add domain to project scope
+          const domainData = {
+            name: domain,
+            project: projectId,
+            hosts: [existingHost.id], // Link to existing host
+            discovered_by: "autorecon",
+            confidence: confidence,
+            metadata: {
+              job_id: jobId,
+              auto_added: true,
+              linked_host: existingHost.id,
+              tools_found_by: Array.from(toolsThatFoundDomain),
+              tool_count: toolCount,
+              total_tools_enabled: totalToolsEnabled,
+            },
+          };
+
+          await PenPal.API.Domains.Insert(domainData);
+          autoAddedDomains.push({ domain, ip, hostId: existingHost.id });
+          logger.log(`Successfully added domain ${domain} to project scope`);
+        } catch (error) {
+          logger.error(`Failed to auto-add domain ${domain}:`, error);
+          // Fall back to staging
+          stagedAssets.push({
+            type: "domain",
+            value: domain,
+            tool: "autorecon",
+            confidence: confidence,
+            classification: {
+              dns_resolved: true,
+              ip_address: ip,
+              existing_host: existingHost.id,
+              auto_add_failed: error.message,
+              tools_found_by: Array.from(toolsThatFoundDomain),
+              tool_count: toolCount,
+              total_tools_enabled: totalToolsEnabled,
+            },
+            metadata: {
+              jobId,
+              resolved_ip: ip,
+              toolsFoundBy: Array.from(toolsThatFoundDomain),
+              toolCount: toolCount,
+              totalToolsEnabled: totalToolsEnabled,
+            },
+          });
+        }
+      } else {
+        // IP not in scope - classify and stage
+        const classification = ipClassifications[ip] || {};
+
+        const fullClassification = {
+          // Preserve all CoreAPI classification fields
+          ...classification,
+          // Add AutoRecon-specific fields
+          dns_resolved: true,
+          ip_address: ip,
+          tools_found_by: Array.from(toolsThatFoundDomain),
+          tool_count: toolCount,
+          total_tools_enabled: totalToolsEnabled,
+        };
+
+        logger.log(
+          `Staging domain ${domain} (${ip}) with classification: ${
+            fullClassification.country || "Unknown"
+          } / ${fullClassification.org || "Unknown ASN"} / ${
+            fullClassification.cloud_provider?.provider || "Non-cloud"
+          }${
+            fullClassification.db_errors
+              ? ` (DB issues: ${fullClassification.db_errors.join(", ")})`
+              : ""
+          }`
+        );
+
+        stagedAssets.push({
+          type: "domain",
+          value: domain,
+          tool: "autorecon",
+          confidence: confidence,
+          classification: fullClassification,
+          metadata: {
+            jobId,
+            resolved_ip: ip,
+            toolsFoundBy: Array.from(toolsThatFoundDomain),
+            toolCount: toolCount,
+            totalToolsEnabled: totalToolsEnabled,
+          },
+        });
+      }
+    }
+
+    // Small delay between batches to be respectful to DNS servers
+    if (i + batchSize < domains.length) {
+      await new Promise((resolve) => setTimeout(resolve, 100));
+    }
+  }
+
+  // Stage assets that need manual review
+  if (stagedAssets.length > 0) {
+    await createStagedAssets(projectId, stagedAssets);
+    logger.log(`Staged ${stagedAssets.length} assets requiring manual review`);
+  }
+
+  // Log summary
+  logger.log(`Domain processing complete:`);
+  logger.log(`- Auto-added to scope: ${autoAddedDomains.length} domains`);
+  logger.log(`- Staged for review: ${stagedAssets.length} assets`);
+
+  if (autoAddedDomains.length > 0) {
+    logger.log(
+      "Auto-added domains:",
+      autoAddedDomains.map((d) => `${d.domain} -> ${d.ip} (host ${d.hostId})`)
     );
   }
 };

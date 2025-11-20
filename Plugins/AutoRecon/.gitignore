@@ -1,0 +1,3 @@
+# MaxMind GeoIP databases - downloaded automatically at runtime
+server/geoip-db/*.mmdb
+server/geoip-db/last-update-check

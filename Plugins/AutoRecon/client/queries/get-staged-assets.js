@@ -8,6 +8,7 @@ const GetStagedAssets = gql`
       value
       tool
       confidence
+      classification
       metadata
       created_at
     }

@@ -9,6 +9,7 @@ export default {
       "ip_address",
       "mac_address",
       "domain_ids",
+      "classification",
     ]),
 
     async domains({ domain_ids }, args, { PenPalCachingAPI }) {

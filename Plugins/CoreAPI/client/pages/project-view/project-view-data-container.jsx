@@ -100,6 +100,16 @@ const ProjectViewDataContainer = ({ project, disable_polling }) => {
       ),
     },
     {
+      value: "domains",
+      label: "Domains",
+      content: () => (
+        <Components.ProjectViewDomains
+          project={project}
+          disable_polling={disable_polling}
+        />
+      ),
+    },
+    {
       value: "services",
       label: "Services",
       content: () => (

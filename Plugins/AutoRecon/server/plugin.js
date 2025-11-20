@@ -5,6 +5,10 @@ const __dirname = dirname(fileURLToPath(import.meta.url));
 import { loadGraphQLFiles, resolvers } from "./graphql/index.js";
 import * as API from "./api/index.js";
 import PenPal from "#penpal/core";
+
+// Initialize logger for this plugin
+const logger = PenPal.Utils.BuildLogger("AutoRecon");
+
 import {
   AutoReconTools,
   AutoReconToolDefaults,

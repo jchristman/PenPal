@@ -11,6 +11,7 @@ export default gql`
       }
       ip_address
       mac_address
+      classification
       os {
         name
         method

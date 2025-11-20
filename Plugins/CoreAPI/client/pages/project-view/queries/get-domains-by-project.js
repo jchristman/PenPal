@@ -8,6 +8,7 @@ export default gql`
         name
         resolved_ips
       }
+      totalCount
     }
   }
 `;

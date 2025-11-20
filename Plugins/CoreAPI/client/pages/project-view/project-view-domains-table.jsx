@@ -7,11 +7,11 @@ import {
   ChevronDoubleRightIcon,
   ChevronUpIcon,
   ChevronDownIcon,
-  ComputerDesktopIcon,
-  ServerIcon,
   GlobeAltIcon,
+  ServerIcon,
+  CheckCircleIcon,
+  XCircleIcon,
   MagnifyingGlassIcon,
-  ShieldExclamationIcon,
 } from "@heroicons/react/24/outline";
 
 const { formatDate } = Utils;
@@ -141,10 +141,10 @@ const SortableHeader = ({
   );
 };
 
-const ProjectViewHostsTable = ({ hosts = [] }) => {
+const ProjectViewDomainsTable = ({ domains = [] }) => {
   const [page, setPage] = useState(0);
   const [rowsPerPage, setRowsPerPage] = useState(10);
-  const [sort, setSort] = useState({ key: "ip_address", direction: "asc" });
+  const [sort, setSort] = useState({ key: "name", direction: "asc" });
   const [searchTerm, setSearchTerm] = useState("");
   const [debouncedSearchTerm, setDebouncedSearchTerm] = useState("");
 
@@ -162,19 +162,17 @@ const ProjectViewHostsTable = ({ hosts = [] }) => {
     setPage(0);
   }, [debouncedSearchTerm]);
 
-  // Filter and sort hosts
-  const filteredAndSortedHosts = useMemo(() => {
-    let filtered = hosts;
+  // Filter and sort domains
+  const filteredAndSortedDomains = useMemo(() => {
+    let filtered = domains;
 
     // Apply search filter
     if (debouncedSearchTerm) {
       const search = debouncedSearchTerm.toLowerCase();
-      filtered = hosts.filter((host) => {
+      filtered = domains.filter((domain) => {
         return (
-          host.ip_address?.toLowerCase().includes(search) ||
-          host.domains?.some((domain) => domain.name.toLowerCase().includes(search)) ||
-          host.os?.name?.toLowerCase().includes(search) ||
-          host.mac_address?.toLowerCase().includes(search)
+          domain.name?.toLowerCase().includes(search) ||
+          domain.resolved_ips?.some((ip) => ip.toLowerCase().includes(search))
         );
       });
     }
@@ -185,43 +183,24 @@ const ProjectViewHostsTable = ({ hosts = [] }) => {
       let aValue, bValue;
 
       switch (sort.key) {
-        case "ip_address":
-          // Parse IP for proper numeric sorting
-          aValue = a.ip_address
-            ?.split(".")
-            .map((num) => parseInt(num))
-            .join("");
-          bValue = b.ip_address
-            ?.split(".")
-            .map((num) => parseInt(num))
-            .join("");
+        case "name":
+          aValue = a.name || "";
+          bValue = b.name || "";
           break;
-        case "hostnames":
-          aValue = a.domains?.[0]?.name || "";
-          bValue = b.domains?.[0]?.name || "";
+        case "resolved_ips":
+          aValue = a.resolved_ips?.length || 0;
+          bValue = b.resolved_ips?.length || 0;
           break;
-        case "os":
-          aValue = a.os?.name || "Unknown";
-          bValue = b.os?.name || "Unknown";
-          break;
-        case "services":
-          aValue = a.servicesConnection?.totalCount || 0;
-          bValue = b.servicesConnection?.totalCount || 0;
-          break;
-        case "vulnerabilities":
-          aValue = a.vulnerabilitiesConnection?.totalCount || 0;
-          bValue = b.vulnerabilitiesConnection?.totalCount || 0;
-          break;
-        case "mac_address":
-          aValue = a.mac_address || "";
-          bValue = b.mac_address || "";
+        case "status":
+          aValue = (a.resolved_ips?.length || 0) > 0 ? 1 : 0;
+          bValue = (b.resolved_ips?.length || 0) > 0 ? 1 : 0;
           break;
         default:
           aValue = "";
           bValue = "";
       }
 
-      if (sort.key === "services" || sort.key === "vulnerabilities") {
+      if (sort.key === "resolved_ips" || sort.key === "status") {
         // Numeric comparison for counts
         if (sort.direction === "asc") {
           return aValue - bValue;
@@ -238,10 +217,10 @@ const ProjectViewHostsTable = ({ hosts = [] }) => {
     });
 
     return sortableItems;
-  }, [hosts, debouncedSearchTerm, sort]);
+  }, [domains, debouncedSearchTerm, sort]);
 
   // Paginate
-  const paginatedHosts = filteredAndSortedHosts.slice(
+  const paginatedDomains = filteredAndSortedDomains.slice(
     page * rowsPerPage,
     page * rowsPerPage + rowsPerPage
   );
@@ -256,37 +235,37 @@ const ProjectViewHostsTable = ({ hosts = [] }) => {
   };
 
   // Calculate statistics
-  const totalServices = useMemo(
+  const totalIPs = useMemo(
     () =>
-      hosts.reduce(
-        (sum, host) => sum + (host.servicesConnection?.totalCount || 0),
+      domains.reduce(
+        (sum, domain) => sum + (domain.resolved_ips?.length || 0),
         0
       ),
-    [hosts]
+    [domains]
   );
 
   return (
     <Card>
       <CardHeader>
-        <CardTitle>Hosts</CardTitle>
+        <CardTitle>Domains</CardTitle>
         <CardDescription>
-          A list of all hosts discovered in this project.
+          A list of all domains discovered in this project.
         </CardDescription>
         <div className="flex justify-between items-center pt-4">
           <Input
-            placeholder="Search hosts..."
+            placeholder="Search domains..."
             value={searchTerm}
             onChange={(e) => setSearchTerm(e.target.value)}
             className="max-w-sm"
           />
           <div className="flex items-center space-x-2">
             <Badge variant="outline">
-              Total Hosts:{" "}
-              <span className="font-bold ml-1">{hosts.length}</span>
+              Total Domains:{" "}
+              <span className="font-bold ml-1">{domains.length}</span>
             </Badge>
             <Badge variant="outline">
-              Total Services:{" "}
-              <span className="font-bold ml-1">{totalServices}</span>
+              Total IPs:{" "}
+              <span className="font-bold ml-1">{totalIPs}</span>
             </Badge>
           </div>
         </div>
@@ -296,161 +275,62 @@ const ProjectViewHostsTable = ({ hosts = [] }) => {
           <TableHeader>
             <TableRow>
               <SortableHeader
-                sortKey="ip_address"
+                sortKey="name"
                 currentSort={sort}
                 onSort={setSort}
               >
-                IP Address
+                Domain Name
               </SortableHeader>
               <SortableHeader
-                sortKey="hostnames"
+                sortKey="status"
                 currentSort={sort}
                 onSort={setSort}
               >
-                Hostnames
-              </SortableHeader>
-              <SortableHeader sortKey="os" currentSort={sort} onSort={setSort}>
-                Operating System
+                Status
               </SortableHeader>
               <SortableHeader
-                sortKey="mac_address"
-                currentSort={sort}
-                onSort={setSort}
-              >
-                MAC Address
-              </SortableHeader>
-              <SortableHeader
-                sortKey="services"
+                sortKey="resolved_ips"
                 currentSort={sort}
                 onSort={setSort}
                 className="text-right"
               >
-                Services
+                Resolved IPs
               </SortableHeader>
-              <SortableHeader
-                sortKey="vulnerabilities"
-                currentSort={sort}
-                onSort={setSort}
-                className="text-right"
-              >
-                Vulnerabilities
-              </SortableHeader>
-              <TableHead>Location</TableHead>
-              <TableHead>Classification</TableHead>
             </TableRow>
           </TableHeader>
           <TableBody>
-            {paginatedHosts.map((host) => (
+            {paginatedDomains.map((domain) => (
               <TableRow
-                key={host.id}
+                key={domain.id}
                 className="cursor-pointer hover:bg-muted/50"
               >
                 <TableCell className="font-medium">
                   <div className="flex items-center space-x-2">
-                    <ComputerDesktopIcon className="h-4 w-4 text-muted-foreground" />
-                    <span>{host.ip_address}</span>
+                    <GlobeAltIcon className="h-4 w-4 text-muted-foreground" />
+                    <span>{domain.name}</span>
                   </div>
                 </TableCell>
                 <TableCell>
-                  {host.domains?.length > 0 ? (
-                    <div className="space-y-1">
-                      {host.domains.slice(0, 2).map((domain, idx) => (
-                        <div key={idx} className="flex items-center space-x-1">
-                          <GlobeAltIcon className="h-3 w-3 text-muted-foreground" />
-                          <span className="text-xs">{domain.name}</span>
-                        </div>
-                      ))}
-                      {host.domains.length > 2 && (
-                        <Badge variant="secondary" className="text-xs">
-                          +{host.domains.length - 2} more
-                        </Badge>
-                      )}
+                  {domain.resolved_ips?.length > 0 ? (
+                    <div className="flex items-center space-x-1">
+                      <CheckCircleIcon className="h-4 w-4 text-green-600" />
+                      <Badge variant="outline" className="text-green-600">
+                        Resolved
+                      </Badge>
                     </div>
                   ) : (
-                    <span className="text-muted-foreground text-sm">
-                      No domains
-                    </span>
-                  )}
-                </TableCell>
-                <TableCell>
-                  {host.os?.name ? (
-                    <Badge variant="outline">{host.os.name}</Badge>
-                  ) : (
-                    <span className="text-muted-foreground text-sm">
-                      Unknown
-                    </span>
-                  )}
-                </TableCell>
-                <TableCell>
-                  {host.mac_address ? (
-                    <span className="font-mono text-xs">
-                      {host.mac_address}
-                    </span>
-                  ) : (
-                    <span className="text-muted-foreground text-sm">
-                      Unknown
-                    </span>
+                    <div className="flex items-center space-x-1">
+                      <XCircleIcon className="h-4 w-4 text-muted-foreground" />
+                      <Badge variant="secondary">No Resolution</Badge>
+                    </div>
                   )}
                 </TableCell>
                 <TableCell className="text-right">
                   <div className="flex items-center justify-end space-x-2">
                     <ServerIcon className="h-4 w-4 text-muted-foreground" />
                     <Badge variant="secondary">
-                      {host.servicesConnection?.totalCount || 0}
+                      {domain.resolved_ips?.length || 0}
                     </Badge>
-                  </div>
-                </TableCell>
-                <TableCell className="text-right">
-                  <div className="flex items-center justify-end space-x-2">
-                    <ShieldExclamationIcon className="h-4 w-4 text-muted-foreground" />
-                    <Badge
-                      variant={
-                        (host.vulnerabilitiesConnection?.totalCount || 0) > 0
-                          ? "destructive"
-                          : "secondary"
-                      }
-                    >
-                      {host.vulnerabilitiesConnection?.totalCount || 0}
-                    </Badge>
-                  </div>
-                </TableCell>
-                <TableCell>
-                  {host.classification?.country ? (
-                    <div className="text-xs">
-                      <div className="font-medium">
-                        {host.classification.city && host.classification.region
-                          ? `${host.classification.city}, ${host.classification.region}`
-                          : host.classification.city || host.classification.region}
-                      </div>
-                      <div className="text-muted-foreground">
-                        {host.classification.country}
-                      </div>
-                    </div>
-                  ) : (
-                    <span className="text-muted-foreground text-sm">
-                      Unknown
-                    </span>
-                  )}
-                </TableCell>
-                <TableCell>
-                  <div className="space-y-1">
-                    {host.classification?.org && (
-                      <Badge variant="outline" className="text-xs">
-                        {host.classification.org}
-                        {host.classification.asn && ` (ASN ${host.classification.asn})`}
-                      </Badge>
-                    )}
-                    {host.classification?.cloud_provider?.provider && (
-                      <Badge variant="secondary" className="text-xs">
-                        {host.classification.cloud_provider.provider}
-                        {host.classification.cloud_provider.service && ` (${host.classification.cloud_provider.service})`}
-                      </Badge>
-                    )}
-                    {!host.classification?.org && !host.classification?.cloud_provider?.provider && (
-                      <span className="text-muted-foreground text-sm">
-                        Unknown
-                      </span>
-                    )}
                   </div>
                 </TableCell>
               </TableRow>
@@ -478,18 +358,18 @@ const ProjectViewHostsTable = ({ hosts = [] }) => {
               Showing {page * rowsPerPage + 1}-
               {Math.min(
                 (page + 1) * rowsPerPage,
-                filteredAndSortedHosts.length
+                filteredAndSortedDomains.length
               )}{" "}
-              of {filteredAndSortedHosts.length} hosts
+              of {filteredAndSortedDomains.length} domains
             </div>
           </div>
           <div className="flex items-center space-x-4">
             <div className="text-sm text-muted-foreground">
               Page {page + 1} of{" "}
-              {Math.ceil(filteredAndSortedHosts.length / rowsPerPage) || 1}
+              {Math.ceil(filteredAndSortedDomains.length / rowsPerPage) || 1}
             </div>
             <TablePaginationActions
-              count={filteredAndSortedHosts.length}
+              count={filteredAndSortedDomains.length}
               page={page}
               rowsPerPage={rowsPerPage}
               onPageChange={handleChangePage}
@@ -502,6 +382,6 @@ const ProjectViewHostsTable = ({ hosts = [] }) => {
   );
 };
 
-registerComponent("ProjectViewHostsTable", ProjectViewHostsTable);
+registerComponent("ProjectViewDomainsTable", ProjectViewDomainsTable);
 
-export default ProjectViewHostsTable;
+export default ProjectViewDomainsTable;
