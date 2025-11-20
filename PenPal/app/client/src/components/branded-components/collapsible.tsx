@@ -2,7 +2,7 @@
 
 import * as React from "react";
 import * as CollapsiblePrimitive from "@radix-ui/react-collapsible";
-import { registerComponent } from "../../penpal/client";
+import { registerComponent } from "../../penpal/client.ts";
 
 const Collapsible = CollapsiblePrimitive.Root;
 

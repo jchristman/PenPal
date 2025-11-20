@@ -1,8 +1,14 @@
 import React, { useState } from "react";
 import { Components, registerComponent } from "@penpal/core";
-import CodeHighlight from "./code-highlight.jsx";
+import CodeHighlight from "./code-highlight.tsx";
 
-const ErrorDisplay = ({ err_number, message, stack }) => {
+interface ErrorDisplayProps {
+  err_number?: number | null;
+  message?: string;
+  stack?: string;
+}
+
+const ErrorDisplay: React.FC<ErrorDisplayProps> = ({ err_number, message, stack }) => {
   const [copied, setCopied] = useState(false);
 
   console.log("ErrorDisplay", { err_number, message, stack });

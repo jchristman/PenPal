@@ -1,4 +1,4 @@
-import { registerComponent } from "../../penpal/client";
+import { registerComponent } from "../../penpal/client.ts";
 import * as React from "react";
 import * as DropdownMenuPrimitive from "@radix-ui/react-dropdown-menu";
 import { Check, ChevronRight, Circle } from "lucide-react";

@@ -1,6 +1,6 @@
 import * as React from "react";
 import * as SeparatorPrimitives from "@radix-ui/react-separator";
-import { registerComponent } from "../../penpal/client";
+import { registerComponent } from "../../penpal/client.ts";
 
 import { cn } from "./utils";
 

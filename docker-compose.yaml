@@ -23,7 +23,7 @@ services:
       - penpal-frontend-bun-cache:/home/node/.bun/install/cache
       - penpal-bun-global-cache:/root/.bun/install/cache
       - ./PenPal/app/client/package.json:/penpal/package-tmp.json:ro
-      - ./PenPal/app/client/vite.config.js:/penpal/vite.config.js:ro
+      - ./PenPal/app/client/vite.config.ts:/penpal/vite.config.ts:ro
       - ./PenPal/app/client/src:/penpal/src
       - ./Plugins:/penpal/plugins
     ports:

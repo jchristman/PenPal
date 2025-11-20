@@ -2,11 +2,20 @@
  * Simple health check utility for the GraphQL server
  */
 
+interface HealthCheckResult {
+  healthy: boolean;
+  status: string;
+  details: string;
+}
+
 const GRAPHQL_ENDPOINT = "http://localhost:3001/graphql";
 
-export const checkServerHealth = async () => {
+export const checkServerHealth = async (): Promise<HealthCheckResult> => {
   try {
-    // Try a simple fetch to the GraphQL endpoint
+    // Try a simple fetch to the GraphQL endpoint with timeout
+    const controller = new AbortController();
+    const timeoutId = setTimeout(() => controller.abort(), 5000);
+
     const response = await fetch(GRAPHQL_ENDPOINT, {
       method: "POST",
       headers: {
@@ -15,8 +24,10 @@ export const checkServerHealth = async () => {
       body: JSON.stringify({
         query: "{ __typename }",
       }),
-      timeout: 5000, // 5 second timeout
+      signal: controller.signal,
     });
+
+    clearTimeout(timeoutId);
 
     if (response.ok) {
       return {
@@ -32,35 +43,43 @@ export const checkServerHealth = async () => {
       };
     }
   } catch (error) {
-    if (error.name === "AbortError") {
-      return {
-        healthy: false,
-        status: "Server response timeout",
-        details: "Request took longer than 5 seconds",
-      };
-    }
+    if (error instanceof Error) {
+      if (error.name === "AbortError") {
+        return {
+          healthy: false,
+          status: "Server response timeout",
+          details: "Request took longer than 5 seconds",
+        };
+      }
 
-    if (error.message.includes("Failed to fetch")) {
+      if (error.message.includes("Failed to fetch")) {
+        return {
+          healthy: false,
+          status: "Cannot reach server",
+          details: "Server may not be running or network is down",
+        };
+      }
+
       return {
         healthy: false,
-        status: "Cannot reach server",
-        details: "Server may not be running or network is down",
+        status: "Connection error",
+        details: error.message,
       };
     }
 
     return {
       healthy: false,
       status: "Connection error",
-      details: error.message,
+      details: "Unknown error occurred",
     };
   }
 };
 
 export const waitForServerHealth = async (
-  maxAttempts = 30,
-  intervalMs = 2000,
-  onProgress = null
-) => {
+  maxAttempts: number = 30,
+  intervalMs: number = 2000,
+  onProgress: ((message: string) => void) | null = null
+): Promise<HealthCheckResult> => {
   for (let attempt = 1; attempt <= maxAttempts; attempt++) {
     onProgress?.(`Checking server health (${attempt}/${maxAttempts})...`);
 

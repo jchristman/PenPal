@@ -1,7 +1,16 @@
 import React from "react";
 import { Components, registerComponent } from "@penpal/core";
 
-const ApolloLoading = ({
+interface ApolloLoadingProps {
+  status?: string;
+  error?: Error | null;
+  onRetry?: () => void;
+  progress?: number;
+  maxRetries?: number;
+  currentRetry?: number;
+}
+
+const ApolloLoading: React.FC<ApolloLoadingProps> = ({
   status,
   error,
   onRetry,

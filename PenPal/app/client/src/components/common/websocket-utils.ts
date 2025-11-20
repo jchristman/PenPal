@@ -7,24 +7,33 @@ export const WS_CONNECTION_STATES = {
   DISCONNECTED: "DISCONNECTED",
   RECONNECTING: "RECONNECTING",
   FAILED: "FAILED",
-};
+} as const;
+
+export type WSConnectionState = typeof WS_CONNECTION_STATES[keyof typeof WS_CONNECTION_STATES];
 
 // Global WebSocket connection state
-let globalWsState = WS_CONNECTION_STATES.DISCONNECTED;
-let wsStateListeners = new Set();
+let globalWsState: WSConnectionState = WS_CONNECTION_STATES.DISCONNECTED;
+let wsStateListeners = new Set<(state: WSConnectionState) => void>();
 
 // Function to update global WebSocket state
-export const setWebSocketState = (state) => {
+export const setWebSocketState = (state: WSConnectionState): void => {
   globalWsState = state;
   wsStateListeners.forEach((listener) => listener(state));
 };
 
 // Hook to monitor WebSocket connection state
-export const useWebSocketState = () => {
-  const [connectionState, setConnectionState] = useState(globalWsState);
+export const useWebSocketState = (): {
+  connectionState: WSConnectionState;
+  isConnected: boolean;
+  isConnecting: boolean;
+  isReconnecting: boolean;
+  isDisconnected: boolean;
+  isFailed: boolean;
+} => {
+  const [connectionState, setConnectionState] = useState<WSConnectionState>(globalWsState);
 
   useEffect(() => {
-    const listener = (state) => setConnectionState(state);
+    const listener = (state: WSConnectionState) => setConnectionState(state);
     wsStateListeners.add(listener);
 
     return () => {
@@ -43,10 +52,18 @@ export const useWebSocketState = () => {
 };
 
 // Hook for automatic fallback to polling when WebSocket fails
+interface SubscriptionWithFallbackOptions {
+  pollInterval?: number;
+  maxPollDuration?: number;
+  onFallback?: () => void;
+  onReconnect?: () => void;
+  [key: string]: any;
+}
+
 export const useSubscriptionWithFallback = (
-  subscriptionHook,
-  fallbackQuery,
-  options = {}
+  subscriptionHook: any,
+  fallbackQuery: any,
+  options: SubscriptionWithFallbackOptions = {}
 ) => {
   const {
     pollInterval = 5000,
@@ -57,21 +74,21 @@ export const useSubscriptionWithFallback = (
   } = options;
 
   const { connectionState, isConnected } = useWebSocketState();
-  const [isPolling, setIsPolling] = useState(false);
-  const [subscriptionData, setSubscriptionData] = useState(null);
-  const [subscriptionError, setSubscriptionError] = useState(null);
-  const pollTimeoutRef = useRef(null);
-  const maxPollTimeoutRef = useRef(null);
+  const [isPolling, setIsPolling] = useState<boolean>(false);
+  const [subscriptionData, setSubscriptionData] = useState<any>(null);
+  const [subscriptionError, setSubscriptionError] = useState<any>(null);
+  const pollTimeoutRef = useRef<NodeJS.Timeout | null>(null);
+  const maxPollTimeoutRef = useRef<NodeJS.Timeout | null>(null);
 
   // Use the subscription when WebSocket is connected
   const subscriptionResult = subscriptionHook({
     ...subscriptionOptions,
     skip: !isConnected,
-    onData: (data) => {
+    onData: (data: any) => {
       setSubscriptionData(data);
       subscriptionOptions.onData?.(data);
     },
-    onError: (error) => {
+    onError: (error: any) => {
       setSubscriptionError(error);
       subscriptionOptions.onError?.(error);
     },
@@ -189,7 +206,15 @@ export const useConnectionStatus = () => {
 };
 
 // Utility function to create a retry mechanism for any async operation
-export const createRetryMechanism = (config = {}) => {
+interface RetryConfig {
+  maxRetries?: number;
+  initialDelay?: number;
+  maxDelay?: number;
+  backoffMultiplier?: number;
+  shouldRetry?: (error: any, attempt: number) => boolean;
+}
+
+export const createRetryMechanism = (config: RetryConfig = {}) => {
   const {
     maxRetries = 5,
     initialDelay = 1000,
@@ -198,7 +223,7 @@ export const createRetryMechanism = (config = {}) => {
     shouldRetry = () => true,
   } = config;
 
-  return async (operation, ...args) => {
+  return async (operation: (...args: any[]) => any, ...args: any[]) => {
     let lastError;
 
     for (let attempt = 0; attempt <= maxRetries; attempt++) {

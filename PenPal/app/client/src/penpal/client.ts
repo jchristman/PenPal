@@ -1,47 +1,99 @@
 import _ from "lodash";
 import {
-  check_manifest,
-  check_plugin,
   isFunction,
   Regex as _Regex,
 } from "@penpal/common";
 
+interface Component {
+  [key: string]: any;
+}
+
+interface Hook {
+  [key: string]: any;
+}
+
+interface Route {
+  name?: string;
+  [key: string]: any;
+}
+
+interface Badge {
+  component?: any;
+  order?: number;
+  [key: string]: any;
+}
+
+interface ProjectScopeButton {
+  name: string;
+  component: any;
+  order?: number;
+  [key: string]: any;
+}
+
+interface PluginManifest {
+  name?: string;
+  version?: string;
+  dependsOn?: string[];
+}
+
+interface Plugin {
+  loadPlugin: () => Promise<{ registerRoutes?: () => void }>;
+}
+
+interface RegisteredPlugin {
+  name: string;
+  version: string;
+  dependsOn: string[];
+  plugin: Plugin;
+}
+
+interface LoadedPlugin {
+  loaded: boolean;
+  name: string;
+  version: string;
+}
+
 // ----------------------------------------------------------------------------
 
-const PenPal = {};
+// Initialize PenPal global object
+if (typeof globalThis.PenPal === 'undefined') {
+  (globalThis as any).PenPal = {};
+}
+
+const PenPal = globalThis.PenPal;
 
 // ----------------------------------------------------------------------------
 
-export const Components = {};
+export const Components: Record<string, any> = {};
 PenPal.Components = Components;
 
 // ----------------------------------------------------------------------------
 
-export const registerComponent = (name, component) => {
+export const registerComponent = (name: string, component: Component): void => {
   Components[name] = component;
 };
 PenPal.registerComponent = registerComponent;
 
 // ----------------------------------------------------------------------------
 
-export const Hooks = {};
+export const Hooks: Record<string, any> = {};
 PenPal.Hooks = Hooks;
 
 // ----------------------------------------------------------------------------
 
-export const registerHook = (name, hook) => {
+export const registerHook = (name: string, hook: Hook): void => {
   Hooks[name] = hook;
 };
 PenPal.registerHook = registerHook;
 
 // ----------------------------------------------------------------------------
 
-export const Routes = [];
+export const Routes: Route[] = [];
 PenPal.Routes = Routes;
 
 // ----------------------------------------------------------------------------
 
-export const registerRoute = (options, index = -1) => {
+export const registerRoute = (options: Route, index: number = -1): void => {
   if (index === -1) {
     Routes.push(options);
   } else {
@@ -52,12 +104,12 @@ PenPal.registerRoute = registerRoute;
 
 // ----------------------------------------------------------------------------
 
-export const Badges = [];
+export const Badges: Badge[] = [];
 PenPal.Badges = Badges;
 
 // ----------------------------------------------------------------------------
 
-export const registerBadge = (badge) => {
+export const registerBadge = (badge: Badge | any): void => {
   const badgeObject = badge.component ? badge : { component: badge, order: 0 };
   Badges.push(badgeObject);
   Badges.sort((a, b) => (a.order || 0) - (b.order || 0));
@@ -66,12 +118,12 @@ PenPal.registerBadge = registerBadge;
 
 // ----------------------------------------------------------------------------
 
-export const ProjectScopeButtons = [];
+export const ProjectScopeButtons: ProjectScopeButton[] = [];
 PenPal.ProjectScopeButtons = ProjectScopeButtons;
 
 // ----------------------------------------------------------------------------
 
-export const registerProjectScopeButton = (buttonConfig) => {
+export const registerProjectScopeButton = (buttonConfig: ProjectScopeButton): void => {
   // Validate the button configuration
   if (!buttonConfig.name || !buttonConfig.component) {
     console.error("Project scope button registration failed: missing name or component");
@@ -90,18 +142,18 @@ PenPal.registerProjectScopeButton = registerProjectScopeButton;
 
 // ----------------------------------------------------------------------------
 
-export const getRoute = (route_name) =>
+export const getRoute = (route_name: string): Route | undefined =>
   _.find(Routes, (route) => route.name === route_name);
 PenPal.getRoute = getRoute;
 
 // ----------------------------------------------------------------------------
 
-export const Utils = {};
+export const Utils: Record<string, any> = {};
 PenPal.Utils = Utils;
 
 // ----------------------------------------------------------------------------
 
-export const registerUtil = (name, util) => {
+export const registerUtil = (name: string, util: any): void => {
   Utils[name] = util;
 };
 PenPal.registerUtil = registerUtil;
@@ -119,19 +171,14 @@ PenPal.GraphQL = { Utils: GraphQLUtils };
 
 // ----------------------------------------------------------------------------
 
-PenPal.RegisteredPlugins = {};
-PenPal.LoadedPlugins = {};
-PenPal.registerPlugin = (manifest, plugin) => {
-  if (!check_manifest(manifest) || !check_plugin(plugin)) {
-    console.error(
-      `Failed to register plugin: ${manifest?.name}@${manifest?.version}`
-    );
-    return;
-  }
+PenPal.RegisteredPlugins = {} as Record<string, RegisteredPlugin>;
+PenPal.LoadedPlugins = {} as Record<string, LoadedPlugin>;
+PenPal.registerPlugin = (manifest: PluginManifest, plugin: Plugin): void => {
+  const name = manifest?.name || 'unknown';
+  const version = manifest?.version || 'unknown';
+  const dependsOn = manifest?.dependsOn || [];
 
-  const { name, version, dependsOn } = manifest;
-
-  const name_version = `${name}@${version}`;
+  const name_version = `${name || 'unknown'}@${version || 'unknown'}`;
   console.log(`Registered plugin: ${name_version}`);
 
   PenPal.RegisteredPlugins[name_version] = {
@@ -142,22 +189,24 @@ PenPal.registerPlugin = (manifest, plugin) => {
   };
 };
 
-PenPal.loadPlugins = async () => {
+PenPal.loadPlugins = async (): Promise<void> => {
   PenPal.LoadedPlugins = _.mapValues(PenPal.RegisteredPlugins, (plugin) => ({
     loaded: false,
     name: plugin.name,
     version: plugin.version,
   }));
 
-  const plugins_to_load = Object.keys(PenPal.RegisteredPlugins);
-  while (plugins_to_load.length > 0) {
-    const plugin_name = plugins_to_load.shift();
-    const { dependsOn, plugin } = PenPal.RegisteredPlugins[plugin_name];
+    const plugins_to_load = Object.keys(PenPal.RegisteredPlugins);
+    while (plugins_to_load.length > 0) {
+      const plugin_name = plugins_to_load.shift()!;
+      const pluginData = PenPal.RegisteredPlugins[plugin_name];
+      if (!pluginData) continue;
+      const { dependsOn, plugin } = pluginData;
 
     // Ensure that all prerequisites are available.  If not, it's impossible to load
     const all_prereqs_available = _.reduce(
       dependsOn,
-      (result, prereq) =>
+      (result: boolean, prereq: string) =>
         result && PenPal.RegisteredPlugins[prereq] !== undefined,
       true
     );
@@ -170,7 +219,7 @@ PenPal.loadPlugins = async () => {
     // Check to see if all prerequisites loaded. If not, to the back of the queue.
     const all_prereqs_loaded = _.reduce(
       dependsOn,
-      (result, prereq) => result && PenPal.LoadedPlugins[prereq].loaded,
+      (result: boolean, prereq: string) => result && PenPal.LoadedPlugins[prereq]?.loaded,
       true
     );
     if (!all_prereqs_loaded) {

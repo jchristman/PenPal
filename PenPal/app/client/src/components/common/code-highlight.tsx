@@ -4,6 +4,8 @@ import "clipboard"; // Load before prism so prism can use it
 import "./prism.js"; // Loads as a global
 import "./prism.css";
 
+// Note: Prism is loaded as a global via the import above
+
 Prism.plugins.NormalizeWhitespace.setDefaults({
   "remove-trailing": true,
   "remove-indent": true,
@@ -12,7 +14,12 @@ Prism.plugins.NormalizeWhitespace.setDefaults({
   "tabs-to-spaces": 4,
 });
 
-const CodeHighlight = ({ code: _code, language = "" }) => {
+interface CodeHighlightProps {
+  code: string;
+  language?: string;
+}
+
+const CodeHighlight: React.FC<CodeHighlightProps> = ({ code: _code, language = "" }) => {
   useEffect(() => Prism.highlightAll());
 
   return (

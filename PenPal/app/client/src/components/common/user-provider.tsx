@@ -4,21 +4,53 @@ import {
   registerComponent,
   registerHook,
   Hooks,
-} from "@penpal/core";
+} from "../../penpal/client";
 import { useMutation, useQuery, useApolloClient } from "@apollo/client";
 
-import { storeLoginToken, getLoginToken, resetStore } from "./store.js";
+import { storeLoginToken, getLoginToken, resetStore } from "./store";
 
 import {
   AUTHENTICATE_WITH_PASSWORD,
   SIGNUP,
   CURRENT_USER,
   LOGOUT,
-} from "./user-provider-gql.js";
+} from "./user-provider-gql";
 
-const AccountContext = createContext({});
+interface User {
+  id: string;
+  emails: string[];
+  createdAt: Date;
+  profile: {
+    display_name: string;
+  };
+  settings: {
+    roles: string[];
+  };
+}
 
-const AccountProvider = ({ children }) => {
+interface AccountData {
+  user: User | null;
+  loggedIn: boolean;
+  loading: boolean;
+  login: (email: string, password: string) => Promise<void>;
+  logout: () => Promise<void>;
+  signup: (email: string, password: string) => Promise<boolean>;
+}
+
+interface AccountProviderProps {
+  children?: React.ReactNode;
+}
+
+const AccountContext = createContext<AccountData>({
+  user: null,
+  loggedIn: false,
+  loading: true,
+  login: async () => {},
+  logout: async () => {},
+  signup: async () => false,
+});
+
+const AccountProvider: React.FC<AccountProviderProps> = ({ children }) => {
   const { toast } = Hooks.useToast();
   const apollo_client = useApolloClient();
   const [authTokenLoaded, setAuthTokenLoaded] = useState(
@@ -52,7 +84,7 @@ const AccountProvider = ({ children }) => {
       });
     },
   });
-  const login_func = async (email, password) => {
+  const login_func = async (email: string, password: string): Promise<void> => {
     try {
       const {
         data: {
@@ -68,14 +100,14 @@ const AccountProvider = ({ children }) => {
       console.error("Login error", e);
       toast({
         title: "Login Failed",
-        description: e.message,
+        description: e instanceof Error ? e.message : "An error occurred",
         variant: "destructive",
         duration: 5000,
       });
     }
   };
 
-  const clearTokensAndState = async () => {
+  const clearTokensAndState = async (): Promise<void> => {
     await resetStore();
     setAuthTokenLoaded(false);
     apollo_client.cache.reset();
@@ -89,7 +121,7 @@ const AccountProvider = ({ children }) => {
       }
     },
   });
-  const logout_func = async () => {
+  const logout_func = async (): Promise<void> => {
     const token = await getLoginToken();
     try {
       await logout({
@@ -108,7 +140,7 @@ const AccountProvider = ({ children }) => {
       console.error("Logout error", e);
       toast({
         title: "Logout Failed",
-        description: e.message,
+        description: e instanceof Error ? e.message : "An error occurred",
         variant: "destructive",
         duration: 10000,
       });
@@ -131,7 +163,7 @@ const AccountProvider = ({ children }) => {
       });
     },
   });
-  const signup_func = async (email, password) => {
+  const signup_func = async (email: string, password: string): Promise<boolean> => {
     try {
       const {
         data: {
@@ -145,7 +177,7 @@ const AccountProvider = ({ children }) => {
       setAuthTokenLoaded(true);
     } catch (e) {
       // If it's an "admin must approve your account" message
-      if (/admin.*approve/i.test(e.message)) {
+      if (e instanceof Error && /admin.*approve/i.test(e.message)) {
         toast({
           title: "Account Approval Required",
           description:
@@ -158,7 +190,7 @@ const AccountProvider = ({ children }) => {
 
       toast({
         title: "Signup Failed",
-        description: e.message,
+        description: e instanceof Error ? e.message : "An error occurred",
         variant: "destructive",
         duration: 5000,
       });
@@ -220,10 +252,10 @@ const AccountProvider = ({ children }) => {
   );
 };
 
-const useAccount = () => useContext(AccountContext);
+const useAccount = (): AccountData => useContext(AccountContext);
 
 registerComponent("AccountProvider", AccountProvider);
+registerHook("useAccount", useAccount);
 
 // This is only needed for the fast refresh plugin, the registerComponent above is needed for the plugin system
 export default AccountProvider;
-registerHook("useAccount", useAccount);

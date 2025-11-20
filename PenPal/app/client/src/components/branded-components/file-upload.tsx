@@ -1,4 +1,4 @@
-import { registerComponent } from "../../penpal/client";
+import { registerComponent } from "../../penpal/client.ts";
 import React, { useState, useRef, type ChangeEvent } from "react";
 import { cn } from "./utils";
 import { Button } from "./button";

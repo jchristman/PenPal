@@ -4,25 +4,32 @@ import { BrowserRouter } from "react-router-dom";
 import { ApolloProvider } from "@apollo/client";
 import { TooltipProvider } from "@radix-ui/react-tooltip";
 
-import.meta.glob("./*/*.jsx", { eager: true });
-import.meta.glob("./*/*.js", { eager: true });
-import.meta.glob("./*/*.tsx", { eager: true });
-import.meta.glob("./*/*.ts", { eager: true });
+(import.meta as any).glob("./*/*.jsx", { eager: true });
+(import.meta as any).glob("./*/*.js", { eager: true });
+(import.meta as any).glob("./*/*.tsx", { eager: true });
+(import.meta as any).glob("./*/*.ts", { eager: true });
 
-import apolloInit from "./apollo-init.js";
-import { waitForServerHealth } from "./common/server-health-check.js";
+import apolloInit from "./apollo-init";
+import { waitForServerHealth } from "./common/server-health-check.ts";
 import {
   ConnectionStatusNotification,
   ConnectionDebugPanel,
-} from "./common/connection-status.jsx";
+} from "./common/connection-status.tsx";
 
-const Root = () => {
-  const [apolloClient, setApolloClient] = useState(null);
-  const [loading, setLoading] = useState(true);
-  const [error, setError] = useState(null);
-  const [status, setStatus] = useState("Initializing Apollo Client...");
-  const [progress, setProgress] = useState(0);
-  const [retryCount, setRetryCount] = useState(0);
+// Ensure core components are loaded and registered
+console.log("🔧 Root component loading core providers...");
+import "./common/user-provider";
+import "./common/introspection-provider";
+import "./common/error-boundary";
+import "./common/apollo-loading";
+
+const Root: React.FC = () => {
+  const [apolloClient, setApolloClient] = useState<any>(null);
+  const [loading, setLoading] = useState<boolean>(true);
+  const [error, setError] = useState<Error | null>(null);
+  const [status, setStatus] = useState<string>("Initializing Apollo Client...");
+  const [progress, setProgress] = useState<number>(0);
+  const [retryCount, setRetryCount] = useState<number>(0);
 
   const initializeApollo = useCallback(async () => {
     try {
@@ -32,7 +39,7 @@ const Root = () => {
       setStatus("Checking server connectivity...");
 
       // First, check if the server is reachable with health check
-      const healthProgress = (statusText) => {
+      const healthProgress = (statusText: string): void => {
         setStatus(statusText);
         setProgress(10);
       };
@@ -43,12 +50,12 @@ const Root = () => {
       } catch (healthError) {
         console.warn(
           "Server health check failed, proceeding anyway:",
-          healthError.message
+          healthError instanceof Error ? healthError.message : String(healthError)
         );
         setStatus("Server health check failed, attempting connection...");
       }
 
-      const progressCallback = (statusText) => {
+      const progressCallback = (statusText: string): void => {
         setStatus(statusText);
         // Simulate progress based on status
         switch (statusText) {
@@ -88,7 +95,7 @@ const Root = () => {
       setRetryCount(0); // Reset retry count on success
     } catch (err) {
       console.error("Failed to initialize Apollo Client:", err);
-      setError(err);
+      setError(err instanceof Error ? err : new Error(String(err)));
       setLoading(false);
       setRetryCount((prev) => prev + 1);
     }
@@ -98,7 +105,7 @@ const Root = () => {
     initializeApollo();
   }, [initializeApollo]);
 
-  const handleRetry = () => {
+  const handleRetry = (): void => {
     if (retryCount < 10) {
       initializeApollo();
     } else {

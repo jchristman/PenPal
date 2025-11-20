@@ -1,7 +1,7 @@
-import { registerComponent } from "../../penpal/client";
+import { registerComponent } from "../../penpal/client.ts";
 import { useState, useEffect } from "react";
 import { Link, useLocation } from "react-router-dom";
-import { Hooks } from "../../penpal/client";
+import { Hooks } from "../../penpal/client.ts";
 import {
   ChevronDownIcon,
   ChevronLeftIcon,
@@ -18,8 +18,6 @@ import {
 } from "./tooltip";
 import { cn } from "./utils";
 import * as React from "react";
-
-const { useAccount } = Hooks;
 
 export interface SidebarNavItem {
   title: string;
@@ -46,6 +44,15 @@ export function Sidebar({
 }: SidebarProps) {
   const location = useLocation();
   const pathname = location.pathname;
+
+  // Access hook dynamically to avoid timing issues (see component-import-pattern.mdc)
+  const useAccount = Hooks.useAccount;
+
+  // Handle case where hook isn't available yet
+  if (typeof useAccount !== 'function') {
+    return <div>Loading...</div>;
+  }
+
   const { logout } = useAccount();
   const [isSidebarOpen, setIsSidebarOpen] = useState(true);
   const [showUserMenu, setShowUserMenu] = useState(false);

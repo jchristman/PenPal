@@ -5,10 +5,44 @@ import {
 } from "gql-query-builder";
 import gql from "graphql-tag";
 
+interface GraphQLTypeNode {
+  kind: string;
+  name?: string;
+  ofType?: GraphQLTypeNode;
+  fields?: GraphQLField[];
+}
+
+interface GraphQLField {
+  name: string;
+  type: GraphQLTypeNode;
+  args?: GraphQLArg[];
+}
+
+interface GraphQLArg {
+  name: string;
+  type: GraphQLTypeNode;
+}
+
+interface QueryConfig {
+  operation?: string;
+  fields?: any[];
+}
+
+interface SchemaMap {
+  [key: string]: GraphQLTypeNode;
+}
+
+interface MutationMap {
+  [key: string]: {
+    args: GraphQLArg[];
+    type: GraphQLTypeNode;
+  };
+}
+
 // ----------------------------------------------------------------------------
 
-export const process_schema = (types, schema_root, depth = 0) => {
-  let query = {};
+export const process_schema = (types: SchemaMap, schema_root: GraphQLTypeNode | undefined, depth: number = 0): any => {
+  let query: any = {};
 
   query.fields = [];
   // Guard: if schema_root is missing or has no fields (e.g., SCALAR types), return empty fields
@@ -20,21 +54,21 @@ export const process_schema = (types, schema_root, depth = 0) => {
     if (field.type.kind === "SCALAR" || field.type.ofType?.kind === "SCALAR") {
       query.fields.push(field.name);
     } else {
-      if (field.type.kind === "LIST") {
+      if (field.type.kind === "LIST" && field.type.ofType?.name) {
         const _query = process_schema(
           types,
           types[field.type.ofType.name],
           depth + 1
         );
         query.fields.push({ [field.name]: _query });
-      } else if (field.type.kind === "NON_NULL") {
+      } else if (field.type.kind === "NON_NULL" && field.type.ofType?.name) {
         const _query = process_schema(
           types,
           types[field.type.ofType.name],
           depth + 1
         );
         query.fields.push({ [field.name]: _query });
-      } else {
+      } else if (field.type.name) {
         const _query = process_schema(types, types[field.type.name], depth + 1);
         query.fields.push({ [field.name]: _query });
       }
@@ -44,7 +78,7 @@ export const process_schema = (types, schema_root, depth = 0) => {
   return depth === 0 ? query : query.fields;
 };
 
-export const generateQueryFromSchema = (types, schema_root, query_name) => {
+export const generateQueryFromSchema = (types: SchemaMap | false, schema_root: string | false, query_name: string | false): any => {
   if (types === false || schema_root === false || query_name === false) {
     return gql`
       {
@@ -61,7 +95,7 @@ export const generateQueryFromSchema = (types, schema_root, query_name) => {
   `;
 };
 
-export const generateQueryFromSchemas = (types, schemas = []) => {
+export const generateQueryFromSchemas = (types: SchemaMap | false, schemas: { schema_root: string; query_name: string }[] = []): any => {
   if (types === false || schemas.length === 0) {
     return gql`
       {
@@ -75,7 +109,8 @@ export const generateQueryFromSchemas = (types, schemas = []) => {
     query_config.operation = query_name;
     const { query } = queryBuilder(query_config);
     try {
-      const inner_query = query.match(/query\s+{\s+(.*)\s+}/)[1];
+      const match = query.match(/query\s+{\s+(.*)\s+}/);
+      const inner_query = match ? match[1] : "";
       return inner_query;
     } catch (e) {
       console.error("GenerateQueryFromSchemas Error:", e);
@@ -89,7 +124,7 @@ export const generateQueryFromSchemas = (types, schemas = []) => {
 };
 
 // Helper: unwrap nested type to base named type
-const unwrapTypeName = (typeNode) => {
+const unwrapTypeName = (typeNode: GraphQLTypeNode | undefined): string | undefined => {
   if (!typeNode) return undefined;
   if (typeNode.kind === "NON_NULL" || typeNode.kind === "LIST") {
     return unwrapTypeName(typeNode.ofType);
@@ -98,7 +133,7 @@ const unwrapTypeName = (typeNode) => {
 };
 
 // Helper: unwrap kind (for root return kinds when name points to object)
-const unwrapKind = (typeNode) => {
+const unwrapKind = (typeNode: GraphQLTypeNode | undefined): string | undefined => {
   if (!typeNode) return undefined;
   if (typeNode.kind === "NON_NULL" || typeNode.kind === "LIST") {
     return unwrapKind(typeNode.ofType);
@@ -107,7 +142,7 @@ const unwrapKind = (typeNode) => {
 };
 
 // Helper: build GraphQL type string from type node (handles NON_NULL/LIST nesting)
-const buildTypeString = (typeNode) => {
+const buildTypeString = (typeNode: GraphQLTypeNode | undefined): string => {
   if (!typeNode) return "String"; // fallback
   if (typeNode.kind === "NON_NULL") {
     return `${buildTypeString(typeNode.ofType)}!`;
@@ -119,7 +154,7 @@ const buildTypeString = (typeNode) => {
   return typeNode.name || buildTypeString(typeNode.ofType) || "String";
 };
 
-export const generateMutationFromSchema = (types, mutations, mutation_name) => {
+export const generateMutationFromSchema = (types: SchemaMap | false, mutations: MutationMap | false, mutation_name: string | false): any => {
   if (types === false || mutations === false || mutation_name === false) {
     return gql`
       mutation {
@@ -128,12 +163,12 @@ export const generateMutationFromSchema = (types, mutations, mutation_name) => {
     `;
   }
 
-  const mutation_schema = mutations[mutation_name];
-  const variables = _.chain(mutation_schema.args)
+  const mutation_schema = mutations[mutation_name as string];
+  const variables = _.chain(mutation_schema?.args || [])
     .keyBy("name")
-    .mapValues((variable) => ({
+    .mapValues((variable: any) => ({
       value: null,
-      type: buildTypeString(variable.type),
+      type: buildTypeString(variable?.type),
     }))
     .value();
 
@@ -143,7 +178,7 @@ export const generateMutationFromSchema = (types, mutations, mutation_name) => {
   const selection =
     returnKind === "SCALAR"
       ? { fields: [] }
-      : process_schema(types, types[returnTypeName]);
+      : returnTypeName ? process_schema(types, types[returnTypeName]) : { fields: [] };
 
   const mutation_config = {
     operation: mutation_name,

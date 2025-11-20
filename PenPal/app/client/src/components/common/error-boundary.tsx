@@ -2,8 +2,19 @@ import React from "react";
 import { Components, registerComponent } from "@penpal/core";
 import { serializeError } from "serialize-error";
 
-class ErrorBoundary extends React.Component {
-  constructor(props) {
+interface ErrorBoundaryState {
+  err_number: number;
+  err_message: string;
+  err_stack: string;
+  hasError: boolean;
+}
+
+interface ErrorBoundaryProps {
+  children?: React.ReactNode;
+}
+
+class ErrorBoundary extends React.Component<ErrorBoundaryProps, ErrorBoundaryState> {
+  constructor(props: ErrorBoundaryProps) {
     super(props);
     this.state = {
       err_number: -1,
@@ -13,12 +24,14 @@ class ErrorBoundary extends React.Component {
     };
   }
 
-  static getDerivedStateFromError(error) {
+  // eslint-disable-next-line @typescript-eslint/no-unused-vars
+  // eslint-disable-next-line @typescript-eslint/no-unused-vars
+  static getDerivedStateFromError(error: Error, errorInfo: React.ErrorInfo): Partial<ErrorBoundaryState> {
     // Update state so the next render will show the fallback UI.
     return { hasError: true };
   }
 
-  componentDidCatch(error, errorInfo) {
+  componentDidCatch(error: Error, errorInfo: React.ErrorInfo) {
     // Try to extract message and stack from error
     let err_message = "";
     let err_stack = "";

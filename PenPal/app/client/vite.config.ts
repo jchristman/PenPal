@@ -2,8 +2,9 @@ import { defineConfig } from "vite";
 import react from "@vitejs/plugin-react";
 import tailwindcss from "@tailwindcss/vite";
 import path from "path";
+import { UserConfig } from "vite";
 
-export default defineConfig({
+export default defineConfig(({}) => ({
   plugins: [react(), tailwindcss()],
   server: {
     host: "0.0.0.0",
@@ -28,8 +29,8 @@ export default defineConfig({
   indexHtml: path.resolve(__dirname, "./src/index.html"),
   resolve: {
     alias: {
-      "@penpal/core": path.resolve(__dirname, "./src/penpal/client.js"),
-      "@penpal/common": path.resolve(__dirname, "./src/common/common.js"),
+      "@penpal/core": path.resolve(__dirname, "./src/penpal/client.ts"),
+      "@penpal/common": path.resolve(__dirname, "./src/common/common.ts"),
       "@penpal/plugins": path.resolve(
         __dirname,
         "./plugins/plugins-loader-client.js"
@@ -40,4 +41,4 @@ export default defineConfig({
       path.resolve(__dirname, "./plugins"),
     ],
   },
-});
+})) as UserConfig;

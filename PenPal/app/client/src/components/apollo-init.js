@@ -9,7 +9,7 @@ import { createClient } from "graphql-ws";
 import {
   setWebSocketState,
   WS_CONNECTION_STATES,
-} from "./common/websocket-utils.js";
+} from "./common/websocket-utils.ts";
 
 const graphql_loc = "http://localhost:3001";
 

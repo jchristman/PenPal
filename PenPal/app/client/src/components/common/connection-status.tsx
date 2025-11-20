@@ -4,10 +4,15 @@ import {
   useConnectionStatus,
   useWebSocketState,
   WS_CONNECTION_STATES,
-} from "./websocket-utils.js";
+} from "./websocket-utils.ts";
+
+interface ConnectionStatusChipProps {
+  variant?: string;
+  size?: string;
+}
 
 // Compact connection status chip for toolbars/status bars
-const ConnectionStatusChip = ({ variant = "outline", size = "sm" }) => {
+const ConnectionStatusChip: React.FC<ConnectionStatusChipProps> = ({ variant = "outline", size = "sm" }) => {
   const { connectionState, isConnected } = useWebSocketState();
 
   const getBadgeProps = () => {
@@ -93,8 +98,15 @@ const ConnectionStatusChip = ({ variant = "outline", size = "sm" }) => {
   );
 };
 
+interface ConnectionStatusNotificationProps {
+  autoHideDuration?: number;
+  showOnConnect?: boolean;
+  showOnDisconnect?: boolean;
+  showOnReconnecting?: boolean;
+}
+
 // Full connection status notification using toast system
-const ConnectionStatusNotification = ({
+const ConnectionStatusNotification: React.FC<ConnectionStatusNotificationProps> = ({
   autoHideDuration = 40000,
   showOnConnect = true,
   showOnDisconnect = true,
@@ -102,7 +114,7 @@ const ConnectionStatusNotification = ({
 }) => {
   const { toast } = Hooks.useToast();
   const { showStatus, statusMessage, connectionState } = useConnectionStatus();
-  const [lastNotifiedState, setLastNotifiedState] = React.useState(null);
+  const [lastNotifiedState, setLastNotifiedState] = React.useState<string | null>(null);
 
   React.useEffect(() => {
     if (!showStatus || connectionState === lastNotifiedState) return;
@@ -168,7 +180,7 @@ const ConnectionStatusNotification = ({
 };
 
 // Connection debug panel for development
-const ConnectionDebugPanel = () => {
+const ConnectionDebugPanel: React.FC = () => {
   const { connectionState, isConnected } = useWebSocketState();
 
   if (process.env.NODE_ENV !== "development") {

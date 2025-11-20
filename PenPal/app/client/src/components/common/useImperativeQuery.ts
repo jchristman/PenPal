@@ -1,11 +1,11 @@
 import React from "react";
 import { registerHook } from "@penpal/core";
-import { useApolloClient } from "@apollo/client";
+import { useApolloClient, DocumentNode } from "@apollo/client";
 
-const useImperativeQuery = (query) => {
+const useImperativeQuery = (query: DocumentNode) => {
   const client = useApolloClient();
 
-  const imperativelyCallQuery = async (variables) => {
+  const imperativelyCallQuery = async (variables?: Record<string, any>) => {
     return await client.query({ query, variables });
   };
 

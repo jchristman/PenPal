@@ -1,4 +1,4 @@
-import { registerComponent } from "../../penpal/client";
+import { registerComponent } from "../../penpal/client.ts";
 import * as React from "react";
 import { ArrowUpDown, ArrowDown, ArrowUp } from "lucide-react";
 

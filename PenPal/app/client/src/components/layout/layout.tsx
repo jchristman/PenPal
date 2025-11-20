@@ -4,12 +4,26 @@ import PenPal, { Components, Hooks, registerComponent } from "@penpal/core";
 
 const { useAccount } = Hooks;
 
-const Layout = ({ routes = [] }) => {
+interface RouteItem {
+  path?: string;
+  componentName?: string;
+  prettyName?: string;
+  icon?: React.ComponentType<any>;
+  hideFromNav?: boolean;
+  divider?: boolean;
+  className?: string;
+}
+
+interface LayoutProps {
+  routes?: RouteItem[];
+}
+
+const Layout: React.FC<LayoutProps> = ({ routes = [] }) => {
   const { user } = useAccount();
   const [isSidebarOpen, setIsSidebarOpen] = useState(true);
 
   // Handle sidebar state changes
-  const handleSidebarStateChange = (isOpen) => {
+  const handleSidebarStateChange = (isOpen: boolean): void => {
     setIsSidebarOpen(isOpen);
   };
 
@@ -24,7 +38,7 @@ const Layout = ({ routes = [] }) => {
       return {
         title: route.prettyName,
         href: route.path,
-        icon: <route.icon className="size-6 text-black-500" />,
+        icon: route.icon ? React.createElement(route.icon, { className: "size-6 text-black-500" }) : null,
       };
     });
 
@@ -55,7 +69,7 @@ const Layout = ({ routes = [] }) => {
           </div>
           <div className="flex items-center gap-2">
             <Components.ConnectionStatusChip />
-            {PenPal.Badges.map((badge, index) => {
+            {PenPal.Badges.map((badge: any, index: number) => {
               const BadgeComponent = badge.component;
               return <BadgeComponent key={index} />;
             })}
@@ -67,7 +81,7 @@ const Layout = ({ routes = [] }) => {
           <Routes>
             {routes.map((route) => {
               if (route.divider) return null;
-              const Component = Components[route.componentName];
+              const Component = Components[route.componentName as string];
               return (
                 <Route
                   key={route.path}
