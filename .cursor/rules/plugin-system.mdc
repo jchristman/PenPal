@@ -1,9 +1,6 @@
 ---
-description:
-globs:
-alwaysApply: true
+alwaysApply: false
 ---
-
 # PenPal Plugin System Guide
 
 PenPal uses a sophisticated plugin architecture that allows dynamic loading of cybersecurity tools and integrations.

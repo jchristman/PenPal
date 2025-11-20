@@ -2,6 +2,6 @@ import { mergeTypeDefs } from "@graphql-tools/merge";
 
 import webapp_mutations from "./webapp.graphql";
 
-const mutations = [webapp_mutations];
+const mutations: any[] = [webapp_mutations];
 
 export default mergeTypeDefs(mutations);

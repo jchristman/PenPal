@@ -3,7 +3,10 @@
   "type": "module",
   "version": "0.1.0",
   "scripts": {
-    "server": "nodemon --config ./nodemon.config.json ./src/main.js"
+    "build": "tsc",
+    "dev": "nodemon --config ./nodemon.config.json",
+    "server": "node --import tsx ./src/main.ts",
+    "type-check": "tsc --noEmit"
   },
   "dependencies": {
     "@apollo/server": "^4.10.1",
@@ -26,15 +29,23 @@
     "graphql-tools": "^8.3.19",
     "graphql-ws": "^5.14.3",
     "lodash": "^4.17.21",
-    "mongodb": "^5.3.0",
     "moment": "^2.29.4",
     "moment-timezone": "^0.5.43",
+    "mongodb": "^5.3.0",
     "uuid": "^8.3.1",
     "ws": "^8.15.0"
   },
   "devDependencies": {
+    "@types/cors": "^2.8.19",
+    "@types/express": "^4.17.21",
+    "@types/lodash": "^4.17.7",
+    "@types/node": "^22.0.0",
+    "@types/uuid": "^10.0.0",
+    "@types/ws": "^8.5.10",
     "depcheck": "^1.4.3",
-    "nodemon": "^2.0.22"
+    "nodemon": "^2.0.22",
+    "tsx": "^4.15.0",
+    "typescript": "^5.5.0"
   },
   "imports": {
     "#penpal/core": "./src/penpal/server.js",

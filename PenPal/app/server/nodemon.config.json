@@ -1,4 +1,6 @@
 {
   "watch": ["./src", "./plugins"],
-  "ext": "js,graphql"
+  "ext": "ts,js,graphql",
+  "exec": "node --import tsx ./src/main.ts",
+  "ignore": ["dist/**/*", "**/*.test.ts", "**/*.spec.ts"]
 }

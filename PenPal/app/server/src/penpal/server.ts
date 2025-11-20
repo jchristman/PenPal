@@ -9,15 +9,85 @@ import {
   check_manifest,
   check_plugin,
 } from "#penpal/common";
+import type {
+  PenPalInstance,
+  PenPalConstants,
+  PenPalUtils,
+  Logger,
+  LoggerBuilder
+} from "../types/penpal";
+import type {
+  RegisteredPlugin,
+  LoadedPlugin,
+  PluginModule,
+  PluginLoaderResult
+} from "../types/plugins";
+
 export const Constants = _Constants;
 
 // ----------------------------------------------------------------------------
 
-const PenPal = {};
-PenPal.Constants = Constants;
-PenPal.RegisteredPlugins = {};
-PenPal.LoadedPlugins = {};
-PenPal.Utils = {};
+const PenPal: PenPalInstance = {
+  Constants: { ...Constants },
+  RegisteredPlugins: {},
+  LoadedPlugins: {},
+  Utils: {} as PenPalUtils,
+  init: async (): Promise<void> => {
+    PenPal.Utils.MkdirP(PenPal.Constants.TMP_DIR!);
+  },
+  registerPlugin: (manifest: any, plugin: PluginModule): void => {
+    if (!check_manifest(manifest) || !check_plugin(plugin)) {
+      const logger = PenPal.Utils.BuildLogger("PenPal");
+      logger.error(
+        `Failed to register plugin: ${manifest?.name}@${manifest?.version}`
+      );
+      return;
+    }
+
+    const {
+      name,
+      load,
+      version,
+      dependsOn,
+      requiresImplementation = false,
+      implements: imp = "",
+    } = manifest;
+
+    const name_version = `${name}@${version}`;
+    if (load === false) {
+      const logger = PenPal.Utils.BuildLogger("PenPal");
+      logger.warn(
+        `Manifest for ${name_version} has "load" set to false. Skipping.`
+      );
+      return;
+    }
+
+    const logger = PenPal.Utils.BuildLogger("PenPal");
+    logger.log(`Registered plugin: ${name_version}`);
+
+    PenPal.RegisteredPlugins[name_version] = {
+      dependsOn,
+      requiresImplementation,
+      name,
+      version,
+      plugin,
+      implements: imp,
+    };
+  },
+  loadPlugins: async (): Promise<PluginLoaderResult> => {
+    // Implementation will be added later
+    return {
+      plugins_types: null,
+      plugins_resolvers: [],
+      plugins_buildLoaders: () => ({}),
+    };
+  },
+  runStartupHooks: async (): Promise<void> => {
+    for (let plugin_name in PenPal.LoadedPlugins) {
+      await PenPal.LoadedPlugins[plugin_name].startupHook?.();
+    }
+  },
+};
 
 // ----------------------------------------------------------------------------
 
@@ -25,27 +95,27 @@ PenPal.Constants.TMP_DIR = "/tmp/penpal";
 
 // ----------------------------------------------------------------------------
 
-PenPal.Utils.Epoch = () => Math.floor(new Date().getTime() / 1000);
+PenPal.Utils.Epoch = (): number => Math.floor(new Date().getTime() / 1000);
 
-PenPal.Utils.Sleep = async (ms) =>
+PenPal.Utils.Sleep = async (ms: number): Promise<void> =>
   new Promise((resolve) => setTimeout(resolve, ms));
 
-PenPal.Utils.AsyncNOOP = async () => {
+PenPal.Utils.AsyncNOOP = async (): Promise<void> => {
   await PenPal.Utils.Sleep(0);
 };
 
-PenPal.Utils.AwaitTimeout = async (awaitFunction, timeout) => {
+PenPal.Utils.AwaitTimeout = async <T>(awaitFunction: () => Promise<T>, timeout: number): Promise<T> => {
   const result = await Promise.race([
     awaitFunction(),
-    new Promise((resolve, reject) => {
-      setTimeout(() => reject(new Error("Timeout occurred")), timeout); // Timeout after 5 seconds
+    new Promise<never>((resolve, reject) => {
+      setTimeout(() => reject(new Error("Timeout occurred")), timeout);
     }),
   ]);
 
   return result;
 };
 
-PenPal.Utils.LoadGraphQLDirectories = async (root_dir) => {
+PenPal.Utils.LoadGraphQLDirectories = async (root_dir: string): Promise<any> => {
   const typesArray = await loadFiles(root_dir, {
     recursive: true,
     extensions: ["graphql"],
@@ -53,7 +123,7 @@ PenPal.Utils.LoadGraphQLDirectories = async (root_dir) => {
   return mergeTypeDefs(typesArray);
 };
 
-PenPal.Utils.MkdirP = (directory) => {
+PenPal.Utils.MkdirP = (directory: string): void => {
   const absolute = directory[0] === path.sep;
   const directories = directory.split(path.sep);
   let currentDirectory = absolute ? path.sep : "";
@@ -67,17 +137,20 @@ PenPal.Utils.MkdirP = (directory) => {
   }
 };
 
-PenPal.Utils.RunAfterImport = (fn) => {
+PenPal.Utils.RunAfterImport = (fn: () => void): void => {
   setTimeout(fn, 0);
 };
 
 PenPal.Utils.isFunction = isFunction;
 
-PenPal.Utils.BatchFunction = (handler, timeoutMs) => {
-  let batchedArgs = [];
-  let timeoutId = null;
+PenPal.Utils.BatchFunction = <T extends any[], R>(
+  handler: (batchedArgs: T[]) => R | Promise<R>,
+  timeoutMs: number
+): ((...args: T) => void) => {
+  let batchedArgs: T[] = [];
+  let timeoutId: NodeJS.Timeout | null = null;
 
-  return (...args) => {
+  return (...args: T): void => {
     // Add the arguments to the batch
     batchedArgs.push(args);
 
@@ -101,7 +174,7 @@ PenPal.Utils.BatchFunction = (handler, timeoutMs) => {
 // Logger utility for plugins
 PenPal.Utils.Logger = (() => {
   // ANSI color codes for different plugins
-  const colors = [
+  const colors: string[] = [
     "\x1b[32m", // Green
     "\x1b[33m", // Yellow
     "\x1b[34m", // Blue
@@ -127,11 +200,11 @@ PenPal.Utils.Logger = (() => {
   const dim = "\x1b[2m";
 
   // Color assignment storage
-  const pluginColors = new Map();
+  const pluginColors = new Map<string, string>();
   let colorIndex = 0;
 
   // Simple hash function for consistent color assignment
-  const hashString = (str) => {
+  const hashString = (str: string): number => {
     let hash = 0;
     for (let i = 0; i < str.length; i++) {
       const char = str.charCodeAt(i);
@@ -142,24 +215,24 @@ PenPal.Utils.Logger = (() => {
   };
 
   // Get or assign color for a plugin
-  const getPluginColor = (pluginName) => {
+  const getPluginColor = (pluginName: string): string => {
     if (!pluginColors.has(pluginName)) {
       // Use hash for consistent colors, fallback to rotation for new plugins
       const colorIdx = hashString(pluginName) % colors.length;
       pluginColors.set(pluginName, colors[colorIdx]);
     }
-    return pluginColors.get(pluginName);
+    return pluginColors.get(pluginName)!;
   };
 
   // Format timestamp like the current console format
-  const formatTimestamp = () => {
+  const formatTimestamp = (): string => {
     return new Date().toISOString();
   };
 
   // Create formatted message prefix
-  const formatPrefix = (pluginName, level, color) => {
+  const formatPrefix = (pluginName: string, level: string, color: string): string => {
     const timestamp = formatTimestamp();
-    const levelColors = {
+    const levelColors: Record<string, string> = {
       log: "",
       warn: "\x1b[33m", // Yellow for warnings
       error: "\x1b[31m", // Red for errors
@@ -172,31 +245,31 @@ PenPal.Utils.Logger = (() => {
   };
 
   return {
-    BuildLogger: (pluginName) => {
+    BuildLogger: (pluginName: string): Logger => {
       const color = getPluginColor(pluginName);
 
       return {
-        log: (...args) => {
+        log: (...args: any[]): void => {
           const prefix = formatPrefix(pluginName, "log", color);
           console.log(prefix, ...args, reset);
         },
 
-        warn: (...args) => {
+        warn: (...args: any[]): void => {
           const prefix = formatPrefix(pluginName, "warn", color);
           console.warn(prefix, ...args, reset);
         },
 
-        error: (...args) => {
+        error: (...args: any[]): void => {
           const prefix = formatPrefix(pluginName, "error", color);
           console.error(prefix, ...args, reset);
         },
 
-        info: (...args) => {
+        info: (...args: any[]): void => {
           const prefix = formatPrefix(pluginName, "log", color);
           console.info(prefix, ...args, reset);
         },
 
-        debug: (...args) => {
+        debug: (...args: any[]): void => {
           const prefix = formatPrefix(pluginName, "log", color);
           console.debug(prefix, `${dim}`, ...args, `${reset}`);
         },
@@ -207,78 +280,36 @@ PenPal.Utils.Logger = (() => {
 
 // Expose BuildLogger directly on PenPal.Utils for convenience
 PenPal.Utils.BuildLogger = PenPal.Utils.Logger.BuildLogger;
-const logger = PenPal.Utils.BuildLogger("PenPal");
+const logger: Logger = PenPal.Utils.BuildLogger("PenPal");
 
 // ----------------------------------------------------------------------------
 
-PenPal.init = async () => {
-  PenPal.Utils.MkdirP(PenPal.Constants.TMP_DIR);
-};
 
 // ----------------------------------------------------------------------------
 
-PenPal.registerPlugin = (manifest, plugin) => {
-  if (!check_manifest(manifest) || !check_plugin(plugin)) {
-    logger.error(
-      `Failed to register plugin: ${manifest?.name}@${manifest?.version}`
-    );
-    return;
-  }
-
-  const {
-    name,
-    load,
-    version,
-    dependsOn,
-    requiresImplementation = false,
-    implements: imp = "", // Renaming happens because of the reserved keyword implements, but naming is better, I think
-  } = manifest;
-
-  const name_version = `${name}@${version}`;
-  if (load === false) {
-    logger.warn(
-      `Manifest for ${name_version} has "load" set to false. Skipping.`
-    );
-    return;
-  }
-
-  logger.log(`Registered plugin: ${name_version}`);
-
-  PenPal.RegisteredPlugins[name_version] = {
-    dependsOn,
-    requiresImplementation,
-    name,
-    version,
-    plugin,
-    implements: imp,
-  };
-};
-
-// ----------------------------------------------------------------------------
-
-PenPal.loadPlugins = async () => {
-  PenPal.LoadedPlugins = _.mapValues(PenPal.RegisteredPlugins, (plugin) => ({
+PenPal.loadPlugins = async (): Promise<PluginLoaderResult> => {
+  PenPal.LoadedPlugins = _.mapValues(PenPal.RegisteredPlugins, (plugin: RegisteredPlugin): LoadedPlugin => ({
     loaded: false,
     name: plugin.name,
     version: plugin.version,
   }));
 
-  let plugins_types = null;
-  let plugins_resolvers = [{ Query: {} }, { Mutation: {} }];
-  let plugins_loaders = {};
-  let extra_settings_checkers = {};
-  let postload_hooks = [];
+  let plugins_types: any = null;
+  let plugins_resolvers: any = [{ Query: {} }, { Mutation: {} }];
+  let plugins_loaders: Record<string, any> = {};
+  let extra_settings_checkers: Record<string, any> = {};
+  let postload_hooks: Array<(pluginName: string) => void | Promise<void>> = [];
 
   const plugins_to_load = Object.keys(PenPal.RegisteredPlugins);
   while (plugins_to_load.length > 0) {
-    const plugin_name = plugins_to_load.shift();
-    const { requiresImplementation, dependsOn, plugin } =
+    const plugin_name = plugins_to_load.shift()!;
+    const { requiresImplementation, dependsOn, plugin: pluginModule } =
       PenPal.RegisteredPlugins[plugin_name];
 
     // Ensure that all prerequisites are available.  If not, it's impossible to load
     const all_prereqs_available = _.reduce(
       dependsOn,
-      (result, prereq) =>
+      (result: boolean, prereq: string) =>
         result && PenPal.RegisteredPlugins[prereq] !== undefined,
       true
     );
@@ -291,7 +322,7 @@ PenPal.loadPlugins = async () => {
     // Check to see if all prerequisites loaded. If not, to the back of the queue.
     const all_prereqs_loaded = _.reduce(
       dependsOn,
-      (result, prereq) => result && PenPal.LoadedPlugins[prereq].loaded,
+      (result: boolean, prereq: string) => result && PenPal.LoadedPlugins[prereq].loaded,
       true
     );
     if (!all_prereqs_loaded) {
@@ -318,7 +349,7 @@ PenPal.loadPlugins = async () => {
     }
 
     // Now merge the types from this plugin into the schema
-    const { graphql, settings, hooks, jobs } = await plugin.loadPlugin();
+    const { graphql, settings, hooks, jobs } = await pluginModule.loadPlugin();
 
     if (hooks !== undefined) {
       const { postload, settings: settings_hooks, startup } = hooks;
@@ -371,7 +402,7 @@ PenPal.loadPlugins = async () => {
           plugins_types = mergeTypeDefs([plugins_types, types]);
         }
       if (resolvers !== undefined)
-        plugins_resolvers = mergeResolvers([plugins_resolvers, resolvers]);
+        plugins_resolvers = mergeResolvers([plugins_resolvers as any, resolvers]);
       if (loaders !== undefined)
         plugins_loaders = _.merge(plugins_loaders, loaders);
     }
@@ -391,10 +422,10 @@ PenPal.loadPlugins = async () => {
 
     // If this plugin requires implementation, immediately prioritize loading all its implementations
     if (requiresImplementation) {
-      const implementations = [];
+      const implementations: string[] = [];
 
       // Find all implementations for this plugin
-      Object.keys(PenPal.RegisteredPlugins).forEach((other_plugin_name) => {
+      Object.keys(PenPal.RegisteredPlugins).forEach((other_plugin_name: string) => {
         const other_plugin = PenPal.RegisteredPlugins[other_plugin_name];
         if (other_plugin.implements === plugin_name) {
           implementations.push(other_plugin_name);
@@ -404,16 +435,16 @@ PenPal.loadPlugins = async () => {
       if (implementations.length > 0) {
         // Find all dependencies needed by the implementations (recursively)
         const getDependenciesRecursively = (
-          pluginName,
-          visited = new Set()
-        ) => {
+          pluginName: string,
+          visited: Set<string> = new Set()
+        ): string[] => {
           if (visited.has(pluginName)) return [];
           visited.add(pluginName);
 
           const plugin = PenPal.RegisteredPlugins[pluginName];
           if (!plugin) return [];
 
-          let allDeps = [];
+          let allDeps: string[] = [];
           for (const dep of plugin.dependsOn) {
             if (!PenPal.LoadedPlugins[dep].loaded) {
               allDeps.push(dep);
@@ -423,27 +454,27 @@ PenPal.loadPlugins = async () => {
           return allDeps;
         };
 
-        const allRequiredPlugins = new Set();
+        const allRequiredPlugins = new Set<string>();
 
         // Add implementations and their dependencies
-        implementations.forEach((impl) => {
+        implementations.forEach((impl: string) => {
           allRequiredPlugins.add(impl);
-          getDependenciesRecursively(impl).forEach((dep) =>
+          getDependenciesRecursively(impl).forEach((dep: string) =>
             allRequiredPlugins.add(dep)
           );
         });
 
         // Remove all required plugins from the current queue
-        const remaining_plugins = [];
+        const remaining_plugins: string[] = [];
         while (plugins_to_load.length > 0) {
-          const next_plugin = plugins_to_load.shift();
+          const next_plugin = plugins_to_load.shift()!;
           if (!allRequiredPlugins.has(next_plugin)) {
             remaining_plugins.push(next_plugin);
           }
         }
 
         // Sort required plugins by dependency order (dependencies first)
-        const sortedRequired = Array.from(allRequiredPlugins).sort((a, b) => {
+        const sortedRequired = Array.from(allRequiredPlugins).sort((a: string, b: string) => {
           const aPlugin = PenPal.RegisteredPlugins[a];
           const bPlugin = PenPal.RegisteredPlugins[b];
 
@@ -468,7 +499,7 @@ PenPal.loadPlugins = async () => {
         );
         logger.log(
           `Also prioritized their dependencies: ${Array.from(allRequiredPlugins)
-            .filter((p) => !implementations.includes(p))
+            .filter((p: string) => !implementations.includes(p))
             .join(", ")}`
         );
       }
@@ -484,13 +515,13 @@ PenPal.loadPlugins = async () => {
   return {
     plugins_types,
     plugins_resolvers,
-    plugins_loaders,
+    plugins_buildLoaders: () => plugins_loaders,
   };
 };
 
 // ----------------------------------------------------------------------------
 
-PenPal.runStartupHooks = async () => {
+PenPal.runStartupHooks = async (): Promise<void> => {
   for (let plugin_name in PenPal.LoadedPlugins) {
     await PenPal.LoadedPlugins[plugin_name].startupHook?.();
   }

@@ -2,9 +2,11 @@ import PenPal from "#penpal/core";
 import _ from "lodash";
 
 import startGraphQLServer from "./graphql-server.js";
+import type { Logger } from "./types/penpal";
+import type { PluginLoaderResult } from "./types/plugins";
 
 // Initialize logger for the core PenPal server
-const logger = PenPal.Utils.BuildLogger("PenPal");
+const logger: Logger = PenPal.Utils.BuildLogger("PenPal");
 
 if (process.env.ENABLE_MEMORY_PROFILER === "true") {
   const { writeHeapSnapshot } = await import("v8");
@@ -17,17 +19,17 @@ if (process.env.ENABLE_MEMORY_PROFILER === "true") {
 }
 
 // Global error handlers
-process.on("uncaughtException", (error) => {
+process.on("uncaughtException", (error: Error) => {
   logger.error("UNCAUGHT EXCEPTION:", error);
 });
 
-process.on("unhandledRejection", (reason, promise) => {
+process.on("unhandledRejection", (reason: any, promise: Promise<any>) => {
   logger.error("UNHANDLED REJECTION:", reason);
 });
 
 Error.stackTraceLimit = Infinity;
 
-const run = async () => {
+const run = async (): Promise<void> => {
   logger.log("Running PenPal Init");
   await PenPal.init();
 
@@ -37,7 +39,7 @@ const run = async () => {
 
   // Load all plugins
   logger.log("Loading Plugins...");
-  const { plugins_types, plugins_resolvers, plugins_buildLoaders } =
+  const { plugins_types, plugins_resolvers, plugins_buildLoaders }: PluginLoaderResult =
     await PenPal.loadPlugins();
   logger.log("Plugins loaded");
 
@@ -57,4 +59,7 @@ const run = async () => {
   logger.log("App is running!");
 };
 
-run();
+run().catch((error: Error) => {
+  logger.error("Failed to start PenPal:", error);
+  process.exit(1);
+});

@@ -1,6 +1,5 @@
 ---
-description: 
-globs: *.tsx,*.jsx
+globs: *.tsx
 alwaysApply: false
 ---
 # Combobox (Popover + Command) Scrolling in Dialogs

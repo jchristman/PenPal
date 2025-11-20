@@ -47,6 +47,7 @@ services:
       - penpal-plugin-share:/penpal-plugin-share
       - ./PenPal/app/server/package.json:/penpal/package-tmp.json:ro
       - ./PenPal/app/server/nodemon.config.json:/penpal/nodemon.config.json:ro
+      - ./PenPal/app/server/tsconfig.json:/penpal/tsconfig.json:ro
       - ./PenPal/app/server/src:/penpal/src
       - ./heap-snapshots:/penpal/heap-snapshots
       - ./Plugins:/penpal/plugins

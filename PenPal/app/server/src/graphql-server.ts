@@ -13,15 +13,28 @@ import PenPal from "#penpal/core";
 import _ from "lodash";
 
 import { loadGraphQLFiles, resolvers, buildLoaders } from "./graphql/index.js";
+import type {
+  GraphQLServerConfig,
+  ApolloServerContext,
+  ApolloWebSocketContext,
+  WebSocketConnectionEvent,
+  WebSocketSubscriptionEvent,
+  WebSocketOperationEvent,
+  WebSocketErrorEvent,
+  ServerCleanup,
+  FormattedGraphQLError,
+  GraphQLErrorExtension
+} from "./types/graphql";
+import type { Logger } from "./types/penpal";
 
 // Initialize logger for the GraphQL server
-const logger = PenPal.Utils.BuildLogger("PenPal");
+const logger: Logger = PenPal.Utils.BuildLogger("PenPal");
 
 const startGraphQLServer = async (
-  plugins_types = {},
-  plugins_resolvers = {},
-  plugins_buildLoaders = () => null
-) => {
+  plugins_types: any = {},
+  plugins_resolvers: any[] = [],
+  plugins_buildLoaders: (() => any) | null = () => null
+): Promise<void> => {
   logger.log("Loading GraphQL Files...");
   const types = await loadGraphQLFiles();
   const _resolvers = _.merge(resolvers, plugins_resolvers);
@@ -47,7 +60,7 @@ const startGraphQLServer = async (
     schema,
     allowBatchedHttpRequests: true,
     introspection: true,
-    formatError: (err) => {
+    formatError: (err: any): FormattedGraphQLError => {
       const errorCode = err.extensions?.code ?? "Unknown Error";
       logger.error(`${errorCode} ::: ${err.message}`);
 
@@ -92,14 +105,14 @@ const startGraphQLServer = async (
   // Setup Express middleware
   app.use(
     "/graphql",
-    cors(),
+    cors<cors.CorsRequest>(),
     express.json(),
     expressMiddleware(server, {
-      context: async ({ req }) => {
-        let loaders = {};
+      context: async ({ req }): Promise<ApolloServerContext> => {
+        let loaders: Record<string, any> = {};
 
         loaders = _.extend(loaders, buildLoaders());
-        loaders = _.extend(loaders, plugins_buildLoaders());
+        loaders = _.extend(loaders, plugins_buildLoaders ? plugins_buildLoaders() : {});
 
         //const user = await getUser(req.headers.authorization_token);
         //if (user !== undefined) {
@@ -127,13 +140,13 @@ const startGraphQLServer = async (
   );
 
   // Setup WebSocket server for GraphQL subscriptions
-  const serverCleanup = useServer(
+  const serverCleanup: ServerCleanup = useServer(
     {
       schema,
-      context: async (ctx, msg, args) => {
-        let loaders = {};
+      context: async (ctx: any, msg: any, args: any): Promise<ApolloWebSocketContext> => {
+        let loaders: Record<string, any> = {};
         loaders = _.extend(loaders, buildLoaders());
-        loaders = _.extend(loaders, plugins_buildLoaders());
+        loaders = _.extend(loaders, plugins_buildLoaders ? plugins_buildLoaders() : {});
 
         const PenPalCachingAPI =
           PenPal.API && PenPal.API.CachingAPI ? PenPal.API.CachingAPI() : {};
@@ -150,31 +163,31 @@ const startGraphQLServer = async (
           pubsub,
         };
       },
-      onConnect: (ctx) => {
+      onConnect: () => {
         logger.log("🔗 WebSocket client connected");
       },
-      onDisconnect: (ctx, code, reason) => {
+      onDisconnect: (ctx: any, code?: number, reason?: string) => {
         logger.log("❌ WebSocket client disconnected");
       },
-      onSubscribe: (ctx, msg) => {
+      onSubscribe: (ctx: WebSocketSubscriptionEvent['ctx'], message: WebSocketSubscriptionEvent['message']) => {
         // logger.log("📡 New subscription:", {
         //   id: msg.id,
         //   operationName: msg.payload?.operationName,
         //   query: msg.payload?.query?.substring(0, 100) + "...",
         // });
       },
-      onComplete: (ctx, msg) => {
+      onComplete: (ctx: WebSocketOperationEvent['ctx'], message: WebSocketOperationEvent['message']) => {
         // logger.log("⚡ Operation executed:", {
         //   id: msg.id,
         //   operationName: msg.payload?.operationName,
         //   hasErrors: false,
         // });
       },
-      onError: (ctx, msg, errors) => {
+      onError: (ctx: WebSocketErrorEvent['ctx'], message: WebSocketErrorEvent['message'], errors: WebSocketErrorEvent['errors']) => {
         logger.error("❌ GraphQL WebSocket Error:", {
-          id: msg.id,
-          operationName: msg.payload?.operationName,
-          errors: errors.map((e) => ({
+          id: message.id,
+          operationName: message.payload?.operationName,
+          errors: errors.map((e: any) => ({
             message: e.message,
             path: e.path,
             extensions: e.extensions,
@@ -182,7 +195,7 @@ const startGraphQLServer = async (
         });
 
         // Log the full error details for debugging
-        errors.forEach((error, index) => {
+        errors.forEach((error: any, index: number) => {
           logger.error(`WebSocket Error ${index + 1}:`, {
             message: error.message,
             path: error.path,

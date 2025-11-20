@@ -1,3 +1,7 @@
+---
+globs: *.tsx
+alwaysApply: false
+---
 # PenPal Component Import Pattern
 
 **✅ CRITICAL: Use the `Components` Registry for all UI Elements**
