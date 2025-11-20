@@ -55,6 +55,21 @@ export {
 } from "./networks.js";
 
 export {
+  getDomain,
+  getDomains,
+  getDomainsPaginationInfo,
+  getDomainsByProject,
+  insertDomain,
+  insertDomains,
+  updateDomain,
+  updateDomains,
+  removeDomain,
+  removeDomains,
+  resolveDomain,
+  resolveDomains,
+} from "./domains.js";
+
+export {
   getService,
   getServices,
   getServicesPaginationInfo,

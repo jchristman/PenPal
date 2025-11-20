@@ -1,0 +1,53 @@
+"Classification information for IP addresses including geolocation, ASN, and cloud provider data"
+type IPClassification {
+  "The IP address that was classified"
+  ip: String!
+  "Geolocation information"
+  geolocation: IPGeolocation
+  "ASN (Autonomous System Number) information"
+  asn: IPASN
+  "Cloud provider information if the IP belongs to a cloud provider"
+  cloud_provider: IPCloudProvider
+  "When this classification was last updated"
+  last_updated: Date
+  "Source of the classification data (e.g., 'maxmind-offline')"
+  source: String
+  "Any errors that occurred during classification"
+  errors: [String]
+}
+
+"Geolocation information for an IP address"
+type IPGeolocation {
+  "Country name (e.g., 'United States')"
+  country: String
+  "ISO country code (e.g., 'US')"
+  country_code: String
+  "Region/State name (e.g., 'California')"
+  region: String
+  "City name (e.g., 'San Francisco')"
+  city: String
+  "Latitude coordinate"
+  latitude: Float
+  "Longitude coordinate"
+  longitude: Float
+  "Timezone (e.g., 'America/Los_Angeles')"
+  timezone: String
+}
+
+"ASN (Autonomous System Number) information for an IP address"
+type IPASN {
+  "Autonomous System Number (e.g., 'AS15169')"
+  asn: String
+  "Organization name associated with the ASN (e.g., 'Google LLC')"
+  org: String
+}
+
+"Cloud provider information for an IP address"
+type IPCloudProvider {
+  "Cloud provider name (e.g., 'AWS', 'GCP', 'Azure')"
+  provider: String!
+  "Cloud service type (e.g., 'EC2', 'Compute Engine')"
+  service: String
+  "Cloud region (e.g., 'us-east-1', 'us-central1')"
+  region: String
+}

@@ -46,6 +46,9 @@ const settings = {
       name: "Networks",
     },
     {
+      name: "Domains",
+    },
+    {
       name: "Services",
     },
     {
@@ -112,6 +115,22 @@ const CoreAPIPlugin = {
       RemoveMany: API.removeNetworks,
       Update: API.updateNetwork,
       UpdateMany: API.updateNetworks,
+    };
+
+    PenPal.API.Domains = {
+      Get: API.getDomain,
+      GetMany: API.getDomains,
+      GetPaginationInfo: API.getDomainsPaginationInfo,
+      GetManyByProjectID: API.getDomainsByProject,
+      Insert: API.insertDomain,
+      InsertMany: API.insertDomains,
+      Remove: API.removeDomain,
+      RemoveMany: API.removeDomains,
+      Update: API.updateDomain,
+      UpdateMany: API.updateDomains,
+      // Domain-specific functions
+      ResolveDomain: API.resolveDomain,
+      ResolveDomains: API.resolveDomains,
     };
 
     PenPal.API.Services = {
@@ -337,6 +356,17 @@ const CoreAPIPlugin = {
       ValidateFileType: validateFileType,
       GetEnrichmentFileBucket: getEnrichmentFileBucket,
     };
+
+    // Classification API for IP geolocation and cloud provider identification
+    const { classifyIP, classifyIPs, initializeClassification } = await import("./api/classification.js");
+    PenPal.API.Classification = {
+      ClassifyIP: classifyIP,
+      ClassifyIPs: classifyIPs,
+      Initialize: initializeClassification,
+    };
+
+    // Initialize the classification system
+    await initializeClassification();
 
     PenPal.Test.CoreAPI = { ...mocks };
 

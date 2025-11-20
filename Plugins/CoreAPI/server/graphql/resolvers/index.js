@@ -8,6 +8,9 @@ import configuration_query_resolvers from "./configuration.queries.js";
 import customer_default_resolvers from "./customer.default.js";
 import customer_mutation_resolvers from "./customer.mutations.js";
 import customer_query_resolvers from "./customer.queries.js";
+import domain_default_resolvers from "./domain.default.js";
+import domain_mutation_resolvers from "./domain.mutations.js";
+import domain_query_resolvers from "./domain.queries.js";
 import enrichable_default_resolvers from "./enrichable.default.js";
 import file_attachments_query_resolvers from "./file-attachments.queries.js";
 import file_attachments_mutation_resolvers from "./file-attachments.mutations.js";
@@ -34,6 +37,7 @@ export default {
     ...analytics_query_resolvers,
     ...configuration_query_resolvers,
     ...customer_query_resolvers,
+    ...domain_query_resolvers,
     ...file_attachments_query_resolvers,
     ...host_query_resolvers,
     ...project_query_resolvers,
@@ -44,6 +48,7 @@ export default {
   mutations: {
     ...customer_mutation_resolvers,
     ...configuration_mutation_resolvers,
+    ...domain_mutation_resolvers,
     ...file_attachments_mutation_resolvers,
     ...host_mutation_resolvers,
     ...network_mutation_resolvers,
@@ -56,6 +61,7 @@ export default {
     auditable_default_resolvers,
     audit_user_default_resolvers,
     customer_default_resolvers,
+    domain_default_resolvers,
     enrichable_default_resolvers,
     host_default_resolvers,
     network_default_resolvers,

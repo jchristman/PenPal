@@ -1,0 +1,22 @@
+extend type Mutation {
+  "Create a new domain"
+  createDomain(domain: DomainInput!): Domain
+
+  "Create multiple domains"
+  createDomains(domains: [DomainInput!]!): [Domain]
+
+  "Update an existing domain"
+  updateDomain(domain: DomainUpdateInput!): Domain
+
+  "Remove a domain"
+  removeDomain(id: ID!): Boolean
+
+  "Remove multiple domains"
+  removeDomains(ids: [ID!]!): Boolean
+
+  "Resolve a single domain name to IP addresses"
+  resolveDomain(domainName: String!): JSON
+
+  "Resolve multiple domain names to IP addresses"
+  resolveDomains(domainNames: [String!]!): [JSON]
+}

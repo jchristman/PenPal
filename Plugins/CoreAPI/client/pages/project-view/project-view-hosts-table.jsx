@@ -172,7 +172,7 @@ const ProjectViewHostsTable = ({ hosts = [] }) => {
       filtered = hosts.filter((host) => {
         return (
           host.ip_address?.toLowerCase().includes(search) ||
-          host.hostnames?.some((name) => name.toLowerCase().includes(search)) ||
+          host.domains?.some((domain) => domain.name.toLowerCase().includes(search)) ||
           host.os?.name?.toLowerCase().includes(search) ||
           host.mac_address?.toLowerCase().includes(search)
         );
@@ -197,8 +197,8 @@ const ProjectViewHostsTable = ({ hosts = [] }) => {
             .join("");
           break;
         case "hostnames":
-          aValue = a.hostnames?.[0] || "";
-          bValue = b.hostnames?.[0] || "";
+          aValue = a.domains?.[0]?.name || "";
+          bValue = b.domains?.[0]?.name || "";
           break;
         case "os":
           aValue = a.os?.name || "Unknown";
@@ -335,6 +335,8 @@ const ProjectViewHostsTable = ({ hosts = [] }) => {
               >
                 Vulnerabilities
               </SortableHeader>
+              <TableHead>Location</TableHead>
+              <TableHead>Classification</TableHead>
             </TableRow>
           </TableHeader>
           <TableBody>
@@ -350,23 +352,23 @@ const ProjectViewHostsTable = ({ hosts = [] }) => {
                   </div>
                 </TableCell>
                 <TableCell>
-                  {host.hostnames?.length > 0 ? (
+                  {host.domains?.length > 0 ? (
                     <div className="space-y-1">
-                      {host.hostnames.slice(0, 2).map((hostname, idx) => (
+                      {host.domains.slice(0, 2).map((domain, idx) => (
                         <div key={idx} className="flex items-center space-x-1">
                           <GlobeAltIcon className="h-3 w-3 text-muted-foreground" />
-                          <span className="text-xs">{hostname}</span>
+                          <span className="text-xs">{domain.name}</span>
                         </div>
                       ))}
-                      {host.hostnames.length > 2 && (
+                      {host.domains.length > 2 && (
                         <Badge variant="secondary" className="text-xs">
-                          +{host.hostnames.length - 2} more
+                          +{host.domains.length - 2} more
                         </Badge>
                       )}
                     </div>
                   ) : (
                     <span className="text-muted-foreground text-sm">
-                      No hostnames
+                      No domains
                     </span>
                   )}
                 </TableCell>
@@ -410,6 +412,45 @@ const ProjectViewHostsTable = ({ hosts = [] }) => {
                     >
                       {host.vulnerabilitiesConnection?.totalCount || 0}
                     </Badge>
+                  </div>
+                </TableCell>
+                <TableCell>
+                  {host.classification?.country ? (
+                    <div className="text-xs">
+                      <div className="font-medium">
+                        {host.classification.city && host.classification.region
+                          ? `${host.classification.city}, ${host.classification.region}`
+                          : host.classification.city || host.classification.region}
+                      </div>
+                      <div className="text-muted-foreground">
+                        {host.classification.country}
+                      </div>
+                    </div>
+                  ) : (
+                    <span className="text-muted-foreground text-sm">
+                      Unknown
+                    </span>
+                  )}
+                </TableCell>
+                <TableCell>
+                  <div className="space-y-1">
+                    {host.classification?.org && (
+                      <Badge variant="outline" className="text-xs">
+                        {host.classification.org}
+                        {host.classification.asn && ` (ASN ${host.classification.asn})`}
+                      </Badge>
+                    )}
+                    {host.classification?.cloud_provider?.provider && (
+                      <Badge variant="secondary" className="text-xs">
+                        {host.classification.cloud_provider.provider}
+                        {host.classification.cloud_provider.service && ` (${host.classification.cloud_provider.service})`}
+                      </Badge>
+                    )}
+                    {!host.classification?.org && !host.classification?.cloud_provider?.provider && (
+                      <span className="text-muted-foreground text-sm">
+                        Unknown
+                      </span>
+                    )}
                   </div>
                 </TableCell>
               </TableRow>

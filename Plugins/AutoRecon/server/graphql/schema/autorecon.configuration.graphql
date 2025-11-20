@@ -1,0 +1,71 @@
+# AutoRecon Plugin Configuration Schema
+
+# Tool configuration
+type AutoReconToolConfig {
+  findomain: Boolean
+  subfinder: Boolean
+  amass: Boolean
+  assetfinder: Boolean
+  crtsh: Boolean
+}
+
+# Scan options
+type AutoReconScanOptions {
+  recursive: Boolean
+  scanAllDomains: Boolean
+  timeout: Int
+  maxConcurrency: Int
+}
+
+# UI configuration
+type AutoReconUIConfig {
+  enabled: Boolean
+  autoStart: Boolean
+}
+
+# Main configuration type
+type AutoReconConfiguration {
+  ui: AutoReconUIConfig
+  tools: AutoReconToolConfig
+  options: AutoReconScanOptions
+  _ui: JSON
+}
+
+# Input types for mutations
+input AutoReconToolConfigInput {
+  findomain: Boolean
+  subfinder: Boolean
+  amass: Boolean
+  assetfinder: Boolean
+  crtsh: Boolean
+}
+
+input AutoReconScanOptionsInput {
+  recursive: Boolean
+  scanAllDomains: Boolean
+  timeout: Int
+  maxConcurrency: Int
+}
+
+input AutoReconUIConfigInput {
+  enabled: Boolean
+  autoStart: Boolean
+}
+
+input AutoReconConfigurationInput {
+  ui: AutoReconUIConfigInput
+  tools: AutoReconToolConfigInput
+  options: AutoReconScanOptionsInput
+  _ui: JSON
+}
+
+# GraphQL operations
+extend type Query {
+  getAutoReconConfiguration: AutoReconConfiguration
+}
+
+extend type Mutation {
+  setAutoReconConfiguration(
+    configuration: AutoReconConfigurationInput!
+  ): AutoReconConfiguration
+}

@@ -66,6 +66,30 @@ PenPal.registerBadge = registerBadge;
 
 // ----------------------------------------------------------------------------
 
+export const ProjectScopeButtons = [];
+PenPal.ProjectScopeButtons = ProjectScopeButtons;
+
+// ----------------------------------------------------------------------------
+
+export const registerProjectScopeButton = (buttonConfig) => {
+  // Validate the button configuration
+  if (!buttonConfig.name || !buttonConfig.component) {
+    console.error("Project scope button registration failed: missing name or component");
+    return;
+  }
+
+  ProjectScopeButtons.push({
+    ...buttonConfig,
+    order: buttonConfig.order || 0,
+  });
+
+  // Sort by order
+  ProjectScopeButtons.sort((a, b) => (a.order || 0) - (b.order || 0));
+};
+PenPal.registerProjectScopeButton = registerProjectScopeButton;
+
+// ----------------------------------------------------------------------------
+
 export const getRoute = (route_name) =>
   _.find(Routes, (route) => route.name === route_name);
 PenPal.getRoute = getRoute;

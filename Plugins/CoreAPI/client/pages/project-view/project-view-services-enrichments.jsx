@@ -49,9 +49,9 @@ const DefaultEnrichmentCard = ({ service, enrichment }) => {
             </CardTitle>
             <CardDescription className="text-xs">
               {service.name}
-              {service.host?.hostnames && service.host.hostnames.length > 0 && (
+              {service.host?.domains && service.host.domains.length > 0 && (
                 <div className="text-xs text-muted-foreground mt-1">
-                  Domains: {service.host.hostnames.join(", ")}
+                  Domains: {service.host.domains.map(d => d.name).join(", ")}
                 </div>
               )}
             </CardDescription>
@@ -295,9 +295,9 @@ const ProjectViewServicesEnrichments = ({ services }) => {
                     <TableCell className="font-mono">
                       <div className="space-y-1">
                         <div>{item.service.host?.ip_address || "Unknown"}</div>
-                        {item.service.host?.hostnames && item.service.host.hostnames.length > 0 && (
+                        {item.service.host?.domains && item.service.host.domains.length > 0 && (
                           <div className="text-xs text-muted-foreground">
-                            Domains: {item.service.host.hostnames.join(", ")}
+                            Domains: {item.service.host.domains.map(d => d.name).join(", ")}
                           </div>
                         )}
                       </div>

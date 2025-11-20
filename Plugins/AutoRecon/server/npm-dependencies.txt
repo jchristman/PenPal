@@ -1,0 +1,2 @@
+uuid
+@maxmind/geoip2-node

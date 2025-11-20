@@ -1,0 +1,56 @@
+# AutoRecon GraphQL Schema
+
+type AutoReconScan {
+  id: ID!
+  project_id: ID
+  progress: Float
+  statusText: String
+  created_at: String
+  updated_at: String
+  stages: [AutoReconScanStage!]
+}
+
+type AutoReconScanStage {
+  name: String!
+  status: String!
+  progress: Float
+  statusText: String
+}
+
+type StagedAsset {
+  id: ID!
+  project_id: ID!
+  type: String! # "domain", "host", "service"
+  value: String! # The actual asset value (domain name, IP, etc.)
+  tool: String! # Which tool discovered this asset
+  confidence: Int! # Confidence score 0-100
+  classification: JSON # Geolocation and ASN classification data
+  metadata: JSON
+  created_at: String!
+}
+
+# AutoReconConfiguration is defined in autorecon.configuration.graphql
+
+type AssetAcceptanceResult {
+  accepted: Int!
+  rejected: Int!
+  errors: [String!]
+}
+
+# Queries
+extend type Query {
+  getAutoReconScans(projectId: ID!): [AutoReconScan!]!
+  getStagedAssets(projectId: ID!): [StagedAsset!]!
+}
+
+# Mutations
+extend type Mutation {
+  startAutoReconScan(projectId: ID!): AutoReconScan
+  acceptStagedAssets(projectId: ID!, assetIds: [ID!]!): AssetAcceptanceResult!
+  rejectStagedAssets(projectId: ID!, assetIds: [ID!]!): AssetAcceptanceResult!
+}
+
+# Subscriptions
+extend type Subscription {
+  autoReconScanUpdated(projectId: ID!): AutoReconScan
+}

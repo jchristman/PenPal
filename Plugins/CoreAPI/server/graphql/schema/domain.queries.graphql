@@ -1,0 +1,16 @@
+extend type Query {
+  "Get a single domain by ID"
+  getDomain(id: ID!): Domain
+
+  "Get multiple domains by IDs"
+  getDomains(ids: [ID!]!): [Domain]
+
+  "Get domains for a project with pagination"
+  getDomainsByProject(
+    projectId: ID!
+    first: Int
+    after: String
+    last: Int
+    before: String
+  ): DomainsConnection
+}

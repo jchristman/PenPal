@@ -14,7 +14,11 @@ export default gql`
               hosts {
                 id
                 ip_address
-                hostnames
+                domain_ids
+                domains {
+                  id
+                  name
+                }
                 servicesConnection {
                   totalCount
                 }
