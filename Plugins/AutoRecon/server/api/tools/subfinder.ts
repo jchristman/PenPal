@@ -1,9 +1,9 @@
 import PenPal from "#penpal/core";
 import fs from "fs";
-import { AutoReconLogger as logger } from "../../plugin.js";
+import { AutoReconLogger as logger } from "../../plugin.ts";
 
 // Subfinder subdomain enumeration tool
-export const runSubfinderScan = async (domain, jobId = null) => {
+export const runexport const runSubfinderScan = async (Scan = async (domain: string, jobId: string | null = null) => {
   let containerId = null;
   try {
     logger.log(`Running subfinder scan for ${domain}`);
@@ -66,7 +66,7 @@ export const runSubfinderScan = async (domain, jobId = null) => {
         const logs = await PenPal.Docker.Logs(containerId);
         containerLogs.stdout = logs.combined || logs.stdout || "";
         containerLogs.stderr = logs.stderr || "";
-      } catch (logError) {
+      } catch (logError: any) {
         logger.warn(`Failed to capture logs from container ${containerId}:`, logError.message);
       }
     }
@@ -89,7 +89,7 @@ export const runSubfinderScan = async (domain, jobId = null) => {
     // Clean up output file
     try {
       fs.unlinkSync(outputFile);
-    } catch (cleanupError) {
+    } catch (cleanupError: any) {
       logger.warn(
         `Failed to clean up subfinder output file: ${cleanupError.message}`
       );
@@ -112,7 +112,7 @@ export const runSubfinderScan = async (domain, jobId = null) => {
     );
 
     return { domains, containerLogs };
-  } catch (error) {
+  } catch (error: any) {
     logger.error(`subfinder scan failed for ${domain}:`, error);
 
     // Try to capture logs even on error
@@ -122,7 +122,7 @@ export const runSubfinderScan = async (domain, jobId = null) => {
         const logs = await PenPal.Docker.Logs(containerId);
         containerLogs.stdout = logs.combined || logs.stdout || "";
         containerLogs.stderr = logs.stderr || error.message || "";
-      } catch (logError) {
+      } catch (logError: any) {
         logger.warn(
           `Failed to capture error logs from container ${containerId}:`,
           logError.message
@@ -135,7 +135,7 @@ export const runSubfinderScan = async (domain, jobId = null) => {
     if (containerId) {
       try {
         await PenPal.Docker.RemoveContainer(containerId);
-      } catch (cleanupError) {
+      } catch (cleanupError: any) {
         logger.warn(
           `Failed to clean up container ${containerId}:`,
           cleanupError.message

@@ -1,4 +1,4 @@
-import resolvers from "./resolvers/index.js";
+import resolvers from "./resolvers/index.ts";
 
 export default [
   {

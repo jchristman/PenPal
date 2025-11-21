@@ -2,9 +2,10 @@ import { dirname, join } from "path";
 import { fileURLToPath } from "url";
 const __dirname = dirname(fileURLToPath(import.meta.url));
 
-import { loadGraphQLFiles, resolvers } from "./graphql/index.js";
+import { loadGraphQLFiles, resolvers } from "./graphql/index.ts";
 import * as API from "./api/index.js";
 import PenPal from "#penpal/core";
+import type { PluginModule, PluginLoadResult, PluginSettings } from "#penpal/common";
 
 // Initialize logger for this plugin
 const logger = PenPal.Utils.BuildLogger("AutoRecon");
@@ -17,12 +18,12 @@ import {
   AutoReconStatus,
   AutoReconStages,
   AutoReconStageLabels,
-} from "../common/autorecon-constants.js";
+} from "../common/autorecon-constants.ts";
 
 // File-level logger that can be imported by other files
 export const AutoReconLogger = PenPal.Utils.BuildLogger("AutoRecon");
 
-const settings = {
+const settings: PluginSettings = {
   datastores: [
     {
       name: "AutoReconStagedAssets",
@@ -42,8 +43,8 @@ const settings = {
   },
 };
 
-const AutoReconPlugin = {
-  async loadPlugin() {
+const AutoReconPlugin: PluginModule = {
+  async loadPlugin(): Promise<PluginLoadResult> {
     // Register AutoRecon API
     PenPal.AutoRecon = {
       // Constants
@@ -68,16 +69,16 @@ const AutoReconPlugin = {
       UpdateConfiguration: API.updateAutoReconConfiguration,
 
       // Helper methods
-      GetToolStatus: (toolName) => {
+      GetToolStatus: (toolName: string) => {
         return AutoReconToolDefaults[toolName] || false;
       },
 
-      IsToolEnabled: async (projectId, toolName) => {
+      IsToolEnabled: async (projectId: string, toolName: string) => {
         const config = await API.getAutoReconConfiguration(projectId);
         return config?.tools?.[toolName] ?? AutoReconToolDefaults[toolName];
       },
 
-      GetConfigurationOption: async (projectId, optionName) => {
+      GetConfigurationOption: async (projectId: string, optionName: string) => {
         const config = await API.getAutoReconConfiguration(projectId);
         return (
           config?.options?.[optionName] ?? AutoReconConfigDefaults[optionName]

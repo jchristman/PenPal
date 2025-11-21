@@ -1,0 +1,550 @@
+# Plugin TypeScript Conversion Guide
+
+## Overview
+
+This guide provides a systematic approach to converting PenPal plugins from JavaScript to TypeScript. The conversion maintains backward compatibility while adding type safety and better developer experience.
+
+## Prerequisites
+
+- PenPal project with TypeScript support
+- Understanding of PenPal plugin architecture
+- Familiarity with TypeScript basics
+
+## Conversion Workflow
+
+### Phase 1: Core Plugin Files
+
+#### 1.1 Client Plugin Files
+
+**Files to convert:**
+- `Plugins/YourPlugin/client/plugin.js` → `plugin.ts`
+- `Plugins/YourPlugin/client/routes.js` → `routes.ts`
+- `Plugins/YourPlugin/client/index.js` → `index.ts`
+
+**Conversion steps:**
+
+```typescript
+// plugin.ts - Add proper types
+import type { PenPalPlugin, PenPalProjectScopeButton } from "@penpal/types";
+import.meta.glob("./**/*.{jsx,tsx}", { eager: true }); // Update glob pattern
+import registerRoutes from "./routes.ts";
+import PenPal from "@penpal/core";
+
+const YourPlugin: PenPalPlugin = {
+  async loadPlugin(): Promise<{ registerRoutes?: () => void }> {
+    // Register components with proper typing
+    PenPal.registerProjectScopeButton({
+      name: "YourPlugin",
+      component: "YourComponent",
+      order: 10,
+    } as PenPalProjectScopeButton);
+
+    return { registerRoutes };
+  },
+};
+
+export default YourPlugin;
+
+// routes.ts - Simple function, no parameters
+const registerRoutes = () => {
+  // Routes are registered directly or not at all
+};
+
+export default registerRoutes;
+
+// index.ts - Import manifest with JSON type
+import PenPal from "@penpal/core";
+import Plugin from "./plugin";
+import Manifest from "./manifest.json" with { type: "json" };
+import type { PenPalPluginManifest } from "@penpal/types";
+
+PenPal.registerPlugin(Manifest as PenPalPluginManifest, Plugin);
+```
+
+#### 1.2 Server Plugin Files
+
+**Files to convert:**
+- `Plugins/YourPlugin/server/plugin.js` → `plugin.ts`
+- `Plugins/YourPlugin/server/index.js` → `index.ts`
+
+**Conversion steps:**
+
+```typescript
+// plugin.ts - Add proper types
+import { loadGraphQLFiles, resolvers } from "./graphql/index.ts";
+import * as API from "./api/index.js"; // Keep .js for now, will convert later
+import PenPal from "#penpal/core";
+import type { PluginModule, PluginLoadResult } from "#penpal/common";
+
+const logger = PenPal.Utils.BuildLogger("YourPlugin");
+
+const YourPlugin: PluginModule = {
+  async loadPlugin(): Promise<PluginLoadResult> {
+    // Plugin setup with proper typing
+    PenPal.YourPlugin = {
+      // API methods with proper typing
+    };
+
+    const types = await loadGraphQLFiles();
+
+    return {
+      graphql: { types, resolvers },
+      settings: { /* settings */ },
+    };
+  },
+};
+
+export default YourPlugin;
+
+// index.ts - Simple registration
+import PenPal from "#penpal/core";
+import Plugin from "./plugin.ts";
+import Manifest from "./manifest.json" with { type: "json";
+
+PenPal.registerPlugin(Manifest, Plugin);
+```
+
+### Phase 2: Constants and Common Files
+
+#### 2.1 Shared Constants
+
+**Files to convert:**
+- `Plugins/YourPlugin/common/constants.js` → `constants.ts`
+
+**Conversion steps:**
+
+```typescript
+// Use const assertions and type exports
+export const ToolNames = {
+  TOOL1: "tool1",
+  TOOL2: "tool2",
+} as const;
+
+export type ToolName = typeof ToolNames[keyof typeof ToolNames];
+
+export const ToolDefaults: Record<ToolName, boolean> = {
+  [ToolNames.TOOL1]: true,
+  [ToolNames.TOOL2]: false,
+} as const;
+
+// Update imports in all files that use constants
+import { ToolNames, ToolDefaults } from "../common/constants.ts";
+```
+
+### Phase 3: Client Components and GraphQL
+
+#### 3.1 React Components
+
+**Files to convert:**
+- `Plugins/YourPlugin/client/components/*.jsx` → `*.tsx`
+
+**Conversion steps:**
+
+```typescript
+// Add proper React and PenPal types
+import React, { useState } from "react";
+import { Components, registerComponent, Hooks } from "@penpal/core";
+
+interface ComponentProps {
+  project: {
+    id: string;
+    // Add other project properties
+  };
+}
+
+const YourComponent: React.FC<ComponentProps> = ({ project }) => {
+  const [state, setState] = useState<string>("");
+  const { toast } = Hooks.useToast();
+
+  // Component logic with proper typing
+  const handleAction = async () => {
+    try {
+      // API calls
+    } catch (error: any) {
+      toast({
+        title: "Error",
+        description: error.message,
+        variant: "destructive",
+      });
+    }
+  };
+
+  return (
+    <div>
+      {/* JSX content */}
+    </div>
+  );
+};
+
+registerComponent("YourComponent", YourComponent);
+export default YourComponent;
+```
+
+#### 3.2 GraphQL Queries/Mutations
+
+**Files to convert:**
+- `Plugins/YourPlugin/client/queries/*.js` → `*.ts`
+- `Plugins/YourPlugin/client/mutations/*.js` → `*.ts`
+
+**Conversion steps:**
+
+```typescript
+// queries/your-query.ts
+import { gql } from "@apollo/client";
+
+const YourQuery = gql`
+  query YourQuery($param: String!) {
+    yourQuery(param: $param) {
+      id
+      field
+    }
+  }
+`;
+
+export default YourQuery;
+
+// mutations/your-mutation.ts
+import { gql } from "@apollo/client";
+
+const YourMutation = gql`
+  mutation YourMutation($input: YourInput!) {
+    yourMutation(input: $input) {
+      success
+      data
+    }
+  }
+`;
+
+export default YourMutation;
+```
+
+### Phase 4: Server API Files
+
+#### 4.1 Main API Index
+
+**Files to convert:**
+- `Plugins/YourPlugin/server/api/index.js` → `index.ts`
+
+**Conversion steps:**
+
+```typescript
+// Add comprehensive type definitions
+interface YourConfig {
+  tools: Record<string, boolean>;
+  options: Record<string, any>;
+}
+
+interface JobResult {
+  id: string;
+  status: string;
+  // Add other job properties
+}
+
+// Export functions with proper typing
+export const yourApiFunction = async (param: string): Promise<JobResult> => {
+  try {
+    // Implementation
+    return result;
+  } catch (error: any) {
+    logger.error("Error:", error);
+    throw error;
+  }
+};
+```
+
+#### 4.2 Tool Implementation Files
+
+**Files to convert:**
+- `Plugins/YourPlugin/server/api/tools/*.js` → `*.ts`
+
+**Conversion steps:**
+
+```typescript
+// tools/your-tool.ts
+import PenPal from "#penpal/core";
+import { AutoReconLogger as logger } from "../../plugin.ts";
+
+export const runYourTool = async (domain: string, jobId: string | null = null) => {
+  let containerId: string | null = null;
+  try {
+    // Tool implementation with proper typing
+    const result = await PenPal.Docker.Run({
+      // Docker config
+    });
+
+    containerId = result.stdout?.trim() || null;
+
+    // Process results
+    return { domains: [], containerLogs: { stdout: "", stderr: "" } };
+  } catch (error: any) {
+    logger.error(`Tool failed for ${domain}:`, error);
+    return { domains: [], containerLogs: { stdout: "", stderr: error.message } };
+  }
+};
+```
+
+### Phase 5: GraphQL Resolvers
+
+#### 5.1 GraphQL Schema Loading
+
+**Files to convert:**
+- `Plugins/YourPlugin/server/graphql/index.js` → `index.ts`
+- `Plugins/YourPlugin/server/graphql/schema/index.js` → `index.ts`
+- `Plugins/YourPlugin/server/graphql/resolvers.js` → `resolvers.ts`
+- `Plugins/YourPlugin/server/graphql/resolvers/index.js` → `index.ts`
+
+**Conversion steps:**
+
+```typescript
+// graphql/index.ts
+export { default as loadGraphQLFiles } from "./schema/index.ts";
+export { default as resolvers } from "./resolvers.ts";
+
+// schema/index.ts
+import PenPal from "#penpal/core";
+import { dirname, join } from "path";
+import { fileURLToPath } from "url";
+
+const loadGraphQLFiles = async (): Promise<any> => {
+  const __dirname = dirname(fileURLToPath(import.meta.url));
+  const cur_dir = join(__dirname, ".");
+  return PenPal.Utils.LoadGraphQLDirectories(cur_dir);
+};
+
+export default loadGraphQLFiles;
+
+// resolvers.ts
+import resolvers from "./resolvers/index.ts";
+
+export default [
+  {
+    Query: {
+      ...resolvers.queries,
+    },
+  },
+  {
+    Mutation: {
+      ...resolvers.mutations,
+    },
+  },
+  {
+    Subscription: {
+      ...resolvers.subscriptions,
+    },
+  },
+  ...resolvers.default_resolvers,
+  ...resolvers.scalars,
+];
+
+// resolvers/index.ts
+import queryResolvers from "./your.queries.ts";
+import mutationResolvers from "./your.mutations.ts";
+import subscriptionResolvers from "./your.subscriptions.ts";
+import configResolvers from "./your.configuration.ts";
+
+export default {
+  queries: {
+    ...queryResolvers,
+    ...configResolvers.queries,
+  },
+  mutations: {
+    ...mutationResolvers,
+    ...configResolvers.mutations,
+  },
+  subscriptions: {
+    ...subscriptionResolvers,
+  },
+  default_resolvers: [],
+  scalars: [],
+};
+```
+
+#### 5.2 Individual Resolver Files
+
+**Files to convert:**
+- `Plugins/YourPlugin/server/graphql/resolvers/*.js` → `*.ts`
+
+**Conversion steps:**
+
+```typescript
+// resolvers/your.queries.ts
+import * as API from "../../api/index.ts";
+
+export default {
+  async yourQuery(_parent: any, { param }: { param: string }) {
+    return await API.yourApiFunction(param);
+  },
+};
+
+// resolvers/your.mutations.ts
+import * as API from "../../api/index.ts";
+
+export default {
+  async yourMutation(_parent: any, { input }: { input: YourInput }) {
+    return await API.yourApiMutation(input);
+  },
+};
+
+// resolvers/your.subscriptions.ts
+import PenPal from "#penpal/core";
+
+export default {
+  yourSubscription: {
+    subscribe: (_parent: any, { id }: { id: string }, { pubsub }: { pubsub: any }) => {
+      return pubsub.asyncIterator([`YOUR_EVENT:${id}`]);
+    },
+    resolve: (payload: any) => payload.yourSubscription,
+  },
+};
+
+// resolvers/your.configuration.ts
+import * as API from "../../api/index.ts";
+import { logger } from "../../plugin.ts";
+
+export default {
+  queries: {
+    async getYourConfiguration(): Promise<any> {
+      try {
+        const config = await API.getYourConfiguration();
+        return {
+          ...config,
+          _ui: buildUIConfig(),
+        };
+      } catch (error: any) {
+        logger.error("Failed to get configuration:", error);
+        throw error;
+      }
+    },
+  },
+
+  mutations: {
+    async setYourConfiguration(_parent: any, { configuration }: { configuration: any }): Promise<any> {
+      try {
+        const result = await API.updateYourConfiguration(configuration);
+        return {
+          ...result,
+          _ui: buildUIConfig(),
+        };
+      } catch (error: any) {
+        logger.error("Failed to set configuration:", error);
+        throw error;
+      }
+    },
+  },
+};
+
+function buildUIConfig(): any {
+  return {
+    sections: [
+      { path: "section1", label: "Section 1" },
+      { path: "section2", label: "Section 2" },
+    ],
+  };
+}
+```
+
+## Automated Conversion Commands
+
+### Bulk File Renaming
+```bash
+# Convert all .js files to .ts (excluding node_modules)
+find Plugins/YourPlugin -name "*.js" -not -path "*/node_modules/*" -exec bash -c 'mv "$1" "${1%.js}.ts"' _ {} \;
+
+# Convert all .jsx files to .tsx
+find Plugins/YourPlugin -name "*.jsx" -not -path "*/node_modules/*" -exec bash -c 'mv "$1" "${1%.jsx}.tsx"' _ {} \;
+```
+
+### Import Path Updates
+```bash
+# Update import paths from .js to .ts
+find Plugins/YourPlugin -name "*.ts" -exec sed -i 's/\.js"/.ts"/g' {} \;
+find Plugins/YourPlugin -name "*.ts" -exec sed -i "s/\.js'/.ts'/g" {} \;
+
+# Update meta.glob patterns
+find Plugins/YourPlugin -name "*.ts" -exec sed -i 's/\*\*\/\*\.jsx/\*\*\/\*.\{jsx,tsx\}/g' {} \;
+```
+
+## Validation Steps
+
+### 1. TypeScript Compilation Check
+```bash
+# Run TypeScript compilation for both client and server
+./run-tsc.sh all
+
+# Check for any compilation errors
+```
+
+### 2. Plugin Loading Test
+```bash
+# Start PenPal and verify plugin loads without errors
+./dev.sh
+
+# Check browser console and server logs for any runtime errors
+```
+
+### 3. Functional Testing
+```bash
+# Test all plugin functionality to ensure no regressions
+# - UI components render correctly
+# - GraphQL queries/mutations work
+# - API endpoints function properly
+# - Docker containers start/stop correctly
+```
+
+## Common Issues and Solutions
+
+### 1. Import Path Errors
+**Problem:** TypeScript can't resolve imports after conversion
+**Solution:** Ensure all file extensions are updated and paths are correct
+
+### 2. Type Errors in Components
+**Problem:** React component props not properly typed
+**Solution:** Add interface definitions for all component props
+
+### 3. GraphQL Resolver Type Errors
+**Problem:** Resolver functions have incorrect parameter types
+**Solution:** Use `_parent: any` for unused parent parameters and properly type args
+
+### 4. Docker Tool Type Errors
+**Problem:** Docker API calls have incorrect types
+**Solution:** Add proper typing for Docker configuration objects
+
+### 5. Logger Import Errors
+**Problem:** Logger imports fail after plugin.ts conversion
+**Solution:** Update all logger imports to use `.ts` extension
+
+## Best Practices
+
+### 1. Type Definitions
+- Create interfaces for all data structures
+- Use `as const` for constant objects
+- Export types for reuse across files
+
+### 2. Error Handling
+- Use `error: any` in catch blocks for flexibility
+- Maintain existing error logging patterns
+- Preserve error messages and stack traces
+
+### 3. Import Organization
+- Group imports by type (external, internal, types)
+- Use absolute imports where possible
+- Keep import paths consistent
+
+### 4. File Structure
+- Maintain existing file organization
+- Keep related functionality together
+- Preserve naming conventions
+
+## Completion Checklist
+
+- [ ] All .js files converted to .ts
+- [ ] All .jsx files converted to .tsx
+- [ ] All import paths updated
+- [ ] TypeScript compilation passes
+- [ ] Plugin loads without errors
+- [ ] All functionality tested
+- [ ] Documentation updated
+
+## Example: Complete Plugin Conversion
+
+See the AutoRecon plugin for a complete example of a fully converted TypeScript plugin following all these patterns.

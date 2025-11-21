@@ -1,11 +1,11 @@
 import { exec } from "child_process";
 import { promisify } from "util";
-import { AutoReconLogger as logger } from "../../plugin.js";
+import { AutoReconLogger as logger } from "../../plugin.ts";
 
 const execAsync = promisify(exec);
 
 // CRT.sh certificate transparency subdomain enumeration
-export const runCrtshScan = async (domain) => {
+export const runCrtshScan = async (domain: string): Promise<string[]> => {
   try {
     logger.log(`Running crt.sh scan for ${domain}`);
 
@@ -25,12 +25,12 @@ export const runCrtshScan = async (domain) => {
     try {
       certificates = JSON.parse(result.stdout);
       logger.log(`CRT.sh parsed ${certificates.length} certificates for ${domain}`);
-    } catch (parseError) {
+    } catch (parseError: any) {
       logger.error(`CRT.sh JSON parse failed for ${domain}:`, parseError.message);
       return [];
     }
 
-    const domains = new Set();
+    const domains = new Set<string>();
 
     for (const cert of certificates) {
       if (cert.name_value) {
@@ -49,7 +49,7 @@ export const runCrtshScan = async (domain) => {
 
     logger.log(`crt.sh found ${domains.size} domains for ${domain}:`, Array.from(domains));
     return Array.from(domains);
-  } catch (error) {
+  } catch (error: any) {
     logger.error(`crt.sh scan failed for ${domain}:`, error);
     return [];
   }

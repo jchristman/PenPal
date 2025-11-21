@@ -1,7 +1,7 @@
-import autorecon_queries_resolvers from "./autorecon.queries.js";
-import autorecon_mutations_resolvers from "./autorecon.mutations.js";
-import autorecon_subscriptions_resolvers from "./autorecon.subscriptions.js";
-import autorecon_configuration_resolvers from "./autorecon.configuration.js";
+import autorecon_queries_resolvers from "./autorecon.queries.ts";
+import autorecon_mutations_resolvers from "./autorecon.mutations.ts";
+import autorecon_subscriptions_resolvers from "./autorecon.subscriptions.ts";
+import autorecon_configuration_resolvers from "./autorecon.configuration.ts";
 
 export default {
   queries: {

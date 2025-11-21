@@ -4,7 +4,7 @@ import { fileURLToPath } from "url";
 const __dirname = dirname(fileURLToPath(import.meta.url));
 const cur_dir = join(__dirname, ".");
 
-const loadGraphQLFiles = async () => {
+const loadGraphQLFiles = async (): Promise<any> => {
   return PenPal.Utils.LoadGraphQLDirectories(cur_dir);
 };
 

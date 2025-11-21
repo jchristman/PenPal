@@ -11,17 +11,54 @@ import {
 } from "@heroicons/react/24/outline";
 
 // Import GraphQL queries/mutations/subscriptions
-import StartAutoReconScan from "../queries/start-auto-recon-scan.js";
+import StartAutoReconScan from "../queries/start-auto-recon-scan.ts";
+import GetStagedAssets from "../queries/get-staged-assets.ts";
+import AcceptStagedAssets from "../mutations/accept-staged-assets.ts";
+import RejectStagedAssets from "../mutations/reject-staged-assets.ts";
 
 const { useToast } = Hooks;
 const { Table, TableBody, TableCell, TableHead, TableHeader, TableRow, Badge } =
   Components;
 
+interface Project {
+  id: string;
+  [key: string]: any;
+}
+
+interface Job {
+  id: string;
+  name: string;
+  plugin: string;
+  progress?: number;
+  statusText?: string;
+  status: string;
+  stages?: any[];
+  created_at: string;
+  updated_at: string;
+  project_id: string;
+}
+
+interface StagedAsset {
+  id: string;
+  type: string;
+  value: string;
+  tool: string;
+  confidence: number;
+  classification?: string;
+  metadata?: any;
+  created_at: string;
+}
+
+interface AutoReconSectionProps {
+  project: Project;
+}
+
 // AutoRecon Section Component - full AutoRecon UI
-const AutoReconSection = ({ project }) => {
+const AutoReconSection: React.FC<AutoReconSectionProps> = ({ project }) => {
   const { toast } = useToast();
   const [scanInProgress, setScanInProgress] = useState(false);
   const [stagedAssetsDrawerOpen, setStagedAssetsDrawerOpen] = useState(false);
+  const [selectedAssetIds, setSelectedAssetIds] = useState<string[]>([]);
 
   // Query for AutoRecon jobs for this project
   const {
@@ -72,11 +109,11 @@ const AutoReconSection = ({ project }) => {
   const [acceptAssetsMutation] = useMutation(AcceptStagedAssets);
   const [rejectAssetsMutation] = useMutation(RejectStagedAssets);
 
-  const allJobs = jobsData?.getAllJobs?.jobs || [];
+  const allJobs: Job[] = jobsData?.getAllJobs?.jobs || [];
   const autoreconJobs = allJobs.filter(
     (job) => job.plugin === "AutoRecon" && job.project_id === project.id
   );
-  const stagedAssets = assetsData?.getStagedAssets || [];
+  const stagedAssets: StagedAsset[] = assetsData?.getStagedAssets || [];
   const activeJob = autoreconJobs.find(
     (job) => job.status === "running" || job.status === "pending"
   );
@@ -95,7 +132,7 @@ const AutoReconSection = ({ project }) => {
         });
         refetchJobs();
       }
-    } catch (error) {
+    } catch (error: any) {
       toast({
         title: "Error",
         description: `Failed to start AutoRecon scan: ${error.message}`,
@@ -135,7 +172,7 @@ const AutoReconSection = ({ project }) => {
         setSelectedAssetIds([]);
         refetchAssets();
       }
-    } catch (error) {
+    } catch (error: any) {
       toast({
         title: "Error",
         description: `Failed to accept assets: ${error.message}`,
@@ -170,7 +207,7 @@ const AutoReconSection = ({ project }) => {
         setSelectedAssetIds([]);
         refetchAssets();
       }
-    } catch (error) {
+    } catch (error: any) {
       toast({
         title: "Error",
         description: `Failed to reject assets: ${error.message}`,
@@ -355,7 +392,7 @@ const AutoReconSection = ({ project }) => {
 };
 
 // AutoRecon Buttons Component - provides button for the project scope header
-const AutoReconButtons = ({ project }) => {
+const AutoReconButtons: React.FC<AutoReconSectionProps> = ({ project }) => {
   const { toast } = useToast();
   const [scanInProgress, setScanInProgress] = useState(false);
 
@@ -392,7 +429,7 @@ const AutoReconButtons = ({ project }) => {
   // Mutation for starting scan
   const [startScanMutation] = useMutation(StartAutoReconScan);
 
-  const allJobs = jobsData?.getAllJobs?.jobs || [];
+  const allJobs: Job[] = jobsData?.getAllJobs?.jobs || [];
   const autoreconJobs = allJobs.filter(
     (job) => job.plugin === "AutoRecon" && job.project_id === project.id
   );
@@ -414,7 +451,7 @@ const AutoReconButtons = ({ project }) => {
         });
         refetchJobs();
       }
-    } catch (error) {
+    } catch (error: any) {
       toast({
         title: "Error",
         description: `Failed to start AutoRecon scan: ${error.message}`,

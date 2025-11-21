@@ -1,8 +1,6 @@
-import { Components } from "@penpal/core";
-
-const registerRoutes = (routes) => {
+const registerRoutes = () => {
   // AutoRecon doesn't add new routes - it extends existing project view
-  return routes;
+  return;
 };
 
 export default registerRoutes;

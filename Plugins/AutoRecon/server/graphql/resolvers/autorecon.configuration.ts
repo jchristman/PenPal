@@ -1,13 +1,42 @@
-import * as API from "../../api/index.js";
-import { AutoReconLogger as logger } from "../../plugin.js";
+import * as API from "../../api/index.ts";
+import { AutoReconLogger as logger } from "../../plugin.ts";
 import {
   AutoReconToolDefaults,
   AutoReconConfigDefaults,
-} from "../../../common/autorecon-constants.js";
+} from "../../../common/autorecon-constants.ts";
+
+interface ConfigurationInput {
+  ui?: {
+    enabled?: boolean;
+    autoStart?: boolean;
+  };
+  tools?: Record<string, boolean>;
+  options?: {
+    recursive?: boolean;
+    scanAllDomains?: boolean;
+    timeout?: number;
+    maxConcurrency?: number;
+  };
+  _ui?: any;
+}
+
+interface ValidatedConfiguration {
+  ui?: {
+    enabled: boolean;
+    autoStart: boolean;
+  };
+  tools?: Record<string, boolean>;
+  options?: {
+    recursive: boolean;
+    scanAllDomains: boolean;
+    timeout?: number;
+    maxConcurrency?: number;
+  };
+}
 
 export default {
   queries: {
-    async getAutoReconConfiguration() {
+    async getAutoReconConfiguration(): Promise<any> {
       try {
         logger.log("Getting AutoRecon configuration");
 
@@ -42,7 +71,7 @@ export default {
   },
 
   mutations: {
-    async setAutoReconConfiguration(parent, { configuration }) {
+    async setAutoReconConfiguration(_parent: any, { configuration }: { configuration: ConfigurationInput }): Promise<any> {
       try {
         logger.log("Setting AutoRecon configuration", configuration);
 
@@ -50,7 +79,7 @@ export default {
         const validatedConfig = validateConfiguration(configuration);
 
         // Save configuration
-        const result = await API.updateAutoReconConfiguration("global", validatedConfig);
+        const result = await API.updateAutoReconConfiguration("global", validatedConfig.tools, validatedConfig.options);
 
         // Return merged config with UI metadata
         return {
@@ -66,8 +95,8 @@ export default {
 };
 
 // Helper function to validate configuration
-function validateConfiguration(config) {
-  const validated = { ...config };
+function validateConfiguration(config: ConfigurationInput): ValidatedConfiguration {
+  const validated: ValidatedConfiguration = { ...config };
 
   // Validate UI config
   if (config.ui) {
@@ -81,8 +110,8 @@ function validateConfiguration(config) {
   if (config.tools) {
     validated.tools = {};
     Object.keys(AutoReconToolDefaults).forEach(tool => {
-      if (typeof config.tools[tool] === 'boolean') {
-        validated.tools[tool] = config.tools[tool];
+      if (typeof config.tools![tool] === 'boolean') {
+        validated.tools![tool] = config.tools![tool];
       }
     });
   }
@@ -101,7 +130,7 @@ function validateConfiguration(config) {
 }
 
 // Helper function to build UI configuration
-function buildUIConfig() {
+function buildUIConfig(): any {
   return {
     sections: [
       {
