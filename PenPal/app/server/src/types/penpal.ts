@@ -15,12 +15,14 @@ export interface PenPalInstance {
   RegisteredPlugins: Record<string, RegisteredPlugin>;
   LoadedPlugins: Record<string, LoadedPlugin>;
   Utils: PenPalUtils;
+  Types: Record<string, any>;
 
   // Core methods
   init(): Promise<void>;
   registerPlugin(manifest: any, plugin: PluginModule): void;
   loadPlugins(): Promise<PluginLoaderResult>;
   runStartupHooks(): Promise<void>;
+  registerType(name: string, type: any): void;
 
   // Plugin-added properties (will be added as plugins are converted)
   // API?: PenPalAPI;

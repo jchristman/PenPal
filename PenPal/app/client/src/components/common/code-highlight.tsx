@@ -5,6 +5,7 @@ import "./prism.js"; // Loads as a global
 import "./prism.css";
 
 // Note: Prism is loaded as a global via the import above
+declare const Prism: any;
 
 Prism.plugins.NormalizeWhitespace.setDefaults({
   "remove-trailing": true,

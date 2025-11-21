@@ -1,4 +1,3 @@
-import _ from "lodash";
 import {
   query as queryBuilder,
   mutation as mutationBuilder,
@@ -41,7 +40,11 @@ interface MutationMap {
 
 // ----------------------------------------------------------------------------
 
-export const process_schema = (types: SchemaMap, schema_root: GraphQLTypeNode | undefined, depth: number = 0): any => {
+export const process_schema = (
+  types: SchemaMap,
+  schema_root: GraphQLTypeNode | undefined,
+  depth: number = 0
+): any => {
   let query: any = {};
 
   query.fields = [];
@@ -78,7 +81,11 @@ export const process_schema = (types: SchemaMap, schema_root: GraphQLTypeNode | 
   return depth === 0 ? query : query.fields;
 };
 
-export const generateQueryFromSchema = (types: SchemaMap | false, schema_root: string | false, query_name: string | false): any => {
+export const generateQueryFromSchema = (
+  types: SchemaMap | false,
+  schema_root: string | false,
+  query_name: string | false
+): any => {
   if (types === false || schema_root === false || query_name === false) {
     return gql`
       {
@@ -95,7 +102,10 @@ export const generateQueryFromSchema = (types: SchemaMap | false, schema_root: s
   `;
 };
 
-export const generateQueryFromSchemas = (types: SchemaMap | false, schemas: { schema_root: string; query_name: string }[] = []): any => {
+export const generateQueryFromSchemas = (
+  types: SchemaMap | false,
+  schemas: { schema_root: string; query_name: string }[] = []
+): any => {
   if (types === false || schemas.length === 0) {
     return gql`
       {
@@ -124,7 +134,9 @@ export const generateQueryFromSchemas = (types: SchemaMap | false, schemas: { sc
 };
 
 // Helper: unwrap nested type to base named type
-const unwrapTypeName = (typeNode: GraphQLTypeNode | undefined): string | undefined => {
+const unwrapTypeName = (
+  typeNode: GraphQLTypeNode | undefined
+): string | undefined => {
   if (!typeNode) return undefined;
   if (typeNode.kind === "NON_NULL" || typeNode.kind === "LIST") {
     return unwrapTypeName(typeNode.ofType);
@@ -133,7 +145,9 @@ const unwrapTypeName = (typeNode: GraphQLTypeNode | undefined): string | undefin
 };
 
 // Helper: unwrap kind (for root return kinds when name points to object)
-const unwrapKind = (typeNode: GraphQLTypeNode | undefined): string | undefined => {
+const unwrapKind = (
+  typeNode: GraphQLTypeNode | undefined
+): string | undefined => {
   if (!typeNode) return undefined;
   if (typeNode.kind === "NON_NULL" || typeNode.kind === "LIST") {
     return unwrapKind(typeNode.ofType);
@@ -154,7 +168,11 @@ const buildTypeString = (typeNode: GraphQLTypeNode | undefined): string => {
   return typeNode.name || buildTypeString(typeNode.ofType) || "String";
 };
 
-export const generateMutationFromSchema = (types: SchemaMap | false, mutations: MutationMap | false, mutation_name: string | false): any => {
+export const generateMutationFromSchema = (
+  types: SchemaMap | false,
+  mutations: MutationMap | false,
+  mutation_name: string | false
+): any => {
   if (types === false || mutations === false || mutation_name === false) {
     return gql`
       mutation {
@@ -164,13 +182,13 @@ export const generateMutationFromSchema = (types: SchemaMap | false, mutations: 
   }
 
   const mutation_schema = mutations[mutation_name as string];
-  const variables = _.chain(mutation_schema?.args || [])
-    .keyBy("name")
-    .mapValues((variable: any) => ({
+  const variables = (mutation_schema?.args || []).reduce((acc, variable) => {
+    acc[variable.name] = {
       value: null,
       type: buildTypeString(variable?.type),
-    }))
-    .value();
+    };
+    return acc;
+  }, {} as Record<string, { value: null; type: string }>);
 
   // Determine fields for return type. If scalar, request no fields
   const returnTypeName = unwrapTypeName(mutation_schema.type);
@@ -178,7 +196,9 @@ export const generateMutationFromSchema = (types: SchemaMap | false, mutations: 
   const selection =
     returnKind === "SCALAR"
       ? { fields: [] }
-      : returnTypeName ? process_schema(types, types[returnTypeName]) : { fields: [] };
+      : returnTypeName
+      ? process_schema(types, types[returnTypeName])
+      : { fields: [] };
 
   const mutation_config = {
     operation: mutation_name,

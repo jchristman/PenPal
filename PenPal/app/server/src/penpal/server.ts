@@ -32,6 +32,7 @@ const PenPal: PenPalInstance = {
   RegisteredPlugins: {},
   LoadedPlugins: {},
   Utils: {} as PenPalUtils,
+  Types: {} as Record<string, any>,
   init: async (): Promise<void> => {
     PenPal.Utils.MkdirP(PenPal.Constants.TMP_DIR!);
   },
@@ -86,6 +87,9 @@ const PenPal: PenPalInstance = {
     for (let plugin_name in PenPal.LoadedPlugins) {
       await PenPal.LoadedPlugins[plugin_name].startupHook?.();
     }
+  },
+  registerType: (name: string, type: any): void => {
+    PenPal.Types[name] = type;
   },
 };
 

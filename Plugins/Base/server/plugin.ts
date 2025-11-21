@@ -1,4 +1,4 @@
-import { loadGraphQLFiles, resolvers } from "./graphql/index.js";
+import { loadGraphQLFiles, resolvers } from "./graphql/index.ts";
 import PenPal from "#penpal/core";
 
 PenPal.Test = {};

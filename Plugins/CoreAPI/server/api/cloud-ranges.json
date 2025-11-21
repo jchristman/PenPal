@@ -1,6 +1,6 @@
 {
-  "generatedAt": "2025-11-19T15:17:26.725Z",
-  "totalRanges": 20888,
+  "generatedAt": "2025-11-21T19:30:27.304Z",
+  "totalRanges": 20881,
   "ranges": [
     {
       "cidr": "3.4.12.4/32",
@@ -4791,6 +4791,12 @@
       "region": "ap-northeast-1"
     },
     {
+      "cidr": "122.200.61.0/24",
+      "provider": "AWS",
+      "service": "AMAZON",
+      "region": "ap-southeast-2"
+    },
+    {
       "cidr": "150.222.44.32/27",
       "provider": "AWS",
       "service": "AMAZON",
@@ -5605,6 +5611,12 @@
       "provider": "AWS",
       "service": "AMAZON",
       "region": "us-gov-east-1"
+    },
+    {
+      "cidr": "23.228.225.0/24",
+      "provider": "AWS",
+      "service": "AMAZON",
+      "region": "GLOBAL"
     },
     {
       "cidr": "35.50.236.0/24",
@@ -6595,6 +6607,12 @@
       "provider": "AWS",
       "service": "AMAZON",
       "region": "us-west-2"
+    },
+    {
+      "cidr": "51.74.16.0/24",
+      "provider": "AWS",
+      "service": "AMAZON",
+      "region": "eusc-de-east-1"
     },
     {
       "cidr": "52.93.127.219/32",
@@ -8173,12 +8191,6 @@
       "provider": "AWS",
       "service": "AMAZON",
       "region": "eusc-de-east-1"
-    },
-    {
-      "cidr": "52.82.176.0/22",
-      "provider": "AWS",
-      "service": "AMAZON",
-      "region": "cn-northwest-1"
     },
     {
       "cidr": "52.144.194.192/26",
@@ -10629,12 +10641,6 @@
       "region": "GLOBAL"
     },
     {
-      "cidr": "54.222.32.0/22",
-      "provider": "AWS",
-      "service": "AMAZON",
-      "region": "cn-north-1"
-    },
-    {
       "cidr": "64.252.123.0/24",
       "provider": "AWS",
       "service": "AMAZON",
@@ -10939,12 +10945,6 @@
       "provider": "AWS",
       "service": "AMAZON",
       "region": "ap-southeast-7"
-    },
-    {
-      "cidr": "51.0.140.0/23",
-      "provider": "AWS",
-      "service": "AMAZON",
-      "region": "eusc-de-east-1"
     },
     {
       "cidr": "52.93.50.0/24",
@@ -13789,12 +13789,6 @@
       "provider": "AWS",
       "service": "AMAZON",
       "region": "eu-west-3"
-    },
-    {
-      "cidr": "51.0.142.0/23",
-      "provider": "AWS",
-      "service": "AMAZON",
-      "region": "eusc-de-east-1"
     },
     {
       "cidr": "52.93.86.165/32",
@@ -18717,6 +18711,12 @@
       "region": "ap-northeast-1"
     },
     {
+      "cidr": "23.228.224.0/24",
+      "provider": "AWS",
+      "service": "AMAZON",
+      "region": "GLOBAL"
+    },
+    {
       "cidr": "52.2.0.0/15",
       "provider": "AWS",
       "service": "AMAZON",
@@ -18949,12 +18949,6 @@
       "provider": "AWS",
       "service": "AMAZON",
       "region": "us-gov-east-1"
-    },
-    {
-      "cidr": "51.0.136.0/23",
-      "provider": "AWS",
-      "service": "AMAZON",
-      "region": "eusc-de-east-1"
     },
     {
       "cidr": "52.93.55.166/31",
@@ -19279,12 +19273,6 @@
       "provider": "AWS",
       "service": "AMAZON",
       "region": "ap-northeast-1"
-    },
-    {
-      "cidr": "52.46.180.0/22",
-      "provider": "AWS",
-      "service": "AMAZON",
-      "region": "us-west-2"
     },
     {
       "cidr": "52.93.98.0/24",
@@ -21429,12 +21417,6 @@
       "region": "eu-south-1"
     },
     {
-      "cidr": "51.0.138.0/23",
-      "provider": "AWS",
-      "service": "AMAZON",
-      "region": "eusc-de-east-1"
-    },
-    {
       "cidr": "52.93.84.166/32",
       "provider": "AWS",
       "service": "AMAZON",
@@ -21811,12 +21793,6 @@
       "provider": "AWS",
       "service": "AMAZON",
       "region": "us-east-1"
-    },
-    {
-      "cidr": "52.82.180.0/22",
-      "provider": "AWS",
-      "service": "AMAZON",
-      "region": "cn-northwest-1"
     },
     {
       "cidr": "52.93.44.0/24",
@@ -25113,12 +25089,6 @@
       "region": "eu-west-1"
     },
     {
-      "cidr": "54.222.36.0/22",
-      "provider": "AWS",
-      "service": "AMAZON",
-      "region": "cn-north-1"
-    },
-    {
       "cidr": "108.166.244.30/32",
       "provider": "AWS",
       "service": "AMAZON",
@@ -25909,12 +25879,6 @@
       "provider": "AWS",
       "service": "AMAZON",
       "region": "eu-west-3"
-    },
-    {
-      "cidr": "52.46.184.0/22",
-      "provider": "AWS",
-      "service": "AMAZON",
-      "region": "eu-central-1"
     },
     {
       "cidr": "52.67.0.0/16",
@@ -37869,6 +37833,12 @@
       "region": "eu-west-1"
     },
     {
+      "cidr": "122.200.61.0/24",
+      "provider": "AWS",
+      "service": "EC2",
+      "region": "ap-southeast-2"
+    },
+    {
       "cidr": "15.228.0.0/15",
       "provider": "AWS",
       "service": "EC2",
@@ -38475,6 +38445,12 @@
       "region": "us-east-1"
     },
     {
+      "cidr": "51.74.16.0/24",
+      "provider": "AWS",
+      "service": "EC2",
+      "region": "eusc-de-east-1"
+    },
+    {
       "cidr": "99.77.152.0/24",
       "provider": "AWS",
       "service": "EC2",
@@ -39003,12 +38979,6 @@
       "region": "eusc-de-east-1"
     },
     {
-      "cidr": "52.82.176.0/22",
-      "provider": "AWS",
-      "service": "EC2",
-      "region": "cn-northwest-1"
-    },
-    {
       "cidr": "54.183.0.0/16",
       "provider": "AWS",
       "service": "EC2",
@@ -39418,6 +39388,12 @@
     },
     {
       "cidr": "15.220.208.128/26",
+      "provider": "AWS",
+      "service": "EC2",
+      "region": "us-west-2"
+    },
+    {
+      "cidr": "16.148.0.0/16",
       "provider": "AWS",
       "service": "EC2",
       "region": "us-west-2"
@@ -39843,12 +39819,6 @@
       "region": "us-east-1"
     },
     {
-      "cidr": "54.222.32.0/22",
-      "provider": "AWS",
-      "service": "EC2",
-      "region": "cn-north-1"
-    },
-    {
       "cidr": "64.252.123.0/24",
       "provider": "AWS",
       "service": "EC2",
@@ -39985,12 +39955,6 @@
       "provider": "AWS",
       "service": "EC2",
       "region": "ap-southeast-7"
-    },
-    {
-      "cidr": "51.0.140.0/23",
-      "provider": "AWS",
-      "service": "EC2",
-      "region": "eusc-de-east-1"
     },
     {
       "cidr": "52.94.248.224/28",
@@ -40945,12 +40909,6 @@
       "provider": "AWS",
       "service": "EC2",
       "region": "eu-west-3"
-    },
-    {
-      "cidr": "51.0.142.0/23",
-      "provider": "AWS",
-      "service": "EC2",
-      "region": "eusc-de-east-1"
     },
     {
       "cidr": "54.80.0.0/13",
@@ -42675,10 +42633,10 @@
       "region": "us-east-1"
     },
     {
-      "cidr": "51.0.136.0/23",
+      "cidr": "15.224.0.0/16",
       "provider": "AWS",
       "service": "EC2",
-      "region": "eusc-de-east-1"
+      "region": "eu-west-3"
     },
     {
       "cidr": "15.253.0.0/16",
@@ -42751,12 +42709,6 @@
       "provider": "AWS",
       "service": "EC2",
       "region": "eu-west-2"
-    },
-    {
-      "cidr": "52.46.180.0/22",
-      "provider": "AWS",
-      "service": "EC2",
-      "region": "us-west-2"
     },
     {
       "cidr": "216.198.231.0/24",
@@ -43479,12 +43431,6 @@
       "region": "eu-south-1"
     },
     {
-      "cidr": "51.0.138.0/23",
-      "provider": "AWS",
-      "service": "EC2",
-      "region": "eusc-de-east-1"
-    },
-    {
       "cidr": "99.77.55.42/32",
       "provider": "AWS",
       "service": "EC2",
@@ -43603,12 +43549,6 @@
       "provider": "AWS",
       "service": "EC2",
       "region": "us-east-1"
-    },
-    {
-      "cidr": "52.82.180.0/22",
-      "provider": "AWS",
-      "service": "EC2",
-      "region": "cn-northwest-1"
     },
     {
       "cidr": "99.151.64.0/21",
@@ -43843,6 +43783,12 @@
       "provider": "AWS",
       "service": "EC2",
       "region": "us-east-1"
+    },
+    {
+      "cidr": "15.233.0.0/16",
+      "provider": "AWS",
+      "service": "EC2",
+      "region": "ap-southeast-3"
     },
     {
       "cidr": "52.94.249.176/28",
@@ -44101,6 +44047,12 @@
       "provider": "AWS",
       "service": "EC2",
       "region": "us-east-2"
+    },
+    {
+      "cidr": "63.184.0.0/13",
+      "provider": "AWS",
+      "service": "EC2",
+      "region": "eu-central-1"
     },
     {
       "cidr": "18.153.0.0/16",
@@ -44607,12 +44559,6 @@
       "region": "ap-northeast-2"
     },
     {
-      "cidr": "54.222.36.0/22",
-      "provider": "AWS",
-      "service": "EC2",
-      "region": "cn-north-1"
-    },
-    {
       "cidr": "216.198.214.0/24",
       "provider": "AWS",
       "service": "EC2",
@@ -44835,6 +44781,12 @@
       "region": "ap-northeast-1"
     },
     {
+      "cidr": "16.147.0.0/16",
+      "provider": "AWS",
+      "service": "EC2",
+      "region": "us-west-2"
+    },
+    {
       "cidr": "35.44.0.0/15",
       "provider": "AWS",
       "service": "EC2",
@@ -44845,12 +44797,6 @@
       "provider": "AWS",
       "service": "EC2",
       "region": "ap-south-2"
-    },
-    {
-      "cidr": "52.46.184.0/22",
-      "provider": "AWS",
-      "service": "EC2",
-      "region": "eu-central-1"
     },
     {
       "cidr": "52.67.0.0/16",
@@ -46221,6 +46167,12 @@
       "region": "GLOBAL"
     },
     {
+      "cidr": "23.228.225.0/24",
+      "provider": "AWS",
+      "service": "CLOUDFRONT",
+      "region": "GLOBAL"
+    },
+    {
       "cidr": "99.86.0.0/16",
       "provider": "AWS",
       "service": "CLOUDFRONT",
@@ -46534,6 +46486,12 @@
     },
     {
       "cidr": "52.84.0.0/15",
+      "provider": "AWS",
+      "service": "CLOUDFRONT",
+      "region": "GLOBAL"
+    },
+    {
+      "cidr": "23.228.224.0/24",
       "provider": "AWS",
       "service": "CLOUDFRONT",
       "region": "GLOBAL"
@@ -94285,7 +94243,7 @@
       "provider": "Linode"
     },
     {
-      "cidr": "# Last modified: 2025-11-19 10:00:04.981784",
+      "cidr": "# Last modified: 2025-11-21 10:00:04.958604",
       "provider": "Linode"
     },
     {

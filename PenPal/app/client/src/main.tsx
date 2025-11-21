@@ -15,7 +15,7 @@ import "./components/root.tsx";
 import "./components/common/user-provider";
 
 // Load the plugins' code
-import Plugins from "@penpal/plugins";
+import Plugins from "../plugins/plugins-loader-client.js";
 
 // Render the root component
 (async () => {

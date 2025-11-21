@@ -1,93 +1,60 @@
-import React from 'react';
+import React from "react";
 
-// PenPal Global Object Types
-interface PenPalComponents {
+// PenPal Types
+export interface PenPalComponent {
   [key: string]: React.ComponentType<any>;
 }
 
-interface PenPalHooks {
+export interface PenPalHook {
   [key: string]: (...args: any[]) => any;
 }
 
-interface PenPalRoutes {
+export interface PenPalRoute {
   [key: string]: any;
 }
 
-interface PenPalBadges {
+export interface PenPalBadge {
   [key: string]: any;
 }
 
-interface PenPalProjectScopeButtons {
+export interface PenPalUtils {
   [key: string]: any;
 }
 
-interface PenPalUtils {
+export interface PenPalTypes {
   [key: string]: any;
 }
 
-interface PenPalPluginManifest {
+// TODO: Move this to the CoreAPI plugin
+export interface PenPalProjectScopeButton {
+  [key: string]: any;
+}
+
+export interface PenPalPluginManifest {
   name?: string;
   version?: string;
   dependsOn?: string[];
 }
 
-interface PenPalPlugin {
+export interface PenPalPlugin {
   loadPlugin: () => Promise<{ registerRoutes?: () => void }>;
 }
 
-interface PenPalRegisteredPlugin {
+export interface PenPalRegisteredPlugin {
   name: string;
   version: string;
   dependsOn: string[];
   plugin: PenPalPlugin;
 }
 
-interface PenPalLoadedPlugin {
+export interface PenPalLoadedPlugin {
   loaded: boolean;
   name: string;
   version: string;
 }
 
 declare global {
-  var PenPal: {
-    Components: PenPalComponents;
-    Hooks: PenPalHooks;
-    Routes: PenPalRoutes;
-    Badges: PenPalBadges;
-    ProjectScopeButtons: PenPalProjectScopeButtons;
-    Utils: PenPalUtils;
-    Regex: Record<string, RegExp>;
-    GraphQL: {
-      Utils: any;
-    };
-    RegisteredPlugins: Record<string, PenPalRegisteredPlugin>;
-    LoadedPlugins: Record<string, PenPalLoadedPlugin>;
-    registerComponent: (name: string, component: React.ComponentType<any>) => void;
-    registerHook: (name: string, hook: (...args: any[]) => any) => void;
-    registerRoute: (options: any, index?: number) => void;
-    registerBadge: (badge: any) => void;
-    registerProjectScopeButton: (buttonConfig: any) => void;
-    getRoute: (routeName: string) => any;
-    registerUtil: (name: string, util: any) => void;
-    registerPlugin: (manifest: PenPalPluginManifest, plugin: PenPalPlugin) => void;
-    loadPlugins: () => Promise<void>;
-  };
-
-  // ImportMeta types for Vite
   interface ImportMeta {
-    glob: (pattern: string, options?: { eager?: boolean }) => Record<string, any>;
+    glob: (pattern: string, options: { eager: boolean }) => Record<string, any>;
   }
-
-  // Prism global
-  const Prism: {
-    plugins: {
-      NormalizeWhitespace: {
-        setDefaults: (defaults: any) => void;
-      };
-    };
-    highlightAll: () => void;
-  };
-
-  // Apollo init function
-  function apolloInit(onProgress?: (status: string) => void): Promise<any>;
 }

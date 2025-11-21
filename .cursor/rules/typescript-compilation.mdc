@@ -1,0 +1,207 @@
+---
+description: Guidelines for TypeScript compilation checks and error fixing in the PenPal project
+alwaysApply: false
+---
+# TypeScript Compilation and Error Fixing
+
+This rule provides comprehensive guidance for running TypeScript compilation checks and fixing compilation errors in the PenPal project.
+
+## **Core Principles**
+
+- **NEVER modify tsconfig files** without explicit permission. They are carefully configured for the specific project structure.
+- **Run compilation checks in Docker containers** using the dedicated `run-tsc.sh` script.
+- **Fix compilation errors iteratively** by running the script in a loop until all issues are resolved.
+- **Be aware of Docker mount paths** - local `Plugins/` folder maps to `/penpal/plugins` in containers.
+
+## **Compilation Workflow**
+
+### **Step 1: Run Compilation Checks**
+
+Use the `run-tsc.sh` script with specific targets:
+
+```bash
+# Check server TypeScript compilation
+./run-tsc.sh server
+
+# Check client TypeScript compilation
+./run-tsc.sh client
+
+# Check both (run separately, not recommended for fixing)
+./run-tsc.sh all
+```
+
+### **Step 2: Automated Error Fixing**
+
+**AI agents should run compilation checks and automatically fix errors** until no errors remain. Process one target at a time (server or client):
+
+**For Server Compilation:**
+1. Run `./run-tsc.sh server`
+2. If errors exist, analyze and fix them systematically
+3. Re-run `./run-tsc.sh server` to verify fixes
+4. Repeat until compilation succeeds
+
+**For Client Compilation:**
+1. Run `./run-tsc.sh client`
+2. If errors exist, analyze and fix them systematically
+3. Re-run `./run-tsc.sh client` to verify fixes
+4. Repeat until compilation succeeds
+
+**Never run both server and client simultaneously** - fix one environment completely before moving to the other.
+
+## **AI Agent Error Resolution Process**
+
+When compilation fails, AI agents should:
+
+### **1. Analyze Error Output**
+- Read the full error messages from the script output
+- Identify the specific files and line numbers with errors
+- Categorize errors by type (imports, types, syntax, etc.)
+
+### **2. Fix Errors Systematically**
+- Start with the first error listed
+- Fix one error at a time, then re-run to check progress
+- Don't make multiple changes before re-checking compilation
+- Use the error patterns and solutions documented below
+
+### **3. Verify Fixes**
+- Re-run the compilation script after each fix
+- Ensure the previously fixed error no longer appears
+- Continue until script exits with success (0)
+
+### **4. Handle Persistent Errors**
+- If an error persists after attempted fixes, examine the error more carefully
+- Check for related issues in other files
+- Consider if the fix approach needs adjustment
+- Document any errors that cannot be resolved for human review
+
+## **Understanding Docker Mount Structure**
+
+The project uses volume mounts that affect file paths during compilation:
+
+### **Mount Points**
+- **Local:** `./Plugins/` → **Container:** `/penpal/plugins`
+- **Local:** `./PenPal/app/client/src/` → **Container:** `/penpal/src`
+- **Local:** `./PenPal/app/server/src/` → **Container:** `/penpal/src`
+
+### **Path Translation Examples**
+
+```typescript
+// ✅ DO: Use paths that work in both local and container contexts
+import { CoreAPI } from '../../../plugins/CoreAPI/client/index'
+
+// ❌ DON'T: Use absolute container paths in source code
+import { CoreAPI } from '/penpal/plugins/CoreAPI/client/index'
+```
+
+## **Common Compilation Error Patterns**
+
+### **Plugin Import Errors**
+
+**Error:** `Cannot find module '../../plugins/PluginName/client/index'`
+
+**Solution:** Verify the plugin exists and check the import path:
+```typescript
+// ✅ Correct import from plugins-loader-client.ts context
+import { PluginName } from '@penpal/plugins'
+
+// ✅ Direct import if plugin exports properly
+import PluginName from '../../../plugins/PluginName/client/index'
+```
+
+### **Type Declaration Errors**
+
+**Error:** `Property 'X' does not exist on type 'Y'`
+
+**Solutions:**
+- Check if types are properly exported from plugin manifests
+- Add missing type declarations to `types.d.ts` files
+- Ensure plugin follows the established type contract
+
+### **Module Resolution Issues**
+
+**Error:** `Module not found: @penpal/core` or `#penpal/core`
+
+**Context-Aware Solutions:**
+```typescript
+// ✅ Client-side imports
+import { PenPal } from '@penpal/core'
+
+// ✅ Server-side imports
+import { PenPal } from '#penpal/core'
+```
+
+## **Container-Specific Behavior**
+
+### **Server Container (`penpal-server`)**
+- Working directory: `/penpal`
+- Includes server source and plugin server code
+- Uses strict TypeScript settings with declarations enabled
+
+### **Client Container (`penpal-frontend`)**
+- Working directory: `/penpal`
+- Includes client source and plugin client code
+- Uses bundler resolution for modern import patterns
+
+## **Best Practices**
+
+### **✅ DO**
+- Run compilation checks before committing changes
+- Fix errors immediately when they appear in development
+- **AI agents**: Automatically run script and fix errors until no errors remain
+- Keep server and client compilation separate for clarity
+- Verify both server and client compile successfully before deployment
+- Re-run compilation checks after each fix to ensure errors are resolved
+
+### **❌ DON'T**
+- Modify `tsconfig.json` files without explicit approval
+- Run `tsc` directly outside of Docker containers
+- Use absolute container paths (`/penpal/plugins/...`) in source code
+- Commit code that fails TypeScript compilation
+- Mix server and client compilation checks in the same session
+
+## **Troubleshooting Steps**
+
+### **Container Not Running**
+If containers aren't running, the script will automatically start them:
+```bash
+# Script handles container lifecycle automatically
+./run-tsc.sh server  # Will start penpal-server if needed
+```
+
+### **Permission Issues**
+The script sets proper user permissions:
+```bash
+export LOCAL_USER_ID=$(id -u)
+export RUN_LOCATION=local
+```
+
+### **Cache Issues**
+If compilation seems stuck or incorrect:
+```bash
+# Clear TypeScript caches
+docker compose exec penpal-server rm -rf node_modules/.cache
+docker compose exec penpal-frontend rm -rf node_modules/.cache
+```
+
+## **Integration with Development Workflow**
+
+### **Pre-Commit Checks**
+Always run compilation before committing:
+```bash
+# In your pre-commit hook or manual check
+./run-tsc.sh server && ./run-tsc.sh client
+```
+
+### **CI/CD Integration**
+The same script pattern applies in CI environments:
+```bash
+# CI command example
+docker compose -f docker-compose.yaml run --rm penpal-server ./run-tsc.sh server
+```
+
+## **File References**
+
+- [run-tsc.sh](mdc:run-tsc.sh) - The compilation script
+- [docker-compose.yaml](mdc:docker-compose.yaml) - Container configuration
+- [PenPal/app/client/tsconfig.json](mdc:PenPal/app/client/tsconfig.json) - Client TypeScript config
+- [PenPal/app/server/tsconfig.json](mdc:PenPal/app/server/tsconfig.json) - Server TypeScript config

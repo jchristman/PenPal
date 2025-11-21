@@ -31,10 +31,8 @@ export default defineConfig(({}) => ({
     alias: {
       "@penpal/core": path.resolve(__dirname, "./src/penpal/client.ts"),
       "@penpal/common": path.resolve(__dirname, "./src/common/common.ts"),
-      "@penpal/plugins": path.resolve(
-        __dirname,
-        "./plugins/plugins-loader-client.js"
-      ),
+      "@penpal/plugins": "./plugins/plugins-loader-client.ts",
+      "@penpal/types": path.resolve(__dirname, "./src/types.d.ts"),
     },
     modules: [
       path.resolve(__dirname, "./src"),

@@ -40,7 +40,7 @@ run_tsc() {
         echo "📦 ${service_display_name} container not running. Starting ${service_name} container..."
 
         # Run the tsc --noEmit command in the container
-        LOCAL_USER_ID=$(id -u) RUN_LOCATION=local docker compose run --rm ${service_name} bash -c "cd ${working_dir} && npm install && echo 'Running TypeScript compilation...' && npx tsc --noEmit"
+        LOCAL_USER_ID=$(id -u) RUN_LOCATION=local docker compose run --rm ${service_name} bash -c "cd ${working_dir} && npm install && echo 'Running TypeScript compilation...' && ./node_modules/.bin/tsc --noEmit"
         local exit_code=$?
         if [ $exit_code -eq 0 ]; then
             echo "✅ ${service_display_name} TypeScript compilation successful!"
@@ -54,7 +54,7 @@ run_tsc() {
         echo "📦 ${service_display_name} container is running. Running compilation..."
 
         # Run the tsc --noEmit command in the running container
-        docker compose exec ${service_name} bash -c "cd ${working_dir} && echo 'Running TypeScript compilation...' && npx tsc --noEmit"
+        docker compose exec ${service_name} bash -c "cd ${working_dir} && echo 'Running TypeScript compilation...' && ./node_modules/.bin/tsc --noEmit"
         local exit_code=$?
         if [ $exit_code -eq 0 ]; then
             echo "✅ ${service_display_name} TypeScript compilation successful!"
@@ -71,7 +71,7 @@ if [[ "$TARGET" == "server" || "$TARGET" == "all" ]]; then
 fi
 
 if [[ "$TARGET" == "client" || "$TARGET" == "all" ]]; then
-    run_tsc "penpal-frontend" "PenPal Client" "/penpal/src"
+    run_tsc "penpal-frontend" "PenPal Client" "/penpal"
 fi
 
 echo "🎉 TypeScript compilation tests passed for target: $TARGET"

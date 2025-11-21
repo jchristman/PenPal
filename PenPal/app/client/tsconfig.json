@@ -19,13 +19,18 @@
     "allowImportingTsExtensions": true,
     "baseUrl": ".",
     "paths": {
-      "@penpal/core": ["./penpal/client"],
-      "@penpal/common": ["./common/common"],
-      "@penpal/plugins": ["../../../Plugins/plugins-loader-client.js"]
+      "@penpal/core": ["./src/penpal/client"],
+      "@penpal/common": ["./src/common/common"],
+      "@penpal/plugins": ["./plugins/plugins-loader-client.ts"],
+      "@penpal/types": ["./src/types.d.ts"]
     }
   },
   "include": [
-    "./**/*"
+    "./src/**/*",
+    "./plugins/**/client/**/*.ts",
+    "./plugins/**/client/**/*.tsx",
+    "./plugins/**/client/**/*.js",
+    "./plugins/**/client/**/*.jsx"
   ],
   "exclude": [
     "node_modules",

@@ -8,7 +8,7 @@
     "allowJs": true,
     "checkJs": false,
     "outDir": "./dist",
-    "rootDir": "./src",
+    "rootDir": ".",
     "declaration": true,
     "declarationMap": true,
     "sourceMap": true,
@@ -32,14 +32,14 @@
     "baseUrl": ".",
     "paths": {
       "#penpal/core": ["./src/penpal/server.ts"],
-      "#penpal/plugins": ["../../Plugins/plugins-loader-server.js"],
+      "#penpal/plugins": ["./plugins/plugins-loader-server.ts"],
       "#penpal/common": ["./src/common/common.ts"]
     },
     "types": ["node"],
     "lib": ["ES2022"]
   },
   "include": [
-    "src/**/*"
+    "src/**/*",
   ],
   "exclude": [
     "node_modules",
