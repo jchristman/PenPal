@@ -86,27 +86,16 @@ The project uses volume mounts that affect file paths during compilation:
 ### **Path Translation Examples**
 
 ```typescript
-// ✅ DO: Use paths that work in both local and container contexts
-import { CoreAPI } from '../../../plugins/CoreAPI/client/index'
+// DO: Use APIs published from the PenPal import
+import PenPal from '@penpal/core';
+PenPal.API.FUNCTION
 
-// ❌ DON'T: Use absolute container paths in source code
+// ❌ DON'T: Use absolute  or relative paths in source code
 import { CoreAPI } from '/penpal/plugins/CoreAPI/client/index'
+import { CoreAPI } from '../../../plugins/CoreAPI/client/index'
 ```
 
 ## **Common Compilation Error Patterns**
-
-### **Plugin Import Errors**
-
-**Error:** `Cannot find module '../../plugins/PluginName/client/index'`
-
-**Solution:** Verify the plugin exists and check the import path:
-```typescript
-// ✅ Correct import from plugins-loader-client.ts context
-import { PluginName } from '@penpal/plugins'
-
-// ✅ Direct import if plugin exports properly
-import PluginName from '../../../plugins/PluginName/client/index'
-```
 
 ### **Type Declaration Errors**
 

@@ -336,16 +336,6 @@ const { Select, SelectContent } = Components;
 const { Popover, PopoverTrigger, Command } = Components;
 ```
 
-**Pattern 3: Import Path Issues**
-
-```javascript
-// ❌ WRONG: Incorrect relative paths
-import Component from "../../Plugins/Other/component";
-
-// ✅ CORRECT: Plugin-relative paths
-import Component from "../../../../Other/client/component";
-```
-
 **Pattern 4: GraphQL Field Validation**
 
 ```javascript

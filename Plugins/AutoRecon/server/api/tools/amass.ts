@@ -3,7 +3,10 @@ import fs from "fs";
 import { AutoReconLogger as logger } from "../../plugin.ts";
 
 // Amass subdomain enumeration tool
-export const runexport const runAmassScan = async (Scan = async (domain: string, jobId: string | null = null) => {
+export const runAmassScan = async (
+  domain: string,
+  jobId: string | null = null
+) => {
   let containerId = null;
   try {
     logger.log(`Running amass scan for ${domain}`);
@@ -68,7 +71,10 @@ export const runexport const runAmassScan = async (Scan = async (domain: string,
         containerLogs.stdout = logs.combined || logs.stdout || "";
         containerLogs.stderr = logs.stderr || "";
       } catch (logError: any) {
-        logger.warn(`Failed to capture logs from container ${containerId}:`, logError.message);
+        logger.warn(
+          `Failed to capture logs from container ${containerId}:`,
+          logError.message
+        );
       }
     }
 

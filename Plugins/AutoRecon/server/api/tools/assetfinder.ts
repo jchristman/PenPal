@@ -3,7 +3,10 @@ import fs from "fs";
 import { AutoReconLogger as logger } from "../../plugin.ts";
 
 // Assetfinder subdomain enumeration tool
-export const runexport const runAssetfinderScan = async (Scan = async (domain: string, jobId: string | null = null) => {
+export const runAssetfinderScan = async (
+  domain: string,
+  jobId: string | null = null
+) => {
   let containerId = null;
   try {
     logger.log(`Running assetfinder scan for ${domain}`);
@@ -68,7 +71,10 @@ export const runexport const runAssetfinderScan = async (Scan = async (domain: s
         containerLogs.stdout = logs.combined || logs.stdout || "";
         containerLogs.stderr = logs.stderr || "";
       } catch (logError: any) {
-        logger.warn(`Failed to capture logs from container ${containerId}:`, logError.message);
+        logger.warn(
+          `Failed to capture logs from container ${containerId}:`,
+          logError.message
+        );
       }
     }
 

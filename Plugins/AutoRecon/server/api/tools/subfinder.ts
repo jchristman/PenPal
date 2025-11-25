@@ -1,9 +1,9 @@
 import PenPal from "#penpal/core";
 import fs from "fs";
-import { AutoReconLogger as logger } from "../../plugin.ts";
+import { AutoReconLogger as logger } from "../../plugin.js";
 
 // Subfinder subdomain enumeration tool
-export const runexport const runSubfinderScan = async (Scan = async (domain: string, jobId: string | null = null) => {
+export const runSubfinderScan = async (domain: string, jobId: string | null = null) => {
   let containerId = null;
   try {
     logger.log(`Running subfinder scan for ${domain}`);

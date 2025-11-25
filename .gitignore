@@ -141,3 +141,7 @@ heap-snapshots/*
 # Docker Stats
 docker_stats_logs
 docker_stats_logs/*
+
+# Project root package.json and package-lock.json, allow nested package.json files
+package.json
+package-lock.json
