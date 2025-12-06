@@ -1,4 +1,4 @@
-import { registerComponent } from "../../penpal/client";
+import { registerComponent } from "../../penpal/client.ts";
 import * as React from "react";
 import * as DialogPrimitive from "@radix-ui/react-dialog";
 import { X } from "lucide-react";

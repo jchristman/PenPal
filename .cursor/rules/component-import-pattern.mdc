@@ -1,46 +1,39 @@
-# PenPal Component Import Pattern
+---
+globs: *.tsx
+alwaysApply: false
+---
 
-**✅ CRITICAL: Use the `Components` Registry for all UI Elements**
-To ensure PenPal's plugin architecture remains flexible, extensible, and themeable, all shared UI components (like `Table`, `Card`, `Button`, `Input`, etc.) **MUST** be imported from the central `Components` registry.
+# PenPal Plugin System Access Pattern
 
-**❌ DO NOT use direct or aliased imports for UI components.**
+**✅ CRITICAL: Use the `Components` and `Hooks` Registries for all Plugin Resources**
+To ensure PenPal's plugin architecture remains flexible, extensible, and themeable, all shared UI components and hooks **MUST** be accessed from the central `Components` and `Hooks` registries.
+
+**❌ DO NOT destructure or import plugin resources at the module level.**
 
 ### The Correct Pattern
 
-1.  **Import `Components` from `@penpal/core`**.
-2.  **Destructure the specific UI components** you need from the `Components` object.
+1.  **Import `Components` and `Hooks` from `@penpal/core`**.
+2.  **Access resources dynamically** inside components/render functions, never destructure at module level.
 
 ```jsx
-// ✅ CORRECT: Import from the component registry
+// ✅ CORRECT: Access from registries dynamically
 import React from "react";
-import { Components, registerComponent } from "@penpal/core";
-
-// Destructure all needed components from the registry
-const {
-  Table,
-  TableBody,
-  TableCell,
-  TableHead,
-  TableHeader,
-  TableRow,
-  Card,
-  CardContent,
-  CardTitle,
-  Button,
-  Input,
-  Badge,
-} = Components;
+import { Components, Hooks, registerComponent } from "@penpal/core";
 
 const MyPluginComponent = () => {
-  // Use the components
+  // Access hooks dynamically inside the component
+  const { toast } = Hooks.useToast();
+  const { logout } = Hooks.useAccount();
+
+  // Access components dynamically in render
   return (
-    <Card>
-      <CardTitle>My Plugin</CardTitle>
-      <CardContent>
-        <Input placeholder="Search..." />
-        <Button>Submit</Button>
-      </CardContent>
-    </Card>
+    <Components.Card>
+      <Components.CardTitle>My Plugin</Components.CardTitle>
+      <Components.CardContent>
+        <Components.Input placeholder="Search..." />
+        <Components.Button>Submit</Components.Button>
+      </Components.CardContent>
+    </Components.Card>
   );
 };
 
@@ -50,56 +43,75 @@ export default MyPluginComponent;
 
 ### The Incorrect Pattern (To Avoid)
 
-This pattern breaks the plugin architecture and prevents components from being themed or swapped out by the core system.
+This pattern breaks the plugin architecture and prevents resources from being overridden or extended by the core system or other plugins.
 
 ```jsx
-// ❌ INCORRECT: Direct/aliased imports
+// ❌ INCORRECT: Destructuring at module level
 import React from "react";
-import { registerComponent } from "@penpal/core";
+import { Components, Hooks, registerComponent } from "@penpal/core";
 
-// These imports are incorrect and should be avoided
-import { Table, TableBody, TableCell } from "@/components/ui/table";
-import { Card, CardContent, CardTitle } from "@/components/ui/card";
-import { Button } from "@/components/ui/button";
-import { Input } from "@/components/ui/input";
+// DON'T destructure at module level - timing issues!
+const { Card, Button, Input } = Components; // ❌ May be undefined
+const { useAccount } = Hooks; // ❌ May be undefined
 
 const MyBrokenComponent = () => {
-  // ... component implementation ...
+  const { logout } = useAccount(); // ❌ May fail
+  return (
+    <Card>
+      {" "}
+      {/* ❌ May be undefined */}
+      <Input placeholder="Search..." />
+      <Button>Submit</Button>
+    </Card>
+  );
 };
 
-registerComponent("MyBrokenComponent", MyBrokenComponent);
-export default MyBrokenComponent;
+// ❌ INCORRECT: Direct/aliased imports also break architecture
+import { Table, TableBody, TableCell } from "@/components/ui/table";
 ```
 
 ### Why This is Important
 
-- **Extensibility**: Allows the core application or other plugins to override or extend base components.
+- **Extensibility**: Allows the core application or other plugins to override or extend components and hooks.
 - **Theming**: Ensures all components receive the correct theme and styling from the central theme provider.
-- **Consistency**: Maintains a single, consistent source for all UI components, reducing bugs and improving maintainability.
-- **Decoupling**: Keeps plugins decoupled from the specific UI library implementation (e.g., Shadcn UI).
+- **Load Order Safety**: Prevents undefined errors when resources aren't registered yet.
+- **Consistency**: Maintains a single, consistent source for all shared resources, reducing bugs and improving maintainability.
+- **Decoupling**: Keeps plugins decoupled from specific implementations.
 
 ### How to Fix
 
-If you see aliased imports like `from "@/components/ui/..."`, replace them with the destructuring pattern from the `Components` registry as shown in the correct example.
+If you see destructuring at module level or direct imports, replace them with dynamic access patterns as shown in the correct example.
 
-### ⚠️ Load Order & Destructuring Edge Case
+### ⚠️ Load Order & Timing Edge Cases
 
-**Warning:**
-If you destructure components from the `Components` registry at the top of your file (e.g., `const { UIDirectiveJsonTree } = Components;`), you may get `undefined` if the component is registered later in the load order. This is because destructuring happens before all components are registered by the plugin system. This mostly happens within a single plugin, because all files for a plugin that you depend on are guaranteed to be loaded correctly beforehand
+**Critical Warning:**
+If you destructure resources from the `Components` or `Hooks` registries at the module level, you may get `undefined` values if the resources are registered later in the load order. This happens because:
+
+1. **Destructuring occurs immediately** when the module is imported
+2. **Registration happens asynchronously** during plugin loading
+3. **Load order is not guaranteed** with dynamic imports
 
 **Correct Pattern:**
-Always reference components as `Components.ComponentName` inside your render function or component body. This ensures the component is available after registration.
+Always access resources dynamically inside your component/render function. This ensures resources are available after registration.
 
-**Example:**
+**Examples:**
 
 ```jsx
 // ❌ INCORRECT (may be undefined)
-const { UIDirectiveJsonTree } = Components;
-// ...later...
-return <UIDirectiveJsonTree value={data} />;
+const { UIDirectiveJsonTree } = Components; // Destructured too early
+const { useAccount } = Hooks; // Hook not ready yet
 
-// ✅ CORRECT
-return <Components.UIDirectiveJsonTree value={data} />;
+// ✅ CORRECT - Dynamic access
+const MyComponent = () => {
+  const useAccount = Hooks.useAccount; // Access when needed
+  const { logout } = useAccount();
+
+  return <Components.UIDirectiveJsonTree value={data} />;
+};
 ```
 
-This is especially important when using `import.meta.glob` or any dynamic/eager import system for component registration, where registration order is not guaranteed.
+**Best Practice:**
+
+- Access `Components.Resource` and `Hooks.hookName` inside component bodies
+- Add null/undefined checks when resources might not be available yet
+- Use error boundaries for graceful degradation

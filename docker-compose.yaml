@@ -23,7 +23,8 @@ services:
       - penpal-frontend-bun-cache:/home/node/.bun/install/cache
       - penpal-bun-global-cache:/root/.bun/install/cache
       - ./PenPal/app/client/package.json:/penpal/package-tmp.json:ro
-      - ./PenPal/app/client/vite.config.js:/penpal/vite.config.js:ro
+      - ./PenPal/app/client/tsconfig.json:/penpal/tsconfig.json:ro
+      - ./PenPal/app/client/vite.config.ts:/penpal/vite.config.ts:ro
       - ./PenPal/app/client/src:/penpal/src
       - ./Plugins:/penpal/plugins
     ports:
@@ -34,6 +35,7 @@ services:
     environment:
       - LOCAL_USER_ID=${LOCAL_USER_ID}
       - CONTAINER_TYPE=frontend
+      - PLUGINS_MOUNT_PATH=/penpal/plugins
 
   penpal-server:
     build:
@@ -47,6 +49,7 @@ services:
       - penpal-plugin-share:/penpal-plugin-share
       - ./PenPal/app/server/package.json:/penpal/package-tmp.json:ro
       - ./PenPal/app/server/nodemon.config.json:/penpal/nodemon.config.json:ro
+      - ./PenPal/app/server/tsconfig.json:/penpal/tsconfig.json:ro
       - ./PenPal/app/server/src:/penpal/src
       - ./heap-snapshots:/penpal/heap-snapshots
       - ./Plugins:/penpal/plugins
@@ -58,6 +61,7 @@ services:
       - FORCE_COLOR=1
       - CONTAINER_TYPE=server
       - ENABLE_MEMORY_PROFILER=false
+      - PLUGINS_MOUNT_PATH=/penpal/plugins
     tty: true
     command: bun run server
     networks:

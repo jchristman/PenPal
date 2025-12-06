@@ -1,6 +1,6 @@
 // Inspired by react-hot-toast library
 import * as React from "react";
-import { registerHook } from "../../penpal/client";
+import { registerHook } from "../../penpal/client.ts";
 
 import type { ToastActionElement, ToastProps } from "./toast";
 

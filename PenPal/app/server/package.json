@@ -3,7 +3,10 @@
   "type": "module",
   "version": "0.1.0",
   "scripts": {
-    "server": "nodemon --config ./nodemon.config.json ./src/main.js"
+    "build": "tsc",
+    "dev": "nodemon --config ./nodemon.config.json",
+    "server": "node --import tsx ./src/main.ts",
+    "type-check": "tsc --noEmit"
   },
   "dependencies": {
     "@apollo/server": "^4.10.1",
@@ -11,12 +14,17 @@
     "@graphql-tools/merge": "^8.2.1",
     "@graphql-tools/schema": "^9.0.18",
     "@graphql-tools/utils": "^9.0.0",
+    "@maxmind/geoip2-node": "^6.3.0",
+    "async-mqtt": "^2.6.3",
     "better-logging": "^5.0.0",
+    "biguint-format": "^1.0.2",
     "chalk": "^5.3.0",
     "check-types": "^11.2.2",
     "cors": "^2.8.5",
     "express": "^4.17.3",
     "express-ws": "^5.0.2",
+    "fast-json-stable-stringify": "^2.1.0",
+    "flake-idgen": "^1.4.0",
     "glob": "^11.0.3",
     "graphql": "^16.3.0",
     "graphql-middleware": "^6.1.33",
@@ -24,17 +32,32 @@
     "graphql-subscriptions": "^2.0.0",
     "graphql-tag": "^2.12.6",
     "graphql-tools": "^8.3.19",
+    "graphql-upload-ts": "^2.1.3",
     "graphql-ws": "^5.14.3",
+    "ip": "^2.0.1",
     "lodash": "^4.17.21",
-    "mongodb": "^5.3.0",
+    "minio": "^8.0.6",
     "moment": "^2.29.4",
     "moment-timezone": "^0.5.43",
-    "uuid": "^8.3.1",
-    "ws": "^8.15.0"
+    "mongodb": "^5.3.0",
+    "node-pty": "^1.0.0",
+    "shell-quote": "^1.8.3",
+    "stream-to-string": "^1.2.1",
+    "uuid": "^13.0.0",
+    "ws": "^8.15.0",
+    "xml2js": "^0.6.2"
   },
   "devDependencies": {
+    "@types/cors": "^2.8.19",
+    "@types/express": "^4.17.21",
+    "@types/lodash": "^4.17.7",
+    "@types/node": "^22.0.0",
+    "@types/uuid": "^10.0.0",
+    "@types/ws": "^8.5.10",
     "depcheck": "^1.4.3",
-    "nodemon": "^2.0.22"
+    "nodemon": "^2.0.22",
+    "tsx": "^4.15.0",
+    "typescript": "^5.5.0"
   },
   "imports": {
     "#penpal/core": "./src/penpal/server.js",

@@ -1,11 +1,11 @@
 {
-  "name": "PenPal",
+  "name": "penpal",
   "version": "0.1.0",
   "scripts": {
     "frontend": "vite"
   },
   "dependencies": {
-    "@apollo/client": "^3.13.8",
+    "@apollo/client": "^3.14.0",
     "@date-io/moment": "^2.13.1",
     "@heroicons/react": "^2.2.0",
     "@radix-ui/react-alert-dialog": "1.1.14",
@@ -24,12 +24,15 @@
     "@radix-ui/react-toast": "^1.2.14",
     "@radix-ui/react-toggle-group": "^1.1.0",
     "@radix-ui/react-tooltip": "^1.2.7",
+    "@types/d3": "^7.4.3",
     "check-types": "^11.2.2",
     "class-variance-authority": "^0.7.1",
     "classnames": "^2.2.6",
     "clipboard": "^2.0.6",
     "cmdk": "^1.1.1",
+    "d3": "^7.9.0",
     "dataloader": "^2.0.0",
+    "date-fns": "^4.1.0",
     "gql-query-builder": "^3.5.7",
     "graphql": "^16.3.0",
     "graphql-scalars": "^1.21.3",
@@ -44,8 +47,10 @@
     "react-day-picker": "^9.7.0",
     "react-dom": "^19.1.0",
     "react-hook-form": "^7.58.1",
+    "react-json-view-lite": "^2.5.0",
     "react-router": "^6.2.1",
     "react-router-dom": "^6.2.1",
+    "react-syntax-highlighter": "^16.1.0",
     "recharts": "^3.0.2",
     "regenerator-runtime": "^0.13.11",
     "serialize-error": "^9.0.0",
@@ -56,13 +61,23 @@
   "devDependencies": {
     "@tailwindcss/typography": "latest",
     "@tailwindcss/vite": "^4.1.10",
+    "@types/lodash": "^4.14.202",
+    "@types/node": "^20.10.0",
     "@types/react": "^18.2.37",
+    "@types/react-dom": "^18.2.0",
+    "@types/uuid": "^9.0.0",
     "@vitejs/plugin-react": "^4.2.0",
     "depcheck": "^1.4.3",
     "react-refresh": "^0.11.0",
     "tailwindcss": "^4.0.0-alpha.14",
+    "typescript": "^5.3.0",
     "vite": "^5.0.0"
   },
   "type": "module",
-  "private": true
+  "private": true,
+  "main": "index.js",
+  "keywords": [],
+  "author": "",
+  "license": "ISC",
+  "description": ""
 }

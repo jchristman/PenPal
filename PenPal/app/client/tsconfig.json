@@ -1,0 +1,39 @@
+{
+  "compilerOptions": {
+    "target": "ES2022",
+    "lib": ["DOM", "DOM.Iterable", "ES6"],
+    "allowJs": true,
+    "checkJs": false,
+    "skipLibCheck": true,
+    "esModuleInterop": true,
+    "allowSyntheticDefaultImports": true,
+    "strict": true,
+    "forceConsistentCasingInFileNames": true,
+    "noFallthroughCasesInSwitch": true,
+    "module": "ESNext",
+    "moduleResolution": "bundler",
+    "resolveJsonModule": true,
+    "isolatedModules": true,
+    "noEmit": true,
+    "jsx": "react-jsx",
+    "allowImportingTsExtensions": true,
+    "baseUrl": ".",
+    "paths": {
+      "@penpal/core": ["./src/penpal/client"],
+      "@penpal/common": ["./src/common/common"],
+      "@penpal/plugins": ["./plugins/plugins-loader-client.ts"],
+      "@penpal/types": ["./src/types.d.ts"]
+    }
+  },
+  "include": [
+    "./src/**/*",
+    "./plugins/**/client/**/*.ts",
+    "./plugins/**/client/**/*.tsx",
+    "./plugins/**/client/**/*.js",
+    "./plugins/**/client/**/*.jsx"
+  ],
+  "exclude": [
+    "node_modules",
+    "dist"
+  ]
+}

@@ -1,5 +1,27 @@
 # PenPal
 
+## Development Setup
+
+### VSCode Intellisense for Plugins
+
+Plugin dependencies are installed in Docker containers during runtime. For VSCode Intellisense to work properly with plugin imports, run:
+
+```bash
+./install-dev-dependencies.sh
+```
+
+This script:
+1. Merges dependencies from both `PenPal/app/client/package.json` and `PenPal/app/server/package.json`
+2. Installs all plugin dependencies from `Plugins/*/client/npm-dependencies.txt` files
+3. Creates a root-level `node_modules` directory with all dependencies for development
+
+Run this script when:
+- Adding new plugin dependencies
+- Plugin `npm-dependencies.txt` files change
+- VSCode can't resolve imports from plugins or the main application
+
+**Note:** This only affects development - production containers use their own isolated `node_modules`.
+
 PenPal is an automation and reporting all-in-one tool that is meant to enable Cybersecurity Engineers to perform a better, more thorough job and produce better quality reports by automating many of the most tedious tasks in penetration testing and/or red teaming. It is built on a pluggable architecture that can allow for many tools to be integrated seamlessly into the structured, opinionated database scheme. This allows for a consistent approach to targeting that can enable trigger-based automations to perform actions when a condition occurs or on-demand.
 
 ## Features

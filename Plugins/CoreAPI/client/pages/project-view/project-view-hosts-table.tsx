@@ -1,0 +1,549 @@
+import React, { useState, useMemo, useEffect } from "react";
+import { Components, registerComponent, Utils } from "@penpal/core";
+import {
+  ChevronDoubleLeftIcon,
+  ChevronLeftIcon,
+  ChevronRightIcon,
+  ChevronDoubleRightIcon,
+  ChevronUpIcon,
+  ChevronDownIcon,
+  ComputerDesktopIcon,
+  ServerIcon,
+  GlobeAltIcon,
+  MagnifyingGlassIcon,
+  ShieldExclamationIcon,
+} from "@heroicons/react/24/outline";
+
+const { formatDate } = Utils;
+
+interface Host {
+  id: string;
+  ip_address: string;
+  domains?: Array<{ name: string }>;
+  os?: { name: string };
+  mac_address: string;
+  servicesConnection?: { totalCount: number };
+}
+
+const {
+  Button,
+  Table,
+  TableBody,
+  TableCell,
+  TableHead,
+  TableHeader,
+  TableRow,
+  Card,
+  CardContent,
+  CardDescription,
+  CardHeader,
+  CardTitle,
+  Badge,
+  Input,
+} = Components;
+
+interface Host {
+  id: string;
+  ip_address: string;
+  domains?: Array<{ name: string }>;
+  os?: { name: string };
+  mac_address: string;
+  servicesConnection?: { totalCount: number };
+  vulnerabilitiesConnection?: { totalCount: number };
+  classification?: {
+    country?: string;
+    city?: string;
+    region?: string;
+    org?: string;
+    asn?: string;
+    cloud_provider?: {
+      provider?: string;
+      service?: string;
+    };
+  };
+}
+
+const TablePaginationActions = ({
+  count,
+  page,
+  rowsPerPage,
+  onPageChange,
+  isLoading,
+}: {
+  count: number;
+  page: number;
+  rowsPerPage: number;
+  onPageChange: (event: any, page: number) => void;
+  isLoading: boolean;
+}) => {
+  const handleFirstPageButtonClick = (event: any) => {
+    onPageChange(event, 0);
+  };
+
+  const handleBackButtonClick = (event: any) => {
+    onPageChange(event, page - 1);
+  };
+
+  const handleNextButtonClick = (event: any) => {
+    onPageChange(event, page + 1);
+  };
+
+  const handleLastPageButtonClick = (event: any) => {
+    onPageChange(event, Math.max(0, Math.ceil(count / rowsPerPage) - 1));
+  };
+
+  return (
+    <div className="flex items-center space-x-2 ml-4">
+      <Button
+        variant="outline"
+        size="icon"
+        onClick={handleFirstPageButtonClick}
+        disabled={page === 0}
+        className="h-8 w-8 cursor-pointer"
+      >
+        <ChevronDoubleLeftIcon className="h-4 w-4" />
+      </Button>
+      <Button
+        variant="outline"
+        size="icon"
+        onClick={handleBackButtonClick}
+        disabled={page === 0}
+        className="h-8 w-8 cursor-pointer"
+      >
+        <ChevronLeftIcon className="h-4 w-4" />
+      </Button>
+      <Button
+        variant="outline"
+        size="icon"
+        onClick={handleNextButtonClick}
+        disabled={page >= Math.ceil(count / rowsPerPage) - 1}
+        className="h-8 w-8 cursor-pointer"
+      >
+        <ChevronRightIcon className="h-4 w-4" />
+      </Button>
+      <Button
+        variant="outline"
+        size="icon"
+        onClick={handleLastPageButtonClick}
+        disabled={page >= Math.ceil(count / rowsPerPage) - 1}
+        className="h-8 w-8 cursor-pointer"
+      >
+        <ChevronDoubleRightIcon className="h-4 w-4" />
+      </Button>
+    </div>
+  );
+};
+
+const SortableHeader = ({
+  children,
+  sortKey,
+  currentSort,
+  onSort,
+  className = "",
+}: {
+  children: React.ReactNode;
+  sortKey: string;
+  currentSort: { key: string; direction: string } | null;
+  onSort: (sort: { key: string; direction: string }) => void;
+  className?: string;
+}) => {
+  const isSorted = currentSort?.key === sortKey;
+  const direction = isSorted ? currentSort.direction : null;
+
+  const handleClick = () => {
+    if (isSorted) {
+      onSort({ key: sortKey, direction: direction === "asc" ? "desc" : "asc" });
+    } else {
+      onSort({ key: sortKey, direction: "asc" });
+    }
+  };
+
+  return (
+    <TableHead
+      className={`cursor-pointer hover:bg-muted/50 select-none ${className}`}
+      onClick={handleClick}
+    >
+      <div className="flex items-center space-x-1">
+        <span>{children}</span>
+        <div className="flex flex-col">
+          {isSorted && direction === "asc" && (
+            <ChevronUpIcon className="h-3 w-3" />
+          )}
+          {isSorted && direction === "desc" && (
+            <ChevronDownIcon className="h-3 w-3" />
+          )}
+          {!isSorted && (
+            <div className="h-3 w-3 opacity-30">
+              <ChevronUpIcon className="h-3 w-3" />
+            </div>
+          )}
+        </div>
+      </div>
+    </TableHead>
+  );
+};
+
+const ProjectViewHostsTable = ({ hosts = [] }: { hosts?: Host[] }) => {
+  const [page, setPage] = useState(0);
+  const [rowsPerPage, setRowsPerPage] = useState(10);
+  const [sort, setSort] = useState({ key: "ip_address", direction: "asc" });
+  const [searchTerm, setSearchTerm] = useState("");
+  const [debouncedSearchTerm, setDebouncedSearchTerm] = useState("");
+
+  // Debounce search term
+  useEffect(() => {
+    const timer = setTimeout(() => {
+      setDebouncedSearchTerm(searchTerm);
+    }, 1000);
+
+    return () => clearTimeout(timer);
+  }, [searchTerm]);
+
+  // Reset page when search term changes
+  useEffect(() => {
+    setPage(0);
+  }, [debouncedSearchTerm]);
+
+  // Filter and sort hosts
+  const filteredAndSortedHosts = useMemo(() => {
+    let filtered = hosts;
+
+    // Apply search filter
+    if (debouncedSearchTerm) {
+      const search = debouncedSearchTerm.toLowerCase();
+      filtered = hosts.filter((host) => {
+        return (
+          host.ip_address?.toLowerCase().includes(search) ||
+          host.domains?.some((domain: { name: string }) => domain.name.toLowerCase().includes(search)) ||
+          host.os?.name?.toLowerCase().includes(search) ||
+          host.mac_address?.toLowerCase().includes(search)
+        );
+      });
+    }
+
+    // Apply sorting
+    const sortableItems = [...filtered];
+    sortableItems.sort((a, b) => {
+      let aValue, bValue;
+
+      switch (sort.key) {
+        case "ip_address":
+          // Parse IP for proper numeric sorting
+          aValue = a.ip_address
+            ?.split(".")
+            .map((num) => parseInt(num))
+            .join("");
+          bValue = b.ip_address
+            ?.split(".")
+            .map((num) => parseInt(num))
+            .join("");
+          break;
+        case "hostnames":
+          aValue = a.domains?.[0]?.name || "";
+          bValue = b.domains?.[0]?.name || "";
+          break;
+        case "os":
+          aValue = a.os?.name || "Unknown";
+          bValue = b.os?.name || "Unknown";
+          break;
+        case "services":
+          aValue = a.servicesConnection?.totalCount || 0;
+          bValue = b.servicesConnection?.totalCount || 0;
+          break;
+        case "vulnerabilities":
+          aValue = a.vulnerabilitiesConnection?.totalCount || 0;
+          bValue = b.vulnerabilitiesConnection?.totalCount || 0;
+          break;
+        case "mac_address":
+          aValue = a.mac_address || "";
+          bValue = b.mac_address || "";
+          break;
+        default:
+          aValue = "";
+          bValue = "";
+      }
+
+      if (sort.key === "services" || sort.key === "vulnerabilities") {
+        // Numeric comparison for counts
+        if (sort.direction === "asc") {
+          return (aValue as number) - (bValue as number);
+        } else {
+          return (bValue as number) - (aValue as number);
+        }
+      }
+
+      if (sort.direction === "asc") {
+        return aValue > bValue ? 1 : -1;
+      } else {
+        return aValue < bValue ? 1 : -1;
+      }
+    });
+
+    return sortableItems;
+  }, [hosts, debouncedSearchTerm, sort]);
+
+  // Paginate
+  const paginatedHosts = filteredAndSortedHosts.slice(
+    page * rowsPerPage,
+    page * rowsPerPage + rowsPerPage
+  );
+
+  const handleChangePage = (event: any, newPage: number) => {
+    setPage(newPage);
+  };
+
+  const handleChangeRowsPerPage = (event: any) => {
+    setRowsPerPage(parseInt(event.target.value, 10));
+    setPage(0);
+  };
+
+  // Calculate statistics
+  const totalServices = useMemo(
+    () =>
+      hosts.reduce(
+        (sum, host) => sum + (host.servicesConnection?.totalCount || 0),
+        0
+      ),
+    [hosts]
+  );
+
+  return (
+    <Card>
+      <CardHeader>
+        <CardTitle>Hosts</CardTitle>
+        <CardDescription>
+          A list of all hosts discovered in this project.
+        </CardDescription>
+        <div className="flex justify-between items-center pt-4">
+          <Input
+            placeholder="Search hosts..."
+            value={searchTerm}
+            onChange={(e: any) => setSearchTerm(e.target.value)}
+            className="max-w-sm"
+          />
+          <div className="flex items-center space-x-2">
+            <Badge variant="outline">
+              Total Hosts:{" "}
+              <span className="font-bold ml-1">{hosts.length}</span>
+            </Badge>
+            <Badge variant="outline">
+              Total Services:{" "}
+              <span className="font-bold ml-1">{totalServices}</span>
+            </Badge>
+          </div>
+        </div>
+      </CardHeader>
+      <CardContent>
+        <Table className="w-full">
+          <TableHeader>
+            <TableRow>
+              <SortableHeader
+                sortKey="ip_address"
+                currentSort={sort}
+                onSort={setSort}
+              >
+                IP Address
+              </SortableHeader>
+              <SortableHeader
+                sortKey="hostnames"
+                currentSort={sort}
+                onSort={setSort}
+              >
+                Hostnames
+              </SortableHeader>
+              <SortableHeader sortKey="os" currentSort={sort} onSort={setSort}>
+                Operating System
+              </SortableHeader>
+              <SortableHeader
+                sortKey="mac_address"
+                currentSort={sort}
+                onSort={setSort}
+              >
+                MAC Address
+              </SortableHeader>
+              <SortableHeader
+                sortKey="services"
+                currentSort={sort}
+                onSort={setSort}
+                className="text-right"
+              >
+                Services
+              </SortableHeader>
+              <SortableHeader
+                sortKey="vulnerabilities"
+                currentSort={sort}
+                onSort={setSort}
+                className="text-right"
+              >
+                Vulnerabilities
+              </SortableHeader>
+              <TableHead>Location</TableHead>
+              <TableHead>Classification</TableHead>
+            </TableRow>
+          </TableHeader>
+          <TableBody>
+            {paginatedHosts.map((host) => (
+              <TableRow
+                key={host.id}
+                className="cursor-pointer hover:bg-muted/50"
+              >
+                <TableCell className="font-medium">
+                  <div className="flex items-center space-x-2">
+                    <ComputerDesktopIcon className="h-4 w-4 text-muted-foreground" />
+                    <span>{host.ip_address}</span>
+                  </div>
+                </TableCell>
+                <TableCell>
+                  {(host.domains?.length ?? 0) > 0 ? (
+                    <div className="space-y-1">
+                      {(host.domains ?? []).slice(0, 2).map((domain, idx) => (
+                        <div key={idx} className="flex items-center space-x-1">
+                          <GlobeAltIcon className="h-3 w-3 text-muted-foreground" />
+                          <span className="text-xs">{domain.name}</span>
+                        </div>
+                      ))}
+                      {(host.domains?.length ?? 0) > 2 && (
+                        <Badge variant="secondary" className="text-xs">
+                          +{(host.domains?.length ?? 0) - 2} more
+                        </Badge>
+                      )}
+                    </div>
+                  ) : (
+                    <span className="text-muted-foreground text-sm">
+                      No domains
+                    </span>
+                  )}
+                </TableCell>
+                <TableCell>
+                  {host.os?.name ? (
+                    <Badge variant="outline">{host.os.name}</Badge>
+                  ) : (
+                    <span className="text-muted-foreground text-sm">
+                      Unknown
+                    </span>
+                  )}
+                </TableCell>
+                <TableCell>
+                  {host.mac_address ? (
+                    <span className="font-mono text-xs">
+                      {host.mac_address}
+                    </span>
+                  ) : (
+                    <span className="text-muted-foreground text-sm">
+                      Unknown
+                    </span>
+                  )}
+                </TableCell>
+                <TableCell className="text-right">
+                  <div className="flex items-center justify-end space-x-2">
+                    <ServerIcon className="h-4 w-4 text-muted-foreground" />
+                    <Badge variant="secondary">
+                      {host.servicesConnection?.totalCount || 0}
+                    </Badge>
+                  </div>
+                </TableCell>
+                <TableCell className="text-right">
+                  <div className="flex items-center justify-end space-x-2">
+                    <ShieldExclamationIcon className="h-4 w-4 text-muted-foreground" />
+                    <Badge
+                      variant={
+                        (host.vulnerabilitiesConnection?.totalCount || 0) > 0
+                          ? "destructive"
+                          : "secondary"
+                      }
+                    >
+                      {host.vulnerabilitiesConnection?.totalCount || 0}
+                    </Badge>
+                  </div>
+                </TableCell>
+                <TableCell>
+                  {host.classification?.country ? (
+                    <div className="text-xs">
+                      <div className="font-medium">
+                        {host.classification.city && host.classification.region
+                          ? `${host.classification.city}, ${host.classification.region}`
+                          : host.classification.city || host.classification.region}
+                      </div>
+                      <div className="text-muted-foreground">
+                        {host.classification.country}
+                      </div>
+                    </div>
+                  ) : (
+                    <span className="text-muted-foreground text-sm">
+                      Unknown
+                    </span>
+                  )}
+                </TableCell>
+                <TableCell>
+                  <div className="space-y-1">
+                    {host.classification?.org && (
+                      <Badge variant="outline" className="text-xs">
+                        {host.classification.org}
+                        {host.classification.asn && ` (ASN ${host.classification.asn})`}
+                      </Badge>
+                    )}
+                    {host.classification?.cloud_provider?.provider && (
+                      <Badge variant="secondary" className="text-xs">
+                        {host.classification.cloud_provider.provider}
+                        {host.classification.cloud_provider.service && ` (${host.classification.cloud_provider.service})`}
+                      </Badge>
+                    )}
+                    {!host.classification?.org && !host.classification?.cloud_provider?.provider && (
+                      <span className="text-muted-foreground text-sm">
+                        Unknown
+                      </span>
+                    )}
+                  </div>
+                </TableCell>
+              </TableRow>
+            ))}
+          </TableBody>
+        </Table>
+
+        {/* Pagination Footer */}
+        <div className="flex items-center justify-between p-4">
+          <div className="flex items-center space-x-4">
+            <div className="text-sm text-muted-foreground">
+              Rows per page:
+              <select
+                className="ml-2 border border-input rounded px-2 py-1"
+                value={rowsPerPage}
+                onChange={handleChangeRowsPerPage}
+              >
+                <option value={5}>5</option>
+                <option value={10}>10</option>
+                <option value={25}>25</option>
+                <option value={50}>50</option>
+              </select>
+            </div>
+            <div className="text-sm text-muted-foreground">
+              Showing {page * rowsPerPage + 1}-
+              {Math.min(
+                (page + 1) * rowsPerPage,
+                filteredAndSortedHosts.length
+              )}{" "}
+              of {filteredAndSortedHosts.length} hosts
+            </div>
+          </div>
+          <div className="flex items-center space-x-4">
+            <div className="text-sm text-muted-foreground">
+              Page {page + 1} of{" "}
+              {Math.ceil(filteredAndSortedHosts.length / rowsPerPage) || 1}
+            </div>
+            <TablePaginationActions
+              count={filteredAndSortedHosts.length}
+              page={page}
+              rowsPerPage={rowsPerPage}
+              onPageChange={handleChangePage}
+              isLoading={false}
+            />
+          </div>
+        </div>
+      </CardContent>
+    </Card>
+  );
+};
+
+registerComponent("ProjectViewHostsTable", ProjectViewHostsTable);
+
+export default ProjectViewHostsTable;

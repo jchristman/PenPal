@@ -1,4 +1,4 @@
-import { registerComponent } from "../../penpal/client";
+import { registerComponent } from "../../penpal/client.ts";
 import * as React from "react";
 import { Check, ChevronsUpDown, Loader2 } from "lucide-react";
 import { Button } from "./button";

@@ -1,9 +1,7 @@
 ---
 description: Guide for using Task Master to manage task-driven development workflows
-globs: **/*
-alwaysApply: true
+alwaysApply: false
 ---
-
 # Task Master Development Workflow
 
 This guide outlines the typical process for using Task Master to manage software development projects.

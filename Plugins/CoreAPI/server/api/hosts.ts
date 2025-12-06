@@ -1,0 +1,415 @@
+import PenPal from "#penpal/core";
+import { check } from "#penpal/common";
+import _ from "lodash";
+import ip from "ip";
+
+import { required_field, isTestData } from "./common.ts";
+
+import { getNetworksByProject, addHostsToNetwork } from "./networks.ts";
+//import { hosts as mockHosts } from "../test/mock-hosts.json" with { type: "json" };
+const mockHosts = [];
+
+// Import the shared logger from plugin.js
+import { CoreAPILogger as logger } from "../plugin.ts";
+
+// -----------------------------------------------------------
+
+export const getHost = async (host_id, options) => {
+  const is_test = isTestData(host_id);
+  return is_test
+    ? _.find(mockHosts, (host) => host.id === host_id)
+    : await PenPal.DataStore.fetchOne(
+        "CoreAPI",
+        "Hosts",
+        {
+          id: host_id,
+        },
+        options
+      );
+};
+
+export const getHosts = async (host_ids, options) => {
+  const is_test = isTestData(host_ids);
+
+  return is_test
+    ? _.map(host_ids, (id) => _.find(mockHosts, (host) => host.id === id))
+    : await PenPal.DataStore.fetch(
+        "CoreAPI",
+        "Hosts",
+        {
+          id: { $in: host_ids },
+        },
+        options
+      );
+};
+
+export const getHostsPaginationInfo = async (host_ids = [], options) => {
+  return await PenPal.DataStore.getPaginationInfo(
+    "CoreAPI",
+    "Hosts",
+    { id: { $in: host_ids } },
+    options
+  );
+};
+
+export const getHostsByProject = async (project_id, options) => {
+  const result = await PenPal.DataStore.fetch(
+    "CoreAPI",
+    "Hosts",
+    {
+      project: project_id,
+    },
+    options
+  );
+
+  return result;
+};
+
+export const getHostsByNetwork = async (network_id, options) => {
+  const result = await PenPal.DataStore.fetch(
+    "CoreAPI",
+    "Hosts",
+    {
+      network: network_id,
+    },
+    options
+  );
+
+  return result;
+};
+
+export const getHostsByNetworks = async (network_ids, options) => {
+  const result = await PenPal.DataStore.fetch(
+    "CoreAPI",
+    "Hosts",
+    {
+      network: { $in: network_ids },
+    },
+    options
+  );
+
+  return result;
+};
+
+// -----------------------------------------------------------
+
+const default_host = {
+  domain_ids: [],
+  services: [],
+};
+
+export const insertHost = async (host) => {
+  return await insertHosts([host]);
+};
+
+export const insertHosts = async (hosts) => {
+  let _rejected = [];
+  const rejected = [];
+  let _accepted = [];
+  const accepted = [];
+
+  // Check that each host has appropriate fields
+  for (let host of hosts) {
+    try {
+      required_field(host, "project", "insertion");
+      required_field(host, "ip_address", "insertion");
+
+      // Merge defaults, but preserve domain_ids if provided
+      // If domain_ids is provided (even as empty array), use it; otherwise use default empty array
+      const _host = {
+        ...default_host,
+        ...host,
+        // Ensure domain_ids is always an array - preserve provided array or convert to array
+        domain_ids:
+          host.domain_ids !== undefined
+            ? Array.isArray(host.domain_ids)
+              ? host.domain_ids
+              : [host.domain_ids]
+            : default_host.domain_ids,
+      };
+
+      // Debug log to verify domain_ids are being set
+      if (_host.domain_ids && _host.domain_ids.length > 0) {
+        logger.log(
+          `Inserting host ${_host.ip_address} with domain_ids:`,
+          _host.domain_ids
+        );
+      }
+      _accepted.push(_host);
+    } catch (e) {
+      rejected.push({ host, error: e });
+    }
+  }
+
+  if (_accepted.length > 0) {
+    // Find all networks in the project
+    const project_networks = (
+      await getNetworksByProject(_accepted[0].project)
+    ).reduce(
+      (sum, network) => ({
+        ...sum,
+        [network.id]: ip.cidrSubnet(
+          `${network.subnet.network_address}/${network.subnet.subnet_mask}`
+        ),
+      }),
+      {}
+    );
+
+    // Map each host to a network if it falls within an existing network's subnet
+    // Hosts without a matching network are allowed (e.g., external hosts for pentests)
+    for (let host of _accepted) {
+      for (let network_id in project_networks) {
+        if (project_networks[network_id].contains(host.ip_address)) {
+          host.network = network_id;
+          break; // Host can only belong to one network
+        }
+      }
+      // If host doesn't match any network, host.network remains undefined/null, which is valid
+    }
+
+    if (_accepted.length > 0) {
+      // Insert the new hosts
+      let new_host_ids = await PenPal.DataStore.insertMany(
+        "CoreAPI",
+        "Hosts",
+        _accepted
+      );
+
+      // Add the host IDs from the insertion to the data in memory
+      const new_hosts = _.zipWith(new_host_ids, _accepted, ({ id }, _host) => ({
+        id,
+        ..._host,
+      }));
+
+      // Automatically classify IP addresses for new hosts
+      if (new_hosts.length > 0) {
+        try {
+          logger.log(`Classifying ${new_hosts.length} new hosts`);
+          const ips = new_hosts.map((host) => host.ip_address);
+          const classifications = await PenPal.API.Classification.ClassifyIPs(
+            ips
+          );
+
+          // Update hosts with classification data
+          const hosts_to_update = [];
+          for (const host of new_hosts) {
+            const classification = classifications[host.ip_address];
+            if (classification) {
+              hosts_to_update.push({
+                id: host.id,
+                classification: classification,
+              });
+            }
+          }
+
+          if (hosts_to_update.length > 0) {
+            await updateHosts(hosts_to_update);
+            logger.log(
+              `Updated ${hosts_to_update.length} hosts with classification data`
+            );
+          }
+        } catch (error) {
+          logger.error("Failed to classify hosts:", error.message);
+          // Continue with host insertion even if classification fails
+        }
+      }
+
+      // Update the networks with the new hosts
+      // Only group hosts that have a network assigned
+      const hostsWithNetworks = new_hosts.filter((host) => host.network);
+      const network_new_hosts = _.groupBy(hostsWithNetworks, "network");
+      for (let network_id in network_new_hosts) {
+        if (network_id && network_id !== "undefined" && network_id !== "null") {
+          await addHostsToNetwork(
+            network_id,
+            network_new_hosts[network_id].map(({ id }) => id)
+          );
+        }
+      }
+
+      // Accept the successful insertions
+      accepted.push(...new_hosts);
+    } else {
+      logger.error("Rejected", rejected);
+    }
+  }
+
+  // Publish new hosts
+  if (accepted.length > 0) {
+    const new_host_ids = accepted.map(({ id }) => id);
+    PenPal.API.MQTT.Publish(PenPal.API.MQTT.Topics.New.Hosts, {
+      project: hosts[0].project,
+      host_ids: new_host_ids,
+    });
+  }
+
+  return { accepted, rejected };
+};
+
+// -----------------------------------------------------------
+
+export const addServicesToHost = async (host_id, service_ids) => {
+  const host = await getHost(host_id);
+  host.services.push(...service_ids);
+  await updateHost({ id: host_id, services: host.services });
+};
+
+export const updateHost = async (host) => {
+  return await updateHosts([host]);
+};
+
+export const updateHosts = async (hosts) => {
+  const rejected = [];
+  const _accepted = [];
+  const accepted = [];
+
+  for (let host of hosts) {
+    try {
+      required_field(host, "id", "update");
+      _accepted.push(host);
+    } catch (e) {
+      rejected.push({ host, error: e });
+    }
+  }
+
+  let matched_hosts = await PenPal.DataStore.fetch("CoreAPI", "Hosts", {
+    id: { $in: _accepted.map((host) => host.id) },
+  });
+
+  if (matched_hosts.length !== _accepted.length) {
+    // Find the unknown IDs
+    logger.error('Implement updateHosts "host not found" functionality');
+  }
+
+  for (let { id, ...host } of _accepted) {
+    // TODO: Optimize with updateMany
+    let res = await PenPal.DataStore.updateOne(
+      "CoreAPI",
+      "Hosts",
+      { id },
+      host
+    );
+
+    accepted.push({ id, ...host });
+  }
+
+  if (accepted.length > 0) {
+    const updated_host_ids = accepted.map(({ id }) => id);
+    PenPal.API.MQTT.Publish(PenPal.API.MQTT.Topics.Update.Hosts, {
+      project: hosts[0].project,
+      host_ids: updated_host_ids,
+    });
+  }
+
+  return { accepted, rejected };
+};
+
+// -----------------------------------------------------------
+
+export const upsertHosts = async (project_id, hosts) => {
+  const result = [];
+  const to_update = [];
+  const to_insert = [];
+  const rejected = [];
+
+  // Not all data updates are going to have an "id". We need to search from some unique pieces of info that
+  // could relate to a host, such as ip address or mac address
+
+  const to_check = [];
+  const search_ips = [];
+  const search_macs = [];
+
+  for (let host of hosts) {
+    if (host.id !== undefined) {
+      to_update.push(host);
+    } else {
+      if (host.ip_address === undefined && host.mac_address === undefined) {
+        rejected.push(host);
+      } else {
+        to_check.push(host);
+        if (host.ip_address !== undefined) search_ips.push(host.ip_address);
+        if (host.mac_address !== undefined) search_macs.push(host.mac_address);
+      }
+    }
+  }
+
+  let selector = {
+    $and: [
+      { project: project_id },
+      {
+        $or: [
+          { ip_address: { $in: search_ips } },
+          { mac_address: { $in: search_macs } },
+        ],
+      },
+    ],
+  };
+
+  let exists = await PenPal.DataStore.fetch("CoreAPI", "Hosts", selector);
+
+  // After this loop, all existing hosts will be set up for an update and `to_check` will only have "new" hosts left
+  for (let existing_host of exists) {
+    for (let i = 0; i < to_check.length; i++) {
+      if (
+        existing_host.ip_address === to_check[i].ip_address ||
+        existing_host.mac_address === to_check[i].ip_address
+      ) {
+        let found_host = to_check.splice(i, 1)[0];
+        to_update.push({ id: existing_host.id, ...found_host });
+        // Break after match
+        break;
+      }
+    }
+  }
+
+  for (let host of to_check) {
+    to_insert.push(host);
+  }
+
+  // Make sure that the project field is present on all hosts
+  _.each(to_insert, (host) => {
+    host.project = project_id;
+  });
+  _.each(to_update, (host) => {
+    host.project = project_id;
+  });
+
+  // Do the inserts and updates
+  const inserted = await insertHosts(to_insert);
+  const updated = await updateHosts(to_update);
+
+  return {
+    inserted,
+    updated,
+    rejected,
+  };
+};
+
+// -----------------------------------------------------------
+
+export const removeHost = async (host_id) => {
+  return await removeHosts([host_id]);
+};
+
+export const removeHosts = async (host_ids) => {
+  // Get all the host data for hooks so the deleted host hook has some info for notifications and such
+  let hosts = await PenPal.DataStore.fetch("CoreAPI", "Hosts", {
+    id: { $in: host_ids },
+  });
+
+  let res = await PenPal.DataStore.delete("CoreAPI", "Hosts", {
+    id: { $in: host_ids },
+  });
+
+  if (res > 0) {
+    const deleted_host_ids = hosts.map(({ id }) => id);
+    PenPal.API.MQTT.Publish(PenPal.API.MQTT.Topics.Delete.Hosts, {
+      project: hosts[0].project,
+      host_ids: deleted_host_ids,
+    });
+
+    return true;
+  }
+
+  return false;
+};

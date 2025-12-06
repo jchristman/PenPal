@@ -1,4 +1,4 @@
-import { registerComponent } from "../../penpal/client";
+import { registerComponent } from "../../penpal/client.ts";
 import * as React from "react";
 import { type DialogProps } from "@radix-ui/react-dialog";
 import { Command as CommandPrimitive } from "cmdk";

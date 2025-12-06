@@ -1,0 +1,51 @@
+// This helps the IDE understand the project structure and the plugins folder is a valid part of the project
+// while preventing any confusions inside the docker container or when running the project locally
+{
+  "compilerOptions": {
+    "target": "ES2022",
+    "lib": ["DOM", "DOM.Iterable", "ES6", "ES2021"],
+    "allowJs": true,
+    "checkJs": false,
+    "skipLibCheck": true,
+    "esModuleInterop": true,
+    "allowSyntheticDefaultImports": true,
+    "strict": true,
+    "forceConsistentCasingInFileNames": true,
+    "noFallthroughCasesInSwitch": true,
+    "module": "ESNext",
+    "moduleResolution": "node",
+    "resolveJsonModule": true,
+    "isolatedModules": true,
+    "noEmit": true,
+    "jsx": "react-jsx",
+    "allowImportingTsExtensions": true,
+    "baseUrl": ".",
+    "paths": {
+      "@penpal/core": ["./PenPal/app/client/src/penpal/client"],
+      "@penpal/common": ["./PenPal/app/client/src/common/common"],
+      "@penpal/plugins": ["./Plugins/plugins-loader-client.ts"],
+      "@penpal/types": ["./PenPal/app/client/src/types.d.ts"],
+      "#penpal/core": ["./PenPal/app/server/src/penpal/server.ts"],
+      "#penpal/plugins": ["./Plugins/plugins-loader-server.ts"],
+      "#penpal/common": ["./PenPal/app/server/src/common/common.ts"]
+    }
+  },
+  "include": [
+    "PenPal/app/client/src/**/*.ts",
+    "PenPal/app/client/src/**/*.tsx",
+    "PenPal/app/client/src/**/*.js",
+    "PenPal/app/client/src/**/*.jsx",
+    "PenPal/app/server/src/**/*.ts",
+    "PenPal/app/server/src/**/*.tsx",
+    "PenPal/app/server/src/**/*.js",
+    "PenPal/app/server/src/**/*.jsx",
+    "Plugins/**/*.ts",
+    "Plugins/**/*.tsx",
+    "Plugins/**/*.js",
+    "Plugins/**/*.jsx"
+  ],
+  "exclude": [
+    "node_modules",
+    "**/node_modules"
+  ]
+}
