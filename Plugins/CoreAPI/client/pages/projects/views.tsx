@@ -4,9 +4,9 @@ import { Components, registerComponent } from "@penpal/core";
 import { useQuery } from "@apollo/client";
 import GetProjectSummaries from "./queries/get-project-summaries.ts";
 
-import { Name as CardViewName } from "./views-card-view.jsx";
-import { Name as TableViewName } from "./views-table-view.jsx";
-import { Name as TimelineViewName } from "./views-timeline-view.jsx";
+import { Name as CardViewName } from "./views-card-view.tsx";
+import { Name as TableViewName } from "./views-table-view.tsx";
+import { Name as TimelineViewName } from "./views-timeline-view.tsx";
 
 interface ProjectsViewProps {
   view: string;

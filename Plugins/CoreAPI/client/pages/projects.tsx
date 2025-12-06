@@ -5,15 +5,15 @@ import { PlusIcon, ArrowPathIcon } from "@heroicons/react/24/outline";
 import {
   Icon as CardViewIcon,
   Name as CardViewName,
-} from "./projects/views-card-view.jsx";
+} from "./projects/views-card-view.tsx";
 import {
   Icon as TableViewIcon,
   Name as TableViewName,
-} from "./projects/views-table-view.jsx";
+} from "./projects/views-table-view.tsx";
 import {
   Icon as TimelineViewIcon,
   Name as TimelineViewName,
-} from "./projects/views-timeline-view.jsx";
+} from "./projects/views-timeline-view.tsx";
 
 const {
   Button,

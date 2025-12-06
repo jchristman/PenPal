@@ -14,7 +14,7 @@ const registerRoutes = () => {
   const Configuration = {
     name: "configuration",
     path: "/configure",
-    componentName: "Configuration",
+    componentName: "ConfigurationSelector",
     prettyName: "Configure Plugins",
     icon: Cog6ToothIcon,
   };
@@ -23,7 +23,7 @@ const registerRoutes = () => {
   const ConfigurationPlugin = {
     name: "configuration-plugin",
     path: "/configure/:plugin_name",
-    componentName: "Configuration",
+    componentName: "ConfigurationSelector",
     prettyName: "Configure Plugin",
     icon: Cog6ToothIcon,
     hideFromNav: true,

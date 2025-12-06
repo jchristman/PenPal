@@ -3,7 +3,7 @@
 {
   "compilerOptions": {
     "target": "ES2022",
-    "lib": ["DOM", "DOM.Iterable", "ES6"],
+    "lib": ["DOM", "DOM.Iterable", "ES6", "ES2021"],
     "allowJs": true,
     "checkJs": false,
     "skipLibCheck": true,

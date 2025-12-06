@@ -1,7 +1,7 @@
 import React, { useEffect } from "react";
 import { registerComponent, Components } from "@penpal/core";
 import "clipboard"; // Load before prism so prism can use it
-import "./prism.js"; // Loads as a global
+import "./prism.ts"; // Loads as a global
 import "./prism.css";
 
 // Note: Prism is loaded as a global via the import above

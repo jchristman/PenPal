@@ -1,10 +1,10 @@
 import type { PenPalPlugin } from "@penpal/types";
 import PenPal from "@penpal/core";
-import.meta.glob("./**/*.jsx", { eager: true });
+import.meta.glob("./**/*.{jsx,tsx}", { eager: true });
 import registerRoutes from "./routes.ts";
 
 // Import profile GraphQL operations
-import GetProfiles from "./pages/configuration/queries/get-profiles.js";
+import GetProfiles from "./pages/configuration/queries/get-profiles.ts";
 import {
   CreateProfile,
   UpdateProfile,
@@ -13,7 +13,7 @@ import {
   RemovePluginConfigFromProfile,
   ExportPluginProfile,
   ImportPluginProfile,
-} from "./pages/configuration/queries/profile-mutations.js";
+} from "./pages/configuration/queries/profile-mutations.ts";
 
 // Initialize PenPal.Profiles API
 if (!PenPal.Profiles) {
